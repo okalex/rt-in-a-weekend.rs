@@ -33,6 +33,7 @@ fn camera_a(img_width: u32, img_height: u32) -> lib::camera::Camera {
         focus_dist: 3.4,
         samples_per_pixel: 100,
         max_depth: 50,
+        use_multithreading: true,
     };
     return lib::camera::new(camera_options);
 }
@@ -71,6 +72,7 @@ fn camera_b(img_width: u32, img_height: u32) -> lib::camera::Camera {
         focus_dist: 10.0,
         samples_per_pixel: 50,
         max_depth: 5,
+        use_multithreading: true,
     };
     return lib::camera::new(camera_options);
 }

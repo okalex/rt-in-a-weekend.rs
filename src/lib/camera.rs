@@ -15,6 +15,7 @@ pub struct CameraOptions {
   pub focus_dist: f64,
   pub samples_per_pixel: u32,
   pub max_depth: u32,
+  pub use_multithreading: bool,
 }
 
 pub struct Camera {
@@ -28,7 +29,12 @@ pub struct Camera {
 impl Camera {
 
   pub fn render(&self, scene: Arc<scene::Scene>, writer: Arc<dyn writer::Writer>) {
-    let num_threads = std::thread::available_parallelism().unwrap().get();
+    let num_threads = if self.options.use_multithreading {
+      std::thread::available_parallelism().unwrap().get()
+    } else {
+      1
+    };
+    
     let segments = segment_lines(self.options.img_height, num_threads as u32);
     let line_counter = Arc::new(Mutex::new(line_counter::LineCounter::new(self.options.img_height)));
 
