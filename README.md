@@ -1,8 +1,8 @@
 # Overview
 
 This is a rust implementation of the path tracer from the [Ray Tracing in One Weekend](https://raytracing.github.io/)
-series of books. I'm just using this as an opportunity to learn about both path tracing and rust, so the code is probably
-not great, as I'm not a rust programmer. Hopefully, it'll get better in time.
+series of books. I'm just using this as an opportunity to learn about both path tracing and rust, so the code is
+not great, as I'm not a rust programmer and I avoided using any AI tools. Hopefully, it'll get better in time as I do.
 
 The renderer is quite basic at this point (I just finished [the first book](https://raytracing.github.io/books/RayTracingInOneWeekend.html)), though it does support Lambertian, metallic,
 and dielectric (glass) materials, as well as depth-of-field and camera positioning. It's currently computed entirely on
