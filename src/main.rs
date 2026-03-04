@@ -4,16 +4,16 @@ use crate::lib::writer::Writer;
 
 fn main() {
     let aspect_ratio = 16.0 / 9.0;
-    let img_width = 2000;
+    let img_width = 400;
     let img_height = (img_width as f32/ aspect_ratio) as u32;
 
-    let camera = camera_b(img_width, img_height);
-    let writer = lib::writer::new_ppm_writer(img_width, img_height, 255);
+    let camera = camera_a(img_width, img_height);
+    let writer: Arc<dyn Writer> = Arc::new(lib::writer::new_ppm_writer(img_width, img_height, 255));
 
-    let scene = scene_b();
+    let scene = Arc::new(scene_a());
 
     writer.init();
-    camera.render(&scene, &writer);
+    camera.render(Arc::clone(&scene), Arc::clone(&writer));
     writer.close();
 }
 
@@ -25,13 +25,13 @@ fn camera_a(img_width: u32, img_height: u32) -> lib::camera::Camera {
     let camera_options = lib::camera::CameraOptions {
         img_width: img_width,
         img_height: img_height,
-        vfov: 20.0,
-        lookfrom: lib::vec3::new(-2.0, 2.0, 1.0),
+        vfov: 50.0,
+        lookfrom: lib::vec3::new(-1.0, 1.0, 1.0),
         lookat: lib::vec3::new(0.0, 0.0, -1.0),
         vup: lib::vec3::new(0.0, 1.0, 0.0),
-        defocus_angle: 10.0,
+        defocus_angle: 0.5,
         focus_dist: 3.4,
-        samples_per_pixel: 50,
+        samples_per_pixel: 100,
         max_depth: 50,
     };
     return lib::camera::new(camera_options);
@@ -69,8 +69,8 @@ fn camera_b(img_width: u32, img_height: u32) -> lib::camera::Camera {
         vup: lib::vec3::new(0.0, 1.0, 0.0),
         defocus_angle: 0.6,
         focus_dist: 10.0,
-        samples_per_pixel: 100,
-        max_depth: 4,
+        samples_per_pixel: 50,
+        max_depth: 5,
     };
     return lib::camera::new(camera_options);
 }

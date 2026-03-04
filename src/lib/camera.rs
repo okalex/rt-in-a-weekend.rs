@@ -1,5 +1,7 @@
 use std::f64::consts::PI;
-use crate::lib::{vec3, ray, scene, color, interval, random, viewport, writer};
+use std::thread;
+use std::sync::{Arc, Mutex};
+use crate::lib::{vec3, ray, scene, color, interval, random, viewport, writer, line_counter};
 
 #[derive(Clone, Copy)]
 pub struct CameraOptions {
@@ -25,24 +27,42 @@ pub struct Camera {
 
 impl Camera {
 
-  pub fn render(&self, scene: &scene::Scene, writer: &impl writer::Writer) {
-    for j in 0..self.options.img_height {
-      eprint!("\rScanlines remaining: {} ", self.options.img_height - j);
+  pub fn render(&self, scene: Arc<scene::Scene>, writer: Arc<dyn writer::Writer>) {
+    let num_threads = std::thread::available_parallelism().unwrap().get();
+    let segments = segment_lines(self.options.img_height, num_threads as u32);
+    let line_counter = Arc::new(Mutex::new(line_counter::LineCounter::new(self.options.img_height)));
 
-      for i in 0..self.options.img_width {
-        let pixel_color = self.sample_pixel(scene, i, j).to_gamma();
-        writer.write_string(pixel_color.to_string());
+    thread::scope(|s| {
+      for (start, end) in segments {
+        let counter_clone = Arc::clone(&line_counter);
+        let scene_clone = Arc::clone(&scene);
+        let writer_clone = Arc::clone(&writer);
+
+        s.spawn(move || {
+          eprintln!("Rendering lines {} to {}...", start, end - 1);
+
+          for j in start..end {
+            for i in 0..self.options.img_width {
+              let pixel_color = self.sample_pixel(&scene_clone, i, j).to_gamma();
+              writer_clone.write_pixel(i as usize, j as usize, pixel_color.to_u8());
+            }
+
+            let mut c = counter_clone.lock().unwrap();
+            c.dec();
+            c.announce();
+          }
+        });
       }
-    }
+    });
 
     eprintln!("\n\rDone.");
   }
 
-  fn sample_pixel(&self, scene: &scene::Scene, i: u32, j: u32) -> color::Color {
+  fn sample_pixel(&self, scene: &Arc<scene::Scene>, i: u32, j: u32) -> color::Color {
     let mut pixel_color = color::new_vec(0.0, 0.0, 0.0);
     for _ in 0..self.options.samples_per_pixel {
       let r = self.get_ray(i, j);
-      pixel_color = pixel_color + self.ray_color(&r, self.options.max_depth, &scene);
+      pixel_color = pixel_color + self.ray_color(&r, self.options.max_depth, scene);
     }
     return pixel_color.scale(1.0 / (self.options.samples_per_pixel as f64));
   }
@@ -72,7 +92,7 @@ impl Camera {
     return ray::new(ray_origin, ray_dir);
   }
 
-  fn ray_color(&self, ray: &ray::Ray, depth: u32, scene: &scene::Scene) -> color::Color {
+  fn ray_color(&self, ray: &ray::Ray, depth: u32, scene: &Arc<scene::Scene>) -> color::Color {
     if depth <= 0 {
       return color::new_vec(0.0, 0.0, 0.0);
     }
@@ -117,4 +137,19 @@ pub fn new(options: CameraOptions) -> Camera {
 
 fn degrees_to_radians(degrees: f64) -> f64 {
   return degrees * PI / 180.0;
+}
+
+fn segment_lines(num_lines: u32, num_segments: u32) -> Vec<(u32, u32)> {
+  let segment_size = num_lines / num_segments;
+  let mut segments = Vec::new();
+  for i in 0..num_segments {
+    let start = i * segment_size;
+    let end = if i < (num_segments - 1) {
+      (i + 1) * segment_size
+    } else {
+      num_lines
+    };
+    segments.push((start, end));
+  }
+  return segments;
 }

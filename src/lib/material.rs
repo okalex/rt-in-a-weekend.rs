@@ -5,7 +5,7 @@ pub struct Scattered {
   pub attenuation: color::Color,
 }
 
-pub trait Material {
+pub trait Material: Send + Sync {
   fn scatter(&self, r_in: &ray::Ray, rec: &hittable::HitRecord) -> Scattered;
 }
 
@@ -20,7 +20,7 @@ impl Material for DefaultMaterial {
   }
 }
 
-pub fn defaultMaterial() -> DefaultMaterial {
+pub fn default_material() -> DefaultMaterial {
   return DefaultMaterial {};
 }
 

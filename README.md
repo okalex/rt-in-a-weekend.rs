@@ -10,6 +10,7 @@ the CPU, which is slowwwwwwwww.
 
 ## Future planned enhancements
 
+- ~~Support naive multi-threading~~
 - Complete books [2](https://raytracing.github.io/books/RayTracingTheNextWeek.html) and [3](https://raytracing.github.io/books/RayTracingTheRestOfYourLife.html)
 - Implement [BVH optimization](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy)
 - Render on the GPU, using [wgpu](https://wgpu.rs/)

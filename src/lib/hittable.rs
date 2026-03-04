@@ -11,7 +11,7 @@ pub struct HitRecord {
 }
 
 pub fn no_hit() -> HitRecord {
-  let mat: Arc<dyn material::Material> = Arc::new(material::defaultMaterial());
+  let mat: Arc<dyn material::Material> = Arc::new(material::default_material());
   return HitRecord {
     is_hit: false,
     point: vec3::zeroes(),
@@ -33,6 +33,6 @@ pub fn hit_record(point: &vec3::Vec3, normal: &vec3::Vec3, front_face: bool, t: 
   };
 }
 
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
   fn hit(&self, ray: &ray::Ray, ray_t: interval::Interval) -> HitRecord;
 }

@@ -38,11 +38,16 @@ impl Color {
   }
 
   pub fn to_string(&self) -> String {
-    let intensity = interval::new(0.0, 0.999);
-    let r_u8 = (256.0 * intensity.clamp(self.r())) as u8;
-    let g_u8 = (256.0 * intensity.clamp(self.g())) as u8;
-    let b_u8 = (256.0 * intensity.clamp(self.b())) as u8;
-    return format!("{} {} {} ", r_u8, g_u8, b_u8);
+    let color = self.to_u8();
+    return format!("{} {} {} ", color[0], color[1], color[2]);
+  }
+
+  pub fn to_u8(&self) -> [u8; 3] {
+    return [
+      to_u8(self.r()),
+      to_u8(self.g()),
+      to_u8(self.b()),
+    ];
   }
 
 }
@@ -86,7 +91,8 @@ pub fn rand() -> Color {
 }
 
 pub fn to_u8(real: f64) -> u8 {
-  return (255.999 * real) as u8
+  let intensity = interval::new(0.0, 0.999);
+  return (256.0 * intensity.clamp(real)) as u8;
 }
 
 fn linear_to_gamma(linear: f64) -> f64 {
