@@ -1,2 +1,12 @@
 pub mod vec3;
 pub mod color;
+pub mod camera;
+pub mod ray;
+pub mod viewport;
+pub mod sphere;
+pub mod hittable;
+pub mod scene;
+pub mod interval;
+pub mod writer;
+pub mod random;
+pub mod material;
