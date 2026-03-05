@@ -1,19 +1,19 @@
-use crate::lib::vec3;
+use crate::lib::vec3::Vec3;
 
 pub struct Ray {
-  pub orig: vec3::Vec3,
-  pub dir: vec3::Vec3,
+  pub orig: Vec3,
+  pub dir: Vec3,
 }
 
 impl Ray {
-  pub fn new(orig: vec3::Vec3, dir: vec3::Vec3) -> Ray {
+  pub fn new(orig: Vec3, dir: Vec3) -> Ray {
     Ray {
       orig: orig,
       dir: dir,
     }
   }
   
-  pub fn at(&self, t: f64) -> vec3::Vec3 {
+  pub fn at(&self, t: f64) -> Vec3 {
     return self.orig + self.dir.scale(t);
   }
 }

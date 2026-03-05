@@ -1,37 +1,42 @@
-use crate::lib::{hittable, color, vec3, random};
+use crate::lib::color::Color;
+use crate::lib::hittable::HitRecord;
+use crate::lib::random::rand;
 use crate::lib::ray::Ray;
+use crate::lib::vec3::Vec3;
 
 pub struct Scattered {
   pub ray: Ray,
-  pub attenuation: color::Color,
+  pub attenuation: Color,
 }
 
 pub trait Material: Send + Sync {
-  fn scatter(&self, r_in: &Ray, rec: &hittable::HitRecord) -> Scattered;
+  fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered;
 }
 
 pub struct DefaultMaterial {}
 
+impl DefaultMaterial {
+  pub fn new() -> DefaultMaterial {
+    return DefaultMaterial {};
+  }
+}
+
 impl Material for DefaultMaterial {
-  fn scatter(&self, r_in: &Ray, rec: &hittable::HitRecord) -> Scattered {
+  fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
     return Scattered {
-      ray: Ray::new(vec3::zeroes(), vec3::zeroes()),
-      attenuation: color::wrap_vec(vec3::zeroes()),
+      ray: Ray::new(Vec3::zeroes(), Vec3::zeroes()),
+      attenuation: Color::wrap_vec(Vec3::zeroes()),
     }
   }
 }
 
-pub fn default_material() -> DefaultMaterial {
-  return DefaultMaterial {};
-}
-
 pub struct Lambertian {
-  albedo: color::Color,
+  albedo: Color,
 }
 
 impl Material for Lambertian {
-  fn scatter(&self, r_in: &Ray, rec: &hittable::HitRecord) -> Scattered {
-    let mut scatter_dir = rec.normal + vec3::rand_unit();
+  fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
+    let mut scatter_dir = rec.normal + Vec3::rand_unit();
     if scatter_dir.near_zero() {
       scatter_dir = rec.normal;
     }
@@ -45,18 +50,18 @@ impl Material for Lambertian {
 
 pub fn lambertian(albedo: [f64; 3]) -> Lambertian {
   return Lambertian {
-    albedo: color::new_vec(albedo[0], albedo[1], albedo[2]),
+    albedo: Color::new(albedo[0], albedo[1], albedo[2]),
   };
 }
 
 pub struct Metal {
-  albedo: color::Color,
+  albedo: Color,
   fuzz: f64,
 }
 
 impl Material for Metal {
-  fn scatter(&self, r_in: &Ray, rec: &hittable::HitRecord) -> Scattered {
-    let reflected = r_in.dir.reflect(&rec.normal).unit() + vec3::rand_unit().scale(self.fuzz);
+  fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
+    let reflected = r_in.dir.reflect(&rec.normal).unit() + Vec3::rand_unit().scale(self.fuzz);
 
     return Scattered {
       ray: Ray::new(rec.point, reflected),
@@ -67,7 +72,7 @@ impl Material for Metal {
 
 pub fn metal(albedo: [f64; 3], fuzz: f64) -> Metal {
   return Metal {
-    albedo: color::new_vec(albedo[0], albedo[1], albedo[2]),
+    albedo: Color::new(albedo[0], albedo[1], albedo[2]),
     fuzz: if fuzz < 1.0 { fuzz } else { 1.0 },
   };
 }
@@ -77,7 +82,7 @@ pub struct Dielectric {
 }
 
 impl Material for Dielectric {
-  fn scatter(&self, r_in: &Ray, rec: &hittable::HitRecord) -> Scattered {
+  fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
     let ri = if rec.front_face { 1.0 / self.refraction_idx } else { self.refraction_idx };
 
     let unit_dir = r_in.dir.unit();
@@ -85,7 +90,7 @@ impl Material for Dielectric {
     let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
     
     let cannot_refract = (ri * sin_theta) > 1.0;
-    let direction = if cannot_refract || reflectance(cos_theta, ri) > random::rand() { 
+    let direction = if cannot_refract || reflectance(cos_theta, ri) > rand() { 
       unit_dir.reflect(&rec.normal) 
     } else { 
       unit_dir.refract(&rec.normal, ri) 
@@ -93,7 +98,7 @@ impl Material for Dielectric {
 
     return Scattered {
       ray: Ray::new(rec.point, direction),
-      attenuation: color::new_vec(1.0, 1.0, 1.0),
+      attenuation: Color::new(1.0, 1.0, 1.0),
     };
   }
 }

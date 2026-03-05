@@ -13,6 +13,17 @@ pub struct PpmWriter {
   pub buffer: FrameBuffer,
 }
 
+impl PpmWriter {
+  pub fn new(img_width: u32, img_height: u32, max_color_val: u32) -> PpmWriter {
+    PpmWriter {
+      img_width: img_width,
+      img_height: img_height,
+      max_color_val: max_color_val,
+      buffer: FrameBuffer::new(img_width as usize, img_height as usize),
+    }
+  }
+}
+
 impl Writer for PpmWriter {
 
   fn init(&self) {
@@ -36,13 +47,4 @@ impl Writer for PpmWriter {
     }
   }
 
-}
-
-pub fn new_ppm_writer(img_width: u32, img_height: u32, max_color_val: u32) -> PpmWriter {
-  return PpmWriter {
-    img_width: img_width,
-    img_height: img_height,
-    max_color_val: max_color_val,
-    buffer: FrameBuffer::new(img_width as usize, img_height as usize),
-  };
 }

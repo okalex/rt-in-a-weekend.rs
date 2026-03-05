@@ -9,6 +9,79 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
+
+  pub fn new(x: Float, y: Float, z: Float) -> Vec3 {
+    Vec3 {
+      e: [x, y, z],
+    }
+  }
+
+  pub fn new_arr(e: [f64; 3]) -> Vec3 {
+    Vec3 {
+      e,
+    }
+  }
+
+  pub fn fill(val: Float) -> Vec3 {
+    Self::new(val, val, val)
+  }
+
+  pub fn zeroes() -> Vec3 {
+    Self::fill(0.0)
+  }
+
+  pub fn ones() -> Vec3 {
+    Self::fill(1.0)
+  }
+
+  pub fn rand() -> Vec3 {
+    Self::new(
+      random::rand(), 
+      random::rand(), 
+      random::rand()
+    )
+  }
+
+  pub fn rand_range(min: f64, max: f64) -> Vec3 {
+    Self::new(
+      random::rand_range(min, max),
+      random::rand_range(min, max),
+      random::rand_range(min, max),
+    )
+  }
+
+  pub fn rand_unit() -> Vec3 {
+    loop {
+      let p = Self::rand_range(-1.0, 1.0);
+      let lensq = p.length_squared();
+      if 1e-160 < lensq && lensq <= 1.0 {
+        return p.scale(1.0 / lensq.sqrt());
+      }
+    }
+  }
+
+  pub fn rand_on_hemisphere(normal: &Vec3) -> Vec3 {
+    let on_unit_sphere = Self::rand_unit();
+    if on_unit_sphere.is_on_hemisphere(normal) {
+      return on_unit_sphere;
+    } else {
+      return -on_unit_sphere;
+    }
+  }
+
+  pub fn rand_in_unit_disk() -> Vec3 {
+    loop {
+      let p = Self::new(
+        random::rand_range(-1.0, 1.0),
+        random::rand_range(-1.0, 1.0),
+        0.0
+      );
+      if p.length_squared() < 1.0 {
+        return p;
+      }
+    }
+  }
+
   pub fn to_string(&self) -> String {
     return format!("{} {} {}", self.x(), self.y(), self.z());
   }
@@ -30,7 +103,7 @@ impl Vec3 {
   }
 
   pub fn square(&self) -> Vec3 {
-    return new(self.e[0] * self.e[0], self.e[1] * self.e[1], self.e[2] * self.e[2]);
+    return Self::new(self.e[0] * self.e[0], self.e[1] * self.e[1], self.e[2] * self.e[2]);
   }
 
   pub fn length_squared(&self) -> Float {
@@ -46,7 +119,7 @@ impl Vec3 {
   }
 
   pub fn cross(&self, b: &Vec3) -> Vec3 {
-    return new(
+    return Self::new(
       self.e[1] * b.e[2] - self.e[2] * b.e[1],
       self.e[2] * b.e[0] - self.e[0] * b.e[2],
       self.e[0] * b.e[1] - self.e[1] * b.e[0]
@@ -54,7 +127,7 @@ impl Vec3 {
   }
 
   pub fn scale(&self, b: Float) -> Vec3 {
-    return new(
+    return Self::new(
       self.e[0] * b,
       self.e[1] * b,
       self.e[2] * b,
@@ -98,7 +171,7 @@ impl Neg for Vec3 {
   type Output = Self;
 
   fn neg(self) -> Self {
-    return new(-self.x(), -self.y(), -self.z());
+    return Vec3::new(-self.x(), -self.y(), -self.z());
   }
 }
 
@@ -106,7 +179,7 @@ impl Add for Vec3 {
   type Output = Self;
 
   fn add(self, b: Self) -> Self {
-    return new(self.x() + b.x(), self.y() + b.y(), self.z() + b.z());
+    return Vec3::new(self.x() + b.x(), self.y() + b.y(), self.z() + b.z());
   }
 }
 
@@ -114,7 +187,7 @@ impl Sub for Vec3 {
   type Output = Self;
 
   fn sub(self, b: Self) -> Self {
-    return new(self.x() - b.x(), self.y() - b.y(), self.z() - b.z());
+    return Vec3::new(self.x() - b.x(), self.y() - b.y(), self.z() - b.z());
   }
 }
 
@@ -122,7 +195,7 @@ impl Mul for Vec3 {
   type Output = Self;
 
   fn mul(self, b: Self) -> Self {
-    return new(self.x() * b.x(), self.y() * b.y(), self.z() * b.z());
+    return Vec3::new(self.x() * b.x(), self.y() * b.y(), self.z() * b.z());
   }
 }
 
@@ -130,78 +203,6 @@ impl Div for Vec3 {
   type Output = Self;
 
   fn div(self, b: Self) -> Self {
-    return new(self.x() / b.x(), self.y() / b.y(), self.z() / b.z());
-  }
-}
-
-pub fn new(x: Float, y: Float, z: Float) -> Vec3 {
-  return Vec3 {
-    e: [x, y, z],
-  };
-}
-
-pub fn new_arr(e: [f64; 3]) -> Vec3 {
-  return Vec3 {
-    e: e,
-  };
-}
-
-pub fn fill(val: Float) -> Vec3 {
-  return new(val, val, val);
-}
-
-pub fn zeroes() -> Vec3 {
-  return fill(0.0);
-}
-
-pub fn ones() -> Vec3 {
-  return fill(1.0);
-}
-
-pub fn rand() -> Vec3 {
-  return new(
-    random::rand(), 
-    random::rand(), 
-    random::rand()
-  );
-}
-
-pub fn rand_range(min: f64, max: f64) -> Vec3 {
-  return new(
-    random::rand_range(min, max),
-    random::rand_range(min, max),
-    random::rand_range(min, max),
-  );
-}
-
-pub fn rand_unit() -> Vec3 {
-  loop {
-    let p = rand_range(-1.0, 1.0);
-    let lensq = p.length_squared();
-    if 1e-160 < lensq && lensq <= 1.0 {
-      return p.scale(1.0 / lensq.sqrt());
-    }
-  }
-}
-
-pub fn rand_on_hemisphere(normal: &Vec3) -> Vec3 {
-  let on_unit_sphere = rand_unit();
-  if on_unit_sphere.is_on_hemisphere(normal) {
-    return on_unit_sphere;
-  } else {
-    return -on_unit_sphere;
-  }
-}
-
-pub fn rand_in_unit_disk() -> Vec3 {
-  loop {
-    let p = new(
-      random::rand_range(-1.0, 1.0),
-      random::rand_range(-1.0, 1.0),
-      0.0
-    );
-    if p.length_squared() < 1.0 {
-      return p;
-    }
+    return Vec3::new(self.x() / b.x(), self.y() / b.y(), self.z() / b.z());
   }
 }

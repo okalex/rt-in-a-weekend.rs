@@ -1,19 +1,27 @@
 use std::sync::Arc;
-use crate::lib::{hittable, interval};
+use crate::lib::hittable::{Hittable, HitRecord};
+use crate::lib::interval::Interval;
 use crate::lib::ray::Ray;
 
 pub struct Scene {
-  objects: Vec<Arc<dyn hittable::Hittable>>,
+  objects: Vec<Arc<dyn Hittable>>,
 }
 
 impl Scene {
-  pub fn add(&mut self, object: Arc<dyn hittable::Hittable>) {
+
+  pub fn new(objects: Vec<Arc<dyn Hittable>>) -> Scene {
+    Scene {
+      objects: objects,
+    }
+  }
+
+  pub fn add(&mut self, object: Arc<dyn Hittable>) {
     self.objects.push(object);
   }
 
-  pub fn hit(&self, ray: &Ray, ray_t: interval::Interval) -> hittable::HitRecord {
-    let mut closest_so_far = ray_t.max();
-    let mut hit_record = hittable::no_hit();
+  pub fn hit(&self, ray: &Ray, ray_t: Interval) -> HitRecord {
+    let mut closest_so_far = ray_t.max;
+    let mut hit_record = HitRecord::none();
     for object in &self.objects {
       let temp_record = object.hit(ray, ray_t.update_max(closest_so_far));
       if temp_record.is_hit {
@@ -22,11 +30,5 @@ impl Scene {
       }
     }
     return hit_record;
-  }
-}
-
-pub fn new(objects: Vec<Arc<dyn hittable::Hittable>>) -> Scene {
-  return Scene {
-    objects: objects,
   }
 }
