@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::lib::color::Color;
 use crate::lib::image::Image;
 use crate::lib::interval::Interval;
+use crate::lib::perlin::Perlin;
 use crate::lib::vec3::Vec3;
 
 pub trait Texture: Send + Sync {
@@ -101,5 +102,26 @@ impl Texture for ImageTexture {
     let j = (v_clamped * (self.image.height as f64)) as u32;
     
     self.image.pixel_data(i, j)
+  }
+}
+
+pub struct NoiseTexture {
+  scale: f64,
+  noise: Perlin,
+}
+
+impl NoiseTexture {
+  pub fn new(scale: f64) -> Self {
+    Self { scale, noise: Perlin::new() }
+  }
+}
+
+impl Texture for NoiseTexture {
+  fn value(&self, u: f64, v: f64, point: &Vec3) -> Color {
+    let scaled = point.scale(self.scale);
+    // let noise = 0.5 * (1.0 + self.noise.noise(&point.scale(self.scale))); // Perlin noise
+    let noise = self.noise.turb(&scaled, 7); // Turbulent noise
+    // let noise = 0.5 * (1.0 + (self.scale * point.z() + 10.0 * self.noise.turb(point, 7)).sin());
+    Color::wrap_vec(Vec3::ones().scale(noise))
   }
 }

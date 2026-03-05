@@ -15,3 +15,4 @@ pub mod aabb;
 pub mod bvh_node;
 pub mod texture;
 pub mod image;
+pub mod perlin;
