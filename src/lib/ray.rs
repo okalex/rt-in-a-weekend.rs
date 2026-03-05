@@ -3,13 +3,15 @@ use crate::lib::vec3::Vec3;
 pub struct Ray {
   pub orig: Vec3,
   pub dir: Vec3,
+  pub time: f64,
 }
 
 impl Ray {
-  pub fn new(orig: Vec3, dir: Vec3) -> Ray {
+  pub fn new(orig: Vec3, dir: Vec3, time: f64) -> Ray {
     Ray {
-      orig: orig,
-      dir: dir,
+      orig,
+      dir,
+      time,
     }
   }
   

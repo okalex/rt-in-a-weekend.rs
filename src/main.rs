@@ -15,10 +15,10 @@ fn main() {
     let img_width = 400;
     let img_height = (img_width as f32/ aspect_ratio) as u32;
 
-    let camera = camera_a(img_width, img_height);
+    let camera = camera_b(img_width, img_height);
     let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(img_width, img_height, 255));
 
-    let scene = Arc::new(scene_a());
+    let scene = Arc::new(scene_b());
 
     writer.init();
     camera.render(Arc::clone(&scene), Arc::clone(&writer));
@@ -26,7 +26,7 @@ fn main() {
 }
 
 fn rand_arr3() -> [f64; 3] {
-    return [rand(), rand(), rand()];
+    [rand(), rand(), rand()]
 }
 
 fn camera_a(img_width: u32, img_height: u32) -> Camera {
@@ -43,7 +43,7 @@ fn camera_a(img_width: u32, img_height: u32) -> Camera {
         max_depth: 50,
         use_multithreading: true,
     };
-    return Camera::new(camera_options);
+    Camera::new(camera_options)
 }
 
 fn scene_a() -> Scene {
@@ -53,19 +53,19 @@ fn scene_a() -> Scene {
     let material_bubble: Arc<dyn Material> = Arc::new(dielectric(1.0/1.5));
     let material_right: Arc<dyn Material> = Arc::new(metal([0.8, 0.6, 0.2], 0.2));
 
-    let sphere1: Arc<dyn Hittable> = Arc::new(Sphere::new(Vec3::new(1.0, -100.5, -1.0), 100.0, Arc::clone(&material_ground)));
-    let sphere2: Arc<dyn Hittable> = Arc::new(Sphere::new(Vec3::new(0.0, 0.0, -1.2), 0.5, Arc::clone(&material_center)));
-    let sphere3: Arc<dyn Hittable> = Arc::new(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.5, Arc::clone(&material_left)));
-    let sphere4: Arc<dyn Hittable> = Arc::new(Sphere::new(Vec3::new(-1.0, 0.0, -1.0), 0.4, Arc::clone(&material_bubble)));
-    let sphere5: Arc<dyn Hittable> = Arc::new(Sphere::new(Vec3::new(1.0, 0.0, -1.0), 0.5, Arc::clone(&material_right)));
+    let sphere1: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(1.0, -100.5, -1.0), 100.0, Arc::clone(&material_ground)));
+    let sphere2: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(0.0, 0.0, -1.2), 0.5, Arc::clone(&material_center)));
+    let sphere3: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(-1.0, 0.0, -1.0), 0.5, Arc::clone(&material_left)));
+    let sphere4: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(-1.0, 0.0, -1.0), 0.4, Arc::clone(&material_bubble)));
+    let sphere5: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(1.0, 0.0, -1.0), 0.5, Arc::clone(&material_right)));
 
-    return Scene::new(vec![
+    Scene::new(vec![
         Arc::clone(&sphere1),
         Arc::clone(&sphere2),
         Arc::clone(&sphere3),
         Arc::clone(&sphere4),
         Arc::clone(&sphere5),
-    ]);
+    ])
 }
 
 fn camera_b(img_width: u32, img_height: u32) -> Camera {
@@ -82,7 +82,7 @@ fn camera_b(img_width: u32, img_height: u32) -> Camera {
         max_depth: 5,
         use_multithreading: true,
     };
-    return Camera::new(camera_options);
+    Camera::new(camera_options)
 }
 
 fn scene_b() -> Scene {
@@ -91,10 +91,10 @@ fn scene_b() -> Scene {
     let mat2: Arc<dyn Material> = Arc::new(lambertian([0.4, 0.2, 0.1]));
     let mat3: Arc<dyn Material> = Arc::new(metal([0.7, 0.6, 0.5], 0.0));
 
-    let sphere_ground: Arc<dyn Hittable> = Arc::new(Sphere::new(Vec3::new(0.0, -1000.0, 0.0), 1000.0, Arc::clone(&mat_ground)));
-    let sphere1: Arc<dyn Hittable> = Arc::new(Sphere::new(Vec3::new(0.0, 1.0, 0.0), 1.0, Arc::clone(&mat1)));
-    let sphere2: Arc<dyn Hittable> = Arc::new(Sphere::new(Vec3::new(-4.0, 1.0, 0.0), 1.0, Arc::clone(&mat2)));
-    let sphere3: Arc<dyn Hittable> = Arc::new(Sphere::new(Vec3::new(4.0, 1.0, 0.0), 1.0, Arc::clone(&mat3)));
+    let sphere_ground: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(0.0, -1000.0, 0.0), 1000.0, Arc::clone(&mat_ground)));
+    let sphere1: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(0.0, 1.0, 0.0), 1.0, Arc::clone(&mat1)));
+    let sphere2: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(-4.0, 1.0, 0.0), 1.0, Arc::clone(&mat2)));
+    let sphere3: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(4.0, 1.0, 0.0), 1.0, Arc::clone(&mat3)));
 
     let mut scene = Scene::new(vec![
         Arc::clone(&sphere_ground),
@@ -113,7 +113,8 @@ fn scene_b() -> Scene {
                     // Diffuse
                     let albedo = rand_arr3();
                     let mat_sphere: Arc<dyn Material> = Arc::new(lambertian(albedo));
-                    let sphere: Arc<dyn Hittable> = Arc::new(Sphere::new(center, 0.2, Arc::clone(&mat_sphere)));
+                    let center2 = center + Vec3::new(0.0, rand_range(0.0, 0.5), 0.0);
+                    let sphere: Arc<dyn Hittable> = Arc::new(Sphere::moving(center, center2, 0.2, Arc::clone(&mat_sphere)));
                     scene.add(Arc::clone(&sphere));
 
                 } else if choose_mat < 0.95 {
@@ -121,18 +122,18 @@ fn scene_b() -> Scene {
                     let albedo = rand_arr3();
                     let fuzz = rand_range(0.0, 0.5);
                     let mat_sphere: Arc<dyn Material> = Arc::new(metal(albedo, fuzz));
-                    let sphere: Arc<dyn Hittable> = Arc::new(Sphere::new(center, 0.2, Arc::clone(&mat_sphere)));
+                    let sphere: Arc<dyn Hittable> = Arc::new(Sphere::stationary(center, 0.2, Arc::clone(&mat_sphere)));
                     scene.add(Arc::clone(&sphere));
 
                 } else {
                     // Glass
                     let mat_sphere: Arc<dyn Material> = Arc::new(dielectric(1.5));
-                    let sphere: Arc<dyn Hittable> = Arc::new(Sphere::new(center, 0.2, Arc::clone(&mat_sphere)));
+                    let sphere: Arc<dyn Hittable> = Arc::new(Sphere::stationary(center, 0.2, Arc::clone(&mat_sphere)));
                     scene.add(Arc::clone(&sphere));
                 }
             }
         }
     }
 
-    return scene;
+    scene
 }

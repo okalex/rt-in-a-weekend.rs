@@ -123,8 +123,9 @@ impl Camera {
 
     let ray_origin = if self.options.defocus_angle <= 0.0 { self.center } else { self.defocus_disk_sample() };
     let ray_dir = pixel_sample - ray_origin;
+    let ray_time = rand();
 
-    Ray::new(ray_origin, ray_dir)
+    Ray::new(ray_origin, ray_dir, ray_time)
   }
 
   fn ray_color(&self, ray: &Ray, depth: u32, scene: &Arc<Scene>) -> Color {

@@ -24,7 +24,7 @@ impl DefaultMaterial {
 impl Material for DefaultMaterial {
   fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
     return Scattered {
-      ray: Ray::new(Vec3::zeroes(), Vec3::zeroes()),
+      ray: Ray::new(Vec3::zeroes(), Vec3::zeroes(), r_in.time),
       attenuation: Color::wrap_vec(Vec3::zeroes()),
     }
   }
@@ -42,7 +42,7 @@ impl Material for Lambertian {
     }
 
     return Scattered {
-      ray: Ray::new(rec.point, scatter_dir),
+      ray: Ray::new(rec.point, scatter_dir, r_in.time),
       attenuation: self.albedo,
     };
   }
@@ -64,7 +64,7 @@ impl Material for Metal {
     let reflected = r_in.dir.reflect(&rec.normal).unit() + Vec3::rand_unit().scale(self.fuzz);
 
     return Scattered {
-      ray: Ray::new(rec.point, reflected),
+      ray: Ray::new(rec.point, reflected, r_in.time),
       attenuation: self.albedo,
     };
   }
@@ -97,7 +97,7 @@ impl Material for Dielectric {
     };
 
     return Scattered {
-      ray: Ray::new(rec.point, direction),
+      ray: Ray::new(rec.point, direction, r_in.time),
       attenuation: Color::new(1.0, 1.0, 1.0),
     };
   }
