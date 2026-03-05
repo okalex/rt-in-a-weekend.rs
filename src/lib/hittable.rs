@@ -1,5 +1,6 @@
 use std::sync::Arc;
-use crate::lib::{vec3, ray, interval, material};
+use crate::lib::{vec3, interval, material};
+use crate::lib::ray::Ray;
 
 pub struct HitRecord {
   pub is_hit: bool,
@@ -34,5 +35,5 @@ pub fn hit_record(point: &vec3::Vec3, normal: &vec3::Vec3, front_face: bool, t: 
 }
 
 pub trait Hittable: Send + Sync {
-  fn hit(&self, ray: &ray::Ray, ray_t: interval::Interval) -> HitRecord;
+  fn hit(&self, ray: &Ray, ray_t: interval::Interval) -> HitRecord;
 }

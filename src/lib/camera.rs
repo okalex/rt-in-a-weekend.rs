@@ -1,7 +1,8 @@
 use std::f64::consts::PI;
 use std::thread;
 use std::sync::{Arc, Mutex};
-use crate::lib::{vec3, ray, scene, color, interval, random, viewport, writer, line_counter};
+use crate::lib::{vec3, scene, color, interval, random, viewport, writer, line_counter};
+use crate::lib::ray::Ray;
 
 #[derive(Clone, Copy)]
 pub struct CameraOptions {
@@ -86,7 +87,7 @@ impl Camera {
     return self.center + self.defocus_disk_u.scale(p.x()) + self.defocus_disk_v.scale(p.y());
   }
 
-  fn get_ray(&self, i: u32, j: u32) -> ray::Ray {
+  fn get_ray(&self, i: u32, j: u32) -> Ray {
     let offset = self.sample_square();
     let pixel_sample = self.viewport.pixel00_loc(self)
       + self.viewport.delta_u().scale(i as f64 + offset.x())
@@ -95,10 +96,10 @@ impl Camera {
     let ray_origin = if self.options.defocus_angle <= 0.0 { self.center } else { self.defocus_disk_sample() };
     let ray_dir = pixel_sample - ray_origin;
 
-    return ray::new(ray_origin, ray_dir);
+    return Ray::new(ray_origin, ray_dir);
   }
 
-  fn ray_color(&self, ray: &ray::Ray, depth: u32, scene: &Arc<scene::Scene>) -> color::Color {
+  fn ray_color(&self, ray: &Ray, depth: u32, scene: &Arc<scene::Scene>) -> color::Color {
     if depth <= 0 {
       return color::new_vec(0.0, 0.0, 0.0);
     }
@@ -112,8 +113,8 @@ impl Camera {
     return self.background(ray);
   }
 
-  fn background(&self, ray: &ray::Ray) -> color::Color {
-    let a = 0.5 * (ray.dir().unit().y() + 1.0);
+  fn background(&self, ray: &Ray) -> color::Color {
+    let a = 0.5 * (ray.dir.unit().y() + 1.0);
     let white = color::wrap_vec(vec3::ones());
     let blue = color::new_vec(0.5, 0.7, 1.0);
     return white.scale(1.0 - a) + blue.scale(a);

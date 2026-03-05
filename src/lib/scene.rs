@@ -1,5 +1,6 @@
 use std::sync::Arc;
-use crate::lib::{hittable, ray, interval};
+use crate::lib::{hittable, interval};
+use crate::lib::ray::Ray;
 
 pub struct Scene {
   objects: Vec<Arc<dyn hittable::Hittable>>,
@@ -10,7 +11,7 @@ impl Scene {
     self.objects.push(object);
   }
 
-  pub fn hit(&self, ray: &ray::Ray, ray_t: interval::Interval) -> hittable::HitRecord {
+  pub fn hit(&self, ray: &Ray, ray_t: interval::Interval) -> hittable::HitRecord {
     let mut closest_so_far = ray_t.max();
     let mut hit_record = hittable::no_hit();
     for object in &self.objects {

@@ -1,4 +1,3 @@
-use crate::lib::color;
 use crate::lib::frame_buffer::FrameBuffer;
 
 pub trait Writer: Send + Sync {

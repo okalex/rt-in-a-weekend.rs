@@ -1,5 +1,6 @@
 use std::sync::Arc;
-use crate::lib::{hittable, ray, vec3, interval, material};
+use crate::lib::{hittable, vec3, interval, material};
+use crate::lib::ray::Ray;
 
 pub struct Sphere {
   pub center: vec3::Vec3,
@@ -9,10 +10,10 @@ pub struct Sphere {
 
 impl hittable::Hittable for Sphere {
 
-  fn hit(&self, ray: &ray::Ray, ray_t: interval::Interval) -> hittable::HitRecord {
-    let oc = self.center - *ray.orig();
-    let a = ray.dir().length_squared();
-    let h = ray.dir().dot(&oc);
+  fn hit(&self, ray: &Ray, ray_t: interval::Interval) -> hittable::HitRecord {
+    let oc = self.center - ray.orig;
+    let a = ray.dir.length_squared();
+    let h = ray.dir.dot(&oc);
     let c = oc.length_squared() - self.radius * self.radius;
     let discriminant = (h * h) - (a * c);
 
@@ -31,7 +32,7 @@ impl hittable::Hittable for Sphere {
 
     let point = ray.at(root);
     let normal = (point - self.center).scale(1.0 / self.radius);
-    let front_face = ray.dir().dot(&normal) < 0.0;
+    let front_face = ray.dir.dot(&normal) < 0.0;
     return hittable::hit_record(&point, &normal, front_face, root, Arc::clone(&self.mat));
   }
 

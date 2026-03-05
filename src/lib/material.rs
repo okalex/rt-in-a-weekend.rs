@@ -1,20 +1,21 @@
-use crate::lib::{ray, hittable, color, vec3, random};
+use crate::lib::{hittable, color, vec3, random};
+use crate::lib::ray::Ray;
 
 pub struct Scattered {
-  pub ray: ray::Ray,
+  pub ray: Ray,
   pub attenuation: color::Color,
 }
 
 pub trait Material: Send + Sync {
-  fn scatter(&self, r_in: &ray::Ray, rec: &hittable::HitRecord) -> Scattered;
+  fn scatter(&self, r_in: &Ray, rec: &hittable::HitRecord) -> Scattered;
 }
 
 pub struct DefaultMaterial {}
 
 impl Material for DefaultMaterial {
-  fn scatter(&self, r_in: &ray::Ray, rec: &hittable::HitRecord) -> Scattered {
+  fn scatter(&self, r_in: &Ray, rec: &hittable::HitRecord) -> Scattered {
     return Scattered {
-      ray: ray::new(vec3::zeroes(), vec3::zeroes()),
+      ray: Ray::new(vec3::zeroes(), vec3::zeroes()),
       attenuation: color::wrap_vec(vec3::zeroes()),
     }
   }
@@ -29,14 +30,14 @@ pub struct Lambertian {
 }
 
 impl Material for Lambertian {
-  fn scatter(&self, r_in: &ray::Ray, rec: &hittable::HitRecord) -> Scattered {
+  fn scatter(&self, r_in: &Ray, rec: &hittable::HitRecord) -> Scattered {
     let mut scatter_dir = rec.normal + vec3::rand_unit();
     if scatter_dir.near_zero() {
       scatter_dir = rec.normal;
     }
 
     return Scattered {
-      ray: ray::new(rec.point, scatter_dir),
+      ray: Ray::new(rec.point, scatter_dir),
       attenuation: self.albedo,
     };
   }
@@ -54,11 +55,11 @@ pub struct Metal {
 }
 
 impl Material for Metal {
-  fn scatter(&self, r_in: &ray::Ray, rec: &hittable::HitRecord) -> Scattered {
-    let reflected = r_in.dir().reflect(&rec.normal).unit() + vec3::rand_unit().scale(self.fuzz);
+  fn scatter(&self, r_in: &Ray, rec: &hittable::HitRecord) -> Scattered {
+    let reflected = r_in.dir.reflect(&rec.normal).unit() + vec3::rand_unit().scale(self.fuzz);
 
     return Scattered {
-      ray: ray::new(rec.point, reflected),
+      ray: Ray::new(rec.point, reflected),
       attenuation: self.albedo,
     };
   }
@@ -76,10 +77,10 @@ pub struct Dielectric {
 }
 
 impl Material for Dielectric {
-  fn scatter(&self, r_in: &ray::Ray, rec: &hittable::HitRecord) -> Scattered {
+  fn scatter(&self, r_in: &Ray, rec: &hittable::HitRecord) -> Scattered {
     let ri = if rec.front_face { 1.0 / self.refraction_idx } else { self.refraction_idx };
 
-    let unit_dir = r_in.dir().unit();
+    let unit_dir = r_in.dir.unit();
     let cos_theta = f64::min((-unit_dir).dot(&rec.normal), 1.0);
     let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
     
@@ -91,7 +92,7 @@ impl Material for Dielectric {
     };
 
     return Scattered {
-      ray: ray::new(rec.point, direction),
+      ray: Ray::new(rec.point, direction),
       attenuation: color::new_vec(1.0, 1.0, 1.0),
     };
   }
