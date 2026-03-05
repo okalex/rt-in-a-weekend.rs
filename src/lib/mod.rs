@@ -12,3 +12,5 @@ pub mod random;
 pub mod material;
 pub mod frame_buffer;
 pub mod line_counter;
+pub mod aabb;
+pub mod bvh_node;

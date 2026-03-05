@@ -1,6 +1,8 @@
 mod lib;
 
 use std::sync::Arc;
+
+use crate::lib::bvh_node::BvhNode;
 use crate::lib::camera::{Camera, CameraOptions};
 use crate::lib::hittable::Hittable;
 use crate::lib::material::{Material, lambertian, dielectric, metal};
@@ -12,13 +14,14 @@ use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
     let aspect_ratio = 16.0 / 9.0;
-    let img_width = 400;
+    let img_width = 600;
     let img_height = (img_width as f32/ aspect_ratio) as u32;
 
     let camera = camera_b(img_width, img_height);
     let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(img_width, img_height, 255));
 
-    let scene = Arc::new(scene_b());
+    let bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_scene(scene_b()));
+    let scene = Arc::new(Scene::new_obj(Arc::clone(&bvh)));
 
     writer.init();
     camera.render(Arc::clone(&scene), Arc::clone(&writer));
@@ -59,13 +62,13 @@ fn scene_a() -> Scene {
     let sphere4: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(-1.0, 0.0, -1.0), 0.4, Arc::clone(&material_bubble)));
     let sphere5: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(1.0, 0.0, -1.0), 0.5, Arc::clone(&material_right)));
 
-    Scene::new(vec![
-        Arc::clone(&sphere1),
-        Arc::clone(&sphere2),
-        Arc::clone(&sphere3),
-        Arc::clone(&sphere4),
-        Arc::clone(&sphere5),
-    ])
+    let mut scene = Scene::new();
+    scene.add(Arc::clone(&sphere1));
+    scene.add(Arc::clone(&sphere2));
+    scene.add(Arc::clone(&sphere3));
+    scene.add(Arc::clone(&sphere4));
+    scene.add(Arc::clone(&sphere5));
+    scene
 }
 
 fn camera_b(img_width: u32, img_height: u32) -> Camera {
@@ -79,7 +82,7 @@ fn camera_b(img_width: u32, img_height: u32) -> Camera {
         defocus_angle: 0.6,
         focus_dist: 10.0,
         samples_per_pixel: 50,
-        max_depth: 5,
+        max_depth: 50,
         use_multithreading: true,
     };
     Camera::new(camera_options)
@@ -96,12 +99,11 @@ fn scene_b() -> Scene {
     let sphere2: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(-4.0, 1.0, 0.0), 1.0, Arc::clone(&mat2)));
     let sphere3: Arc<dyn Hittable> = Arc::new(Sphere::stationary(Vec3::new(4.0, 1.0, 0.0), 1.0, Arc::clone(&mat3)));
 
-    let mut scene = Scene::new(vec![
-        Arc::clone(&sphere_ground),
-        Arc::clone(&sphere1),
-        Arc::clone(&sphere2),
-        Arc::clone(&sphere3),
-    ]);
+    let mut scene = Scene::new();
+    scene.add(Arc::clone(&sphere_ground));
+    scene.add(Arc::clone(&sphere1));
+    scene.add(Arc::clone(&sphere2));
+    scene.add(Arc::clone(&sphere3));
 
     for a in -11..11 {
         for b in -11..11 {

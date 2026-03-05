@@ -135,12 +135,13 @@ impl Camera {
 
     let interval = Interval::new(0.001, 1000000.0);
     let hit_record = scene.hit(ray, interval);
-    if hit_record.is_hit {
-      let scattered = hit_record.mat.scatter(ray, &hit_record);
-      return scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene);
+    match hit_record {
+      Some(rec) => {
+        let scattered = rec.mat.scatter(ray, &rec);
+        scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene)
+      },
+      None => self.background(ray),
     }
-    
-    self.background(ray)
   }
 
   fn background(&self, ray: &Ray) -> Color {

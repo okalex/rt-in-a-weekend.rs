@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul, Neg, Sub};
+use std::ops::{Add, Div, Index, Mul, Neg, Sub};
 use crate::lib::random;
 
 pub type Float = f64; // Change to f32 for less precision/better performance
@@ -119,19 +119,27 @@ impl Vec3 {
   }
 
   pub fn cross(&self, b: &Vec3) -> Vec3 {
-    return Self::new(
+    Self::new(
       self.e[1] * b.e[2] - self.e[2] * b.e[1],
       self.e[2] * b.e[0] - self.e[0] * b.e[2],
       self.e[0] * b.e[1] - self.e[1] * b.e[0]
-    );
+    )
   }
 
   pub fn scale(&self, b: Float) -> Vec3 {
-    return Self::new(
+    Self::new(
       self.e[0] * b,
       self.e[1] * b,
       self.e[2] * b,
-    );
+    )
+  }
+
+  pub fn inverse(&self) -> Vec3 {
+    Self::new(
+      1.0 / self.e[0],
+      1.0 / self.e[1],
+      1.0 / self.e[2],
+    )
   }
 
   pub fn unit(&self) -> Vec3 {
@@ -159,13 +167,13 @@ impl Vec3 {
   }
 }
 
-// impl Index<usize> for Vec3 {
-//   type Output = Float;
+impl Index<usize> for Vec3 {
+  type Output = Float;
 
-//   fn index(&self, idx: usize) -> &Float {
-//     return &self[idx];
-//   }
-// }
+  fn index(&self, idx: usize) -> &Float {
+    return &self.e[idx];
+  }
+}
 
 impl Neg for Vec3 {
   type Output = Self;

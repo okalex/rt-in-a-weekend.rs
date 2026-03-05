@@ -10,14 +10,19 @@ the CPU, which is slowwwwwwwww.
 
 ## Future planned enhancements
 
-- ~~Support naive multi-threading~~
+- ~~Naive multi-threading~~
 - ~~Motion blur~~
 - Complete books [2](https://raytracing.github.io/books/RayTracingTheNextWeek.html) and [3](https://raytracing.github.io/books/RayTracingTheRestOfYourLife.html)
-- Implement [BVH optimization](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy)
-- Render on the GPU, using [wgpu](https://wgpu.rs/)
-- Implement [physically-based rendering](https://en.wikipedia.org/wiki/Physically_based_rendering)
+- ~~Implement [BVH optimization](https://en.wikipedia.org/wiki/Bounding_volume_hierarchy)~~
+  - Using camera B and scene B, width = 400px, samples-per-pixel = 20, max depth = 10, multi-threading = true:
+  - Before: 537.64s user 9.46s system 766% cpu 1:11.38 total
+  - Random axis: 31.25s user 0.40s system 603% cpu 5.241 total
+  - Longest axis: 28.51s user 0.34s system 578% cpu 4.987 total
+- Texture mapping
+- GPU-rendering, using [wgpu](https://wgpu.rs/)
+- [Physically-based rendering](https://en.wikipedia.org/wiki/Physically_based_rendering)
 - Support common modeling formats
-- Add an interactive mode supporting progressive rendering display and camera movement
+- Interactive mode supporting progressive rendering display and camera movement
 
 ## Example render
 
@@ -26,3 +31,9 @@ This is the final image generated after the completion of the first book. It too
 ![test_b_100_4_large](https://github.com/user-attachments/assets/0c24c2fe-cdcc-4580-8046-43e016096eca)
 
 Note that you can see the limitations of the low bounce depth by looking at the reflection of the small glass spheres in the large metallic sphere.
+
+## BVH Implementation results
+
+Using camera B and scene B, width = 400px, samples-per-pixel = 20, max depth = 10, multi-threading = true:
+- Before: 537.64s user 9.46s system 766% cpu 1:11.38 total
+- After: 31.25s user 0.40s system 603% cpu 5.241 total

@@ -13,23 +13,6 @@ pub trait Material: Send + Sync {
   fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered;
 }
 
-pub struct DefaultMaterial {}
-
-impl DefaultMaterial {
-  pub fn new() -> DefaultMaterial {
-    return DefaultMaterial {};
-  }
-}
-
-impl Material for DefaultMaterial {
-  fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
-    return Scattered {
-      ray: Ray::new(Vec3::zeroes(), Vec3::zeroes(), r_in.time),
-      attenuation: Color::wrap_vec(Vec3::zeroes()),
-    }
-  }
-}
-
 pub struct Lambertian {
   albedo: Color,
 }
