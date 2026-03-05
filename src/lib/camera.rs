@@ -3,7 +3,6 @@ use std::thread;
 use std::sync::{Arc, Mutex};
 use crate::lib::color::Color;
 use crate::lib::interval::Interval;
-use crate::lib::line_counter::LineCounter;
 use crate::lib::random::rand;
 use crate::lib::ray::Ray;
 use crate::lib::scene::Scene;
@@ -63,34 +62,44 @@ impl Camera {
     } else {
       1
     };
-    
-    let segments = segment_lines(self.options.img_height, num_threads as u32);
-    let line_counter = Arc::new(Mutex::new(LineCounter::new(self.options.img_height)));
 
+    let lines: Arc<Mutex<Vec<u32>>> = Arc::new(Mutex::new(
+      (0..self.options.img_height).collect()
+    ));
+    
     thread::scope(|s| {
-      for (start, end) in segments {
-        let counter_clone = Arc::clone(&line_counter);
+      for _ in 0..num_threads {
         let scene_clone = Arc::clone(&scene);
         let writer_clone = Arc::clone(&writer);
+        let lines_clone = Arc::clone(&lines);
 
         s.spawn(move || {
-          eprintln!("Rendering lines {} to {}...", start, end - 1);
-
-          for j in start..end {
-            for i in 0..self.options.img_width {
-              let pixel_color = self.sample_pixel(&scene_clone, i, j).to_gamma();
-              writer_clone.write_pixel(i as usize, j as usize, pixel_color.to_u8());
+          loop {
+            let maybe_line = lines_clone.lock().unwrap().pop();
+            match maybe_line {
+              None => break,
+              Some(line) => {
+                self.render_line(line, &scene_clone, &writer_clone);
+                let remaining_lines = lines_clone.lock().unwrap().len();
+                eprint!("\rLines remaining: {}       ", remaining_lines); 
+              }
             }
-
-            let mut c = counter_clone.lock().unwrap();
-            c.dec();
-            c.announce();
           }
         });
       }
     });
 
     eprintln!("\n\rDone.");
+  }
+
+  fn render_line(&self, line: u32, scene: &Arc<Scene>, writer: &Arc<dyn Writer>) {
+    let mut data: Vec<[u8; 3]> = vec![];
+    for i in 0..self.options.img_width {
+      let pixel_color = self.sample_pixel(scene, i, line).to_gamma();
+      data.push(pixel_color.to_u8());
+    }
+    
+    writer.write_line(line as usize, &data);
   }
 
   fn sample_pixel(&self, scene: &Arc<Scene>, i: u32, j: u32) -> Color {

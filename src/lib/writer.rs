@@ -3,6 +3,7 @@ use crate::lib::frame_buffer::FrameBuffer;
 pub trait Writer: Send + Sync {
   fn init(&self);
   fn write_pixel(&self, x: usize, y: usize, color: [u8; 3]);
+  fn write_line(&self, y: usize, line: &Vec<[u8; 3]>);
   fn close(&self);
 }
 
@@ -31,6 +32,10 @@ impl Writer for PpmWriter {
 
   fn write_pixel(&self, x: usize, y: usize, color: [u8; 3]) {
     self.buffer.set_pixel(x, y, color);
+  }
+
+  fn write_line(&self, y: usize, line: &Vec<[u8; 3]>) {
+    self.buffer.set_line(y, line);
   }
 
   fn close(&self) {

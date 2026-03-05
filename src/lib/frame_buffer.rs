@@ -10,7 +10,7 @@ pub struct FrameBuffer {
 
 impl FrameBuffer {
   pub fn new(width: usize, height: usize) -> Self {
-    let data = vec![vec![[0u8; 3]; height]; width];
+    let data = vec![vec![[0u8; 3]; width]; height];
     Self {
       width,
       height,
@@ -20,12 +20,17 @@ impl FrameBuffer {
 
   pub fn set_pixel(&self, x: usize, y: usize, color: [u8; 3]) {
     let mut buffer = self.data.lock().unwrap();
-    buffer[x][y] = color;
+    buffer[y][x] = color;
+  }
+
+  pub fn set_line(&self, y: usize, line: &Vec<[u8; 3]>) {
+    let mut buffer = self.data.lock().unwrap();
+    buffer[y] = line.to_vec();
   }
 
   pub fn get_pixel(&self, x: usize, y: usize) -> [u8; 3] {
     let buffer = self.data.lock().unwrap();
-    buffer[x][y]
+    buffer[y][x]
   }
 }
 
