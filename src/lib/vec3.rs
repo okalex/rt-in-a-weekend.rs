@@ -17,9 +17,7 @@ impl Vec3 {
   }
 
   pub fn new_arr(e: [f64; 3]) -> Vec3 {
-    Vec3 {
-      e,
-    }
+    Vec3 { e }
   }
 
   pub fn fill(val: Float) -> Vec3 {

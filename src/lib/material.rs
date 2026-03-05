@@ -1,7 +1,10 @@
+use std::sync::Arc;
+
 use crate::lib::color::Color;
 use crate::lib::hittable::HitRecord;
 use crate::lib::random::rand;
 use crate::lib::ray::Ray;
+use crate::lib::texture::{SolidColor, Texture};
 use crate::lib::vec3::Vec3;
 
 pub struct Scattered {
@@ -14,7 +17,22 @@ pub trait Material: Send + Sync {
 }
 
 pub struct Lambertian {
-  albedo: Color,
+  texture: Arc<dyn Texture>,
+}
+
+impl Lambertian {
+  pub fn new(texture: Arc<dyn Texture>) -> Self {
+    Self { texture }
+  }
+
+  pub fn from_color(color: Color) -> Self {
+    let arc_color: Arc<dyn Texture> = Arc::new(SolidColor::new(color));
+    Self::new(arc_color)
+  }
+
+  pub fn from_color_values(color_values: [f64; 3]) -> Self {
+    Self::from_color(Color::from_arr(color_values))
+  }
 }
 
 impl Material for Lambertian {
@@ -26,15 +44,17 @@ impl Material for Lambertian {
 
     return Scattered {
       ray: Ray::new(rec.point, scatter_dir, r_in.time),
-      attenuation: self.albedo,
+      attenuation: self.texture.value(rec.u, rec.v, &rec.point),
     };
   }
 }
 
-pub fn lambertian(albedo: [f64; 3]) -> Lambertian {
-  return Lambertian {
-    albedo: Color::new(albedo[0], albedo[1], albedo[2]),
-  };
+impl Clone for Lambertian {
+  fn clone(&self) -> Self {
+    Self {
+      texture: Arc::clone(&self.texture),
+    }
+  }
 }
 
 pub struct Metal {

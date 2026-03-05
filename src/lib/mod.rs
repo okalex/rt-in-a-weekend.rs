@@ -13,3 +13,5 @@ pub mod material;
 pub mod frame_buffer;
 pub mod aabb;
 pub mod bvh_node;
+pub mod texture;
+pub mod image;

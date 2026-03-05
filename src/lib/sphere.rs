@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use std::f64::consts::PI;
+
 use crate::lib::aabb::AABB;
 use crate::lib::hittable::{Hittable, HitRecord};
 use crate::lib::interval::Interval;
@@ -44,6 +46,14 @@ impl Sphere {
     Self::stationary(Vec3::new_arr(center), radius, mat)
   }
 
+  pub fn get_uv(point: &Vec3) -> (f64, f64) {
+    let theta = (-point.y()).acos();
+    let phi = (-point.z()).atan2(point.x()) + PI;
+    let u = phi / (2.0 * PI);
+    let v = theta / PI;
+    (u, v)
+  }
+
 }
 
 impl Hittable for Sphere {
@@ -70,9 +80,11 @@ impl Hittable for Sphere {
     }
 
     let point = ray.at(root);
-    let normal = (point - curr_center).scale(1.0 / self.radius);
-    let front_face = ray.dir.dot(&normal) < 0.0;
-    return Some(HitRecord::new(&point, &normal, front_face, root, Arc::clone(&self.mat)));
+    let outward_normal = (point - curr_center).scale(1.0 / self.radius);
+    let front_face = ray.dir.dot(&outward_normal) < 0.0;
+    let normal = if front_face { outward_normal } else { -outward_normal };
+    let (u, v) = Sphere::get_uv(&normal); // Why is this not &point?
+    return Some(HitRecord::new(&point, normal, front_face, root, u, v, Arc::clone(&self.mat)));
   }
 
   fn bounding_box(&self) -> AABB {

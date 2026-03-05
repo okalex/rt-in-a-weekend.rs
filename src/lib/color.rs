@@ -11,17 +11,31 @@ pub struct Color {
 impl Color {
 
   pub fn wrap_vec(base: Vec3) -> Color {
-    Color {
-      base,
-    }
+    Color { base }
   }
 
   pub fn new(r: f64, g: f64, b: f64) -> Color {
     Self::wrap_vec(Vec3::new(r, g, b))
   }
 
+  pub fn from_arr(values: [f64; 3]) -> Color {
+    Self::wrap_vec(Vec3::new_arr(values))
+  }
+
+  pub fn from_u8(values: [u8; 3]) -> Color {
+    Self::new(
+      from_u8(values[0]),
+      from_u8(values[1]),
+      from_u8(values[2]),
+    )
+  }
+
   pub fn rand() -> Color {
     Self::new(rand(), rand(), rand())
+  }
+
+  pub fn zeroes() -> Color {
+    Self::new(0.0, 0.0, 0.0)
   }
 
   pub fn r(&self) -> f64 {
@@ -92,6 +106,10 @@ impl Mul for Color {
 pub fn to_u8(real: f64) -> u8 {
   let intensity = Interval::new(0.0, 0.999);
   return (256.0 * intensity.clamp(real)) as u8;
+}
+
+pub fn from_u8(i: u8) -> f64 {
+  return i as f64 / 255.0;
 }
 
 fn linear_to_gamma(linear: f64) -> f64 {

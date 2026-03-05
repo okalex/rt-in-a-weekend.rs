@@ -4,7 +4,6 @@ use std::sync::Arc;
 use crate::lib::aabb::AABB;
 use crate::lib::hittable::{Hittable, HitRecord};
 use crate::lib::interval::Interval;
-use crate::lib::random::rand_usize;
 use crate::lib::ray::Ray;
 use crate::lib::scene::Scene;
 
