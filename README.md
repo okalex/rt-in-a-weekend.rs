@@ -18,11 +18,13 @@ the CPU, which is slowwwwwwwww.
   - Before: 537.64s user 9.46s system 766% cpu 1:11.38 total
   - Random axis: 31.25s user 0.40s system 603% cpu 5.241 total
   - Longest axis: 28.51s user 0.34s system 578% cpu 4.987 total
-- Texture mapping
+- ~~Texture mapping~~
 - GPU-rendering, using [wgpu](https://wgpu.rs/)
 - [Physically-based rendering](https://en.wikipedia.org/wiki/Physically_based_rendering)
 - Support common modeling formats
+- Normal maps
 - Interactive mode supporting progressive rendering display and camera movement
+- Importance sampling
 
 ## Example render
 

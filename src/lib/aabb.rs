@@ -12,15 +12,20 @@ pub struct AABB {
 impl AABB {
 
   pub fn new(x: Interval, y: Interval, z: Interval) -> Self {
-    Self { x, y, z }
+    Self { 
+      x: Self::pad_to_min(x),
+      y: Self::pad_to_min(y),
+      z: Self::pad_to_min(z)
+    }
   }
 
   pub fn empty() -> Self {
-    Self::new(
-      Interval::empty(),
-      Interval::empty(),
-      Interval::empty(),
-    )
+    // Don't use ::new to avoid the default padding
+    Self {
+      x: Interval::empty(),
+      y: Interval::empty(),
+      z: Interval::empty(),
+    }
   }
 
   pub fn from_vecs(a: Vec3, b: Vec3) -> Self {
@@ -37,6 +42,11 @@ impl AABB {
       Interval::union(&box0.y, &box1.y),
       Interval::union(&box0.z, &box1.z),
     )
+  }
+
+  fn pad_to_min(interval: Interval) -> Interval {
+    const delta: f64 = 0.0001;
+    if interval.size() < delta { interval.expand(delta) } else { interval }
   }
 
   pub fn axis_interval(&self, n: usize) -> &Interval {

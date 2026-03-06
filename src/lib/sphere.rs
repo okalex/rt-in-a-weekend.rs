@@ -81,10 +81,10 @@ impl Hittable for Sphere {
 
     let point = ray.at(root);
     let outward_normal = (point - curr_center).scale(1.0 / self.radius);
-    let front_face = ray.dir.dot(&outward_normal) < 0.0;
-    let normal = if front_face { outward_normal } else { -outward_normal };
-    let (u, v) = Sphere::get_uv(&normal); // Why is this not &point?
-    return Some(HitRecord::new(&point, normal, front_face, root, u, v, Arc::clone(&self.mat)));
+    let (front_face, face_normal) = HitRecord::get_front_face(ray, outward_normal);
+    let (u, v) = Sphere::get_uv(&face_normal); // Why is this not &point?
+
+    Some(HitRecord::new(point, face_normal, front_face, root, u, v, Arc::clone(&self.mat)))
   }
 
   fn bounding_box(&self) -> AABB {

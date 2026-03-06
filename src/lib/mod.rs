@@ -16,3 +16,4 @@ pub mod bvh_node;
 pub mod texture;
 pub mod image;
 pub mod perlin;
+pub mod quad;

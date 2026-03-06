@@ -7,6 +7,7 @@ use crate::lib::camera::{Camera, CameraOptions};
 use crate::lib::color::Color;
 use crate::lib::hittable::Hittable;
 use crate::lib::material::{Material, Lambertian, dielectric, metal};
+use crate::lib::quad::Quad;
 use crate::lib::random::{rand, rand_range};
 use crate::lib::scene::Scene;
 use crate::lib::sphere::Sphere;
@@ -15,14 +16,14 @@ use crate::lib::vec3::Vec3;
 use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
-    let aspect_ratio = 16.0 / 9.0;
-    let img_width = 600;
+    let aspect_ratio = 9.0 / 9.0;
+    let img_width = 400;
     let img_height = (img_width as f32/ aspect_ratio) as u32;
 
-    let camera = camera_b(img_width, img_height);
+    let camera = camera_f(img_width, img_height);
     let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(img_width, img_height, 255));
 
-    let bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_scene(scene_b()));
+    let bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_scene(scene_f()));
     let scene = Arc::new(Scene::new_obj(Arc::clone(&bvh)));
 
     writer.init();
@@ -250,5 +251,44 @@ fn scene_e() -> Scene {
     let mut scene = Scene::new();
     scene.add(Arc::clone(&sphere1));
     scene.add(Arc::clone(&sphere2));
+    scene
+}
+
+fn camera_f(img_width: u32, img_height: u32) -> Camera {
+    let camera_options = CameraOptions {
+        img_width: img_width,
+        img_height: img_height,
+        vfov: 80.0,
+        lookfrom: Vec3::new(0.0, 0.0, 9.0),
+        lookat: Vec3::new(0.0, 0.0, 0.0),
+        vup: Vec3::new(0.0, 1.0, 0.0),
+        defocus_angle: 0.0,
+        focus_dist: 3.4,
+        samples_per_pixel: 100,
+        max_depth: 50,
+        use_multithreading: true,
+    };
+    Camera::new(camera_options)
+}
+
+fn scene_f() -> Scene {
+    let left_red: Arc<dyn Material> = Arc::new(Lambertian::from_color_values([1.0, 0.2, 0.2]));
+    let back_green: Arc<dyn Material> = Arc::new(Lambertian::from_color_values([0.2, 1.0, 0.2]));
+    let right_blue: Arc<dyn Material> = Arc::new(Lambertian::from_color_values([0.2, 0.2, 1.0]));
+    let upper_orange: Arc<dyn Material> = Arc::new(Lambertian::from_color_values([1.0, 0.5, 0.0]));
+    let lower_teal: Arc<dyn Material> = Arc::new(Lambertian::from_color_values([0.2, 0.8, 0.8]));
+
+    let left: Arc<dyn Hittable> = Arc::new(Quad::new(Vec3::new(-3.0, -2.0, 5.0), Vec3::new(0.0, 0.0, -4.0), Vec3::new(0.0, 4.0, 0.0), Arc::clone(&left_red)));
+    let back: Arc<dyn Hittable> = Arc::new(Quad::new(Vec3::new(-2.0, -2.0, 0.0), Vec3::new(4.0, 0.0, 0.0), Vec3::new(0.0, 4.0, 0.0), Arc::clone(&back_green)));
+    let right: Arc<dyn Hittable> = Arc::new(Quad::new(Vec3::new(3.0, -2.0, 1.0), Vec3::new(0.0, 0.0, 4.0), Vec3::new(0.0, 4.0, 0.0), Arc::clone(&right_blue)));
+    let upper: Arc<dyn Hittable> = Arc::new(Quad::new(Vec3::new(-2.0, 3.0, 1.0), Vec3::new(4.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 4.0), Arc::clone(&upper_orange)));
+    let lower: Arc<dyn Hittable> = Arc::new(Quad::new(Vec3::new(-2.0, -3.0, 5.0), Vec3::new(4.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -4.0), Arc::clone(&lower_teal)));
+
+    let mut scene = Scene::new();
+    scene.add(Arc::clone(&left));
+    scene.add(Arc::clone(&back));
+    scene.add(Arc::clone(&right));
+    scene.add(Arc::clone(&upper));
+    scene.add(Arc::clone(&lower));
     scene
 }
