@@ -10,23 +10,8 @@ use std::f64::consts::PI;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-#[derive(Clone, Copy)]
-pub struct CameraOptions {
-    pub img_width: u32,
-    pub img_height: u32,
-    pub vfov: f64,
-    pub lookfrom: Vec3,
-    pub lookat: Vec3,
-    pub vup: Vec3,
-    pub defocus_angle: f64,
-    pub focus_dist: f64,
-    pub samples_per_pixel: u32,
-    pub max_depth: u32,
-    pub use_multithreading: bool,
-}
-
 pub struct Camera {
-    pub options: CameraOptions,
+    options: CameraOptions,
     pub center: Vec3,
     viewport: Viewport,
     defocus_disk_u: Vec3,
@@ -39,13 +24,13 @@ impl Camera {
         let h = (theta / 2.0).tan();
         let viewport_height = 2.0 * h * options.focus_dist;
         let viewport_width =
-            viewport_height * (options.img_width as f64) / (options.img_height as f64);
+            viewport_height * (options.width as f64) / (options.height as f64);
         let w = (options.lookfrom - options.lookat).unit();
         let u = options.vup.cross(&w).unit();
         let v = w.cross(&u);
         let viewport = Viewport::new(
-            options.img_width,
-            options.img_height,
+            options.width,
+            options.height,
             viewport_width,
             viewport_height,
             u,
@@ -73,7 +58,7 @@ impl Camera {
         };
 
         let lines: Arc<Mutex<Vec<u32>>> =
-            Arc::new(Mutex::new((0..self.options.img_height).collect()));
+            Arc::new(Mutex::new((0..self.options.height).collect()));
 
         thread::scope(|s| {
             for _ in 0..num_threads {
@@ -100,9 +85,21 @@ impl Camera {
         eprintln!("\n\rDone.");
     }
 
+    pub fn width(&self) -> u32 {
+        self.options.width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.options.height
+    }
+
+    pub fn focus_dist(&self) -> f64 {
+        self.options.focus_dist
+    }
+
     fn render_line(&self, line: u32, scene: &Arc<Scene>, writer: &Arc<dyn Writer>) {
         let mut data: Vec<[u8; 3]> = vec![];
-        for i in 0..self.options.img_width {
+        for i in 0..self.options.width {
             let pixel_color = self.sample_pixel(scene, i, line).to_gamma();
             data.push(pixel_color.to_u8());
         }
@@ -186,4 +183,128 @@ fn segment_lines(num_lines: u32, num_segments: u32) -> Vec<(u32, u32)> {
         segments.push((start, end));
     }
     return segments;
+}
+
+#[derive(Clone, Copy)]
+pub struct CameraOptions {
+    pub width: u32,
+    pub height: u32,
+    pub vfov: f64,
+    pub lookfrom: Vec3,
+    pub lookat: Vec3,
+    pub vup: Vec3,
+    pub defocus_angle: f64,
+    pub focus_dist: f64,
+    pub samples_per_pixel: u32,
+    pub max_depth: u32,
+    pub use_multithreading: bool,
+}
+
+pub struct CameraBuilder {
+    width: u32,
+    aspect_ratio: f64,
+    vfov: f64,
+    lookfrom: Vec3,
+    lookat: Vec3,
+    vup: Vec3,
+    defocus_angle: f64,
+    focus_dist: f64,
+    samples_per_pixel: u32,
+    max_depth: u32,
+    use_multithreading: bool,
+}
+
+impl CameraBuilder {
+    pub fn new() -> Self {
+        CameraBuilder {
+            width: 400,
+            aspect_ratio: 16.0 / 9.0,
+            vfov: 20.0,
+            lookfrom: Vec3::new(0.0, 1.0, 0.0),
+            lookat: Vec3::new(0.0, 0.0, 0.0),
+            vup: Vec3::new(0.0, 1.0, 0.0),
+            defocus_angle: 0.0,
+            focus_dist: 1.0,
+            samples_per_pixel: 100,
+            max_depth: 50,
+            use_multithreading: true,
+        }
+    }
+
+    pub fn build(&self) -> Camera {
+        let options = self.make_options();
+        Camera::new(options)
+    }
+
+    fn make_options(&self) -> CameraOptions {
+        let height = (self.width as f64 / self.aspect_ratio) as u32;
+        CameraOptions {
+            width: self.width,
+            height: height,
+            vfov: self.vfov,
+            lookfrom: self.lookfrom,
+            lookat: self.lookat,
+            vup: self.vup,
+            defocus_angle: self.defocus_angle,
+            focus_dist: self.focus_dist,
+            samples_per_pixel: self.samples_per_pixel,
+            max_depth: self.max_depth,
+            use_multithreading: self.use_multithreading,
+        }
+    }
+
+    pub fn width(mut self, new_width: u32) -> Self {
+        self.width = new_width;
+        self
+    }
+
+    pub fn aspect_ratio(mut self, new_aspect_ratio: f64) -> Self {
+        self.aspect_ratio = new_aspect_ratio;
+        self
+    }
+
+    pub fn vfov(mut self, new_vfov: f64) -> Self {
+        self.vfov = new_vfov;
+        self
+    }
+
+    pub fn lookfrom(mut self, new_lookfrom: [f64; 3]) -> Self {
+        self.lookfrom = Vec3::new_arr(new_lookfrom);
+        self
+    }
+
+    pub fn lookat(mut self, new_lookat: [f64; 3]) -> Self {
+        self.lookat = Vec3::new_arr(new_lookat);
+        self
+    }
+
+    pub fn vup(mut self, new_vup: [f64; 3]) -> Self {
+        self.vup = Vec3::new_arr(new_vup);
+        self
+    }
+
+    pub fn defocus_angle(mut self, new_defocus_angle: f64) -> Self {
+        self.defocus_angle = new_defocus_angle;
+        self
+    }
+
+    pub fn focus_dist(mut self, new_focus_dist: f64) -> Self {
+        self.focus_dist = new_focus_dist;
+        self
+    }
+
+    pub fn samples_per_pixel(mut self, new_samples_per_pixel: u32) -> Self {
+        self.samples_per_pixel = new_samples_per_pixel;
+        self
+    }
+
+    pub fn max_depth(mut self, new_max_depth: u32) -> Self {
+        self.max_depth = new_max_depth;
+        self
+    }
+
+    pub fn use_multithreading(mut self, new_use_multithreading: bool) -> Self {
+        self.use_multithreading = new_use_multithreading;
+        self
+    }
 }

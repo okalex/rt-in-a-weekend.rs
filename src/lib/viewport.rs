@@ -42,7 +42,7 @@ impl Viewport {
 
     pub fn upper_left(&self, camera: &Camera) -> Vec3 {
         return camera.center
-            - self.w.scale(camera.options.focus_dist)
+            - self.w.scale(camera.focus_dist())
             - self.viewport_u.scale(0.5)
             - self.viewport_v.scale(0.5);
     }

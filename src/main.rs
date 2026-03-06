@@ -3,8 +3,7 @@ mod lib;
 use std::sync::Arc;
 
 use crate::lib::bvh_node::BvhNode;
-use crate::lib::camera::{Camera, CameraOptions};
-use crate::lib::color::Color;
+use crate::lib::camera::CameraBuilder;
 use crate::lib::hittable::Hittable;
 use crate::lib::material::{Lambertian, Material, dielectric, metal};
 use crate::lib::quad::Quad;
@@ -16,16 +15,10 @@ use crate::lib::vec3::Vec3;
 use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
-    let aspect_ratio = 9.0 / 9.0;
-    let img_width = 400;
-    let img_height = (img_width as f32 / aspect_ratio) as u32;
+    let camera = camera_f().width(800).build();
+    let scene = make_scene(scene_f());
 
-    let camera = camera_f(img_width, img_height);
-    let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(img_width, img_height, 255));
-
-    let bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_scene(scene_f()));
-    let scene = Arc::new(Scene::new_obj(Arc::clone(&bvh)));
-
+    let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(camera.width(), camera.height(), 255));
     writer.init();
     camera.render(Arc::clone(&scene), Arc::clone(&writer));
     writer.close();
@@ -35,21 +28,18 @@ fn rand_arr3() -> [f64; 3] {
     [rand(), rand(), rand()]
 }
 
-fn camera_a(img_width: u32, img_height: u32) -> Camera {
-    let camera_options = CameraOptions {
-        img_width: img_width,
-        img_height: img_height,
-        vfov: 50.0,
-        lookfrom: Vec3::new(-1.0, 1.0, 1.0),
-        lookat: Vec3::new(0.0, 0.0, -1.0),
-        vup: Vec3::new(0.0, 1.0, 0.0),
-        defocus_angle: 0.5,
-        focus_dist: 3.4,
-        samples_per_pixel: 100,
-        max_depth: 50,
-        use_multithreading: true,
-    };
-    Camera::new(camera_options)
+fn make_scene(scene: Scene) -> Arc<Scene> {
+    let bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_scene(scene));
+    Arc::new(Scene::new_obj(Arc::clone(&bvh)))
+}
+
+fn camera_a() -> CameraBuilder {
+    CameraBuilder::new()
+        .vfov(50.0)
+        .lookfrom([-1.0, 1.0, 1.0])
+        .lookat([0.0, 0.0, -1.0])
+        .defocus_angle(0.5)
+        .focus_dist(3.4)
 }
 
 fn scene_a() -> Scene {
@@ -96,21 +86,12 @@ fn scene_a() -> Scene {
     scene
 }
 
-fn camera_b(img_width: u32, img_height: u32) -> Camera {
-    let camera_options = CameraOptions {
-        img_width: img_width,
-        img_height: img_height,
-        vfov: 20.0,
-        lookfrom: Vec3::new(13.0, 2.0, 3.0),
-        lookat: Vec3::new(0.0, 0.0, 0.0),
-        vup: Vec3::new(0.0, 1.0, 0.0),
-        defocus_angle: 0.6,
-        focus_dist: 10.0,
-        samples_per_pixel: 50,
-        max_depth: 50,
-        use_multithreading: true,
-    };
-    Camera::new(camera_options)
+fn camera_b() -> CameraBuilder {
+    CameraBuilder::new()
+        .lookfrom([13.0, 2.0, 3.0])
+        .lookat([0.0, 0.0, 0.0])
+        .defocus_angle(0.6)
+        .focus_dist(10.0)
 }
 
 fn scene_b() -> Scene {
@@ -204,21 +185,10 @@ fn scene_b() -> Scene {
     scene
 }
 
-fn camera_c(img_width: u32, img_height: u32) -> Camera {
-    let camera_options = CameraOptions {
-        img_width: img_width,
-        img_height: img_height,
-        vfov: 20.0,
-        lookfrom: Vec3::new(13.0, 2.0, 3.0),
-        lookat: Vec3::new(0.0, 0.0, 0.0),
-        vup: Vec3::new(0.0, 1.0, 0.0),
-        defocus_angle: 0.0,
-        focus_dist: 3.4,
-        samples_per_pixel: 100,
-        max_depth: 50,
-        use_multithreading: true,
-    };
-    Camera::new(camera_options)
+fn camera_c() -> CameraBuilder {
+    CameraBuilder::new()
+        .lookfrom([13.0, 2.0, 3.0])
+        .lookat([0.0, 0.0, 0.0])
 }
 
 fn scene_c() -> Scene {
@@ -246,21 +216,10 @@ fn scene_c() -> Scene {
     scene
 }
 
-fn camera_d(img_width: u32, img_height: u32) -> Camera {
-    let camera_options = CameraOptions {
-        img_width: img_width,
-        img_height: img_height,
-        vfov: 20.0,
-        lookfrom: Vec3::new(0.0, 4.0, 16.0),
-        lookat: Vec3::new(0.0, 1.5, 0.0),
-        vup: Vec3::new(0.0, 1.0, 0.0),
-        defocus_angle: 0.0,
-        focus_dist: 3.4,
-        samples_per_pixel: 100,
-        max_depth: 50,
-        use_multithreading: true,
-    };
-    Camera::new(camera_options)
+fn camera_d() -> CameraBuilder {
+    CameraBuilder::new()
+        .lookfrom([0.0, 4.0, 16.0])
+        .lookat([0.0, 1.5, 0.0])
 }
 
 fn scene_d() -> Scene {
@@ -292,21 +251,10 @@ fn scene_d() -> Scene {
     scene
 }
 
-fn camera_e(img_width: u32, img_height: u32) -> Camera {
-    let camera_options = CameraOptions {
-        img_width: img_width,
-        img_height: img_height,
-        vfov: 20.0,
-        lookfrom: Vec3::new(13.0, 2.0, 3.0),
-        lookat: Vec3::new(0.0, 0.0, 0.0),
-        vup: Vec3::new(0.0, 1.0, 0.0),
-        defocus_angle: 0.0,
-        focus_dist: 3.4,
-        samples_per_pixel: 100,
-        max_depth: 50,
-        use_multithreading: true,
-    };
-    Camera::new(camera_options)
+fn camera_e() -> CameraBuilder {
+    CameraBuilder::new()
+        .lookfrom([13.0, 2.0, 3.0])
+        .lookat([0.0, 0.0, 0.0])
 }
 
 fn scene_e() -> Scene {
@@ -329,21 +277,12 @@ fn scene_e() -> Scene {
     scene
 }
 
-fn camera_f(img_width: u32, img_height: u32) -> Camera {
-    let camera_options = CameraOptions {
-        img_width: img_width,
-        img_height: img_height,
-        vfov: 80.0,
-        lookfrom: Vec3::new(0.0, 0.0, 9.0),
-        lookat: Vec3::new(0.0, 0.0, 0.0),
-        vup: Vec3::new(0.0, 1.0, 0.0),
-        defocus_angle: 0.0,
-        focus_dist: 3.4,
-        samples_per_pixel: 100,
-        max_depth: 50,
-        use_multithreading: true,
-    };
-    Camera::new(camera_options)
+fn camera_f() -> CameraBuilder {
+    CameraBuilder::new()
+        .aspect_ratio(1.0)
+        .vfov(80.0)
+        .lookfrom([0.0, 0.0, 9.0])
+        .lookat([0.0, 0.0, 0.0])
 }
 
 fn scene_f() -> Scene {

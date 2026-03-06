@@ -56,9 +56,9 @@ impl AABB {
     }
 
     fn pad_to_min(interval: Interval) -> Interval {
-        const delta: f64 = 0.0001;
-        if interval.size() < delta {
-            interval.expand(delta)
+        const DELTA: f64 = 0.0001;
+        if interval.size() < DELTA {
+            interval.expand(DELTA)
         } else {
             interval
         }
