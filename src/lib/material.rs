@@ -8,112 +8,120 @@ use crate::lib::texture::{SolidColor, Texture};
 use crate::lib::vec3::Vec3;
 
 pub struct Scattered {
-  pub ray: Ray,
-  pub attenuation: Color,
+    pub ray: Ray,
+    pub attenuation: Color,
 }
 
 pub trait Material: Send + Sync {
-  fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered;
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered;
+
+    fn emitted(&self, u: f64, v: f64, point: &Vec3) -> Color {
+        Color::new(0.0, 0.0, 0.0)
+    }
 }
 
 pub struct Lambertian {
-  texture: Arc<dyn Texture>,
+    texture: Arc<dyn Texture>,
 }
 
 impl Lambertian {
-  pub fn new(texture: Arc<dyn Texture>) -> Self {
-    Self { texture }
-  }
+    pub fn new(texture: Arc<dyn Texture>) -> Self {
+        Self { texture }
+    }
 
-  pub fn from_color(color: Color) -> Self {
-    let arc_color: Arc<dyn Texture> = Arc::new(SolidColor::new(color));
-    Self::new(arc_color)
-  }
+    pub fn from_color(color: Color) -> Self {
+        let arc_color: Arc<dyn Texture> = Arc::new(SolidColor::new(color));
+        Self::new(arc_color)
+    }
 
-  pub fn from_color_values(color_values: [f64; 3]) -> Self {
-    Self::from_color(Color::from_arr(color_values))
-  }
+    pub fn from_color_values(color_values: [f64; 3]) -> Self {
+        Self::from_color(Color::from_arr(color_values))
+    }
 }
 
 impl Material for Lambertian {
-  fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
-    let mut scatter_dir = rec.normal + Vec3::rand_unit();
-    if scatter_dir.near_zero() {
-      scatter_dir = rec.normal;
-    }
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
+        let mut scatter_dir = rec.normal + Vec3::rand_unit();
+        if scatter_dir.near_zero() {
+            scatter_dir = rec.normal;
+        }
 
-    return Scattered {
-      ray: Ray::new(rec.point, scatter_dir, r_in.time),
-      attenuation: self.texture.value(rec.u, rec.v, &rec.point),
-    };
-  }
+        return Scattered {
+            ray: Ray::new(rec.point, scatter_dir, r_in.time),
+            attenuation: self.texture.value(rec.u, rec.v, &rec.point),
+        };
+    }
 }
 
 impl Clone for Lambertian {
-  fn clone(&self) -> Self {
-    Self {
-      texture: Arc::clone(&self.texture),
+    fn clone(&self) -> Self {
+        Self {
+            texture: Arc::clone(&self.texture),
+        }
     }
-  }
 }
 
 pub struct Metal {
-  albedo: Color,
-  fuzz: f64,
+    albedo: Color,
+    fuzz: f64,
 }
 
 impl Material for Metal {
-  fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
-    let reflected = r_in.dir.reflect(&rec.normal).unit() + Vec3::rand_unit().scale(self.fuzz);
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
+        let reflected = r_in.dir.reflect(&rec.normal).unit() + Vec3::rand_unit().scale(self.fuzz);
 
-    return Scattered {
-      ray: Ray::new(rec.point, reflected, r_in.time),
-      attenuation: self.albedo,
-    };
-  }
+        return Scattered {
+            ray: Ray::new(rec.point, reflected, r_in.time),
+            attenuation: self.albedo,
+        };
+    }
 }
 
 pub fn metal(albedo: [f64; 3], fuzz: f64) -> Metal {
-  return Metal {
-    albedo: Color::new(albedo[0], albedo[1], albedo[2]),
-    fuzz: if fuzz < 1.0 { fuzz } else { 1.0 },
-  };
+    return Metal {
+        albedo: Color::new(albedo[0], albedo[1], albedo[2]),
+        fuzz: if fuzz < 1.0 { fuzz } else { 1.0 },
+    };
 }
 
 pub struct Dielectric {
-  refraction_idx: f64,
+    refraction_idx: f64,
 }
 
 impl Material for Dielectric {
-  fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
-    let ri = if rec.front_face { 1.0 / self.refraction_idx } else { self.refraction_idx };
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
+        let ri = if rec.front_face {
+            1.0 / self.refraction_idx
+        } else {
+            self.refraction_idx
+        };
 
-    let unit_dir = r_in.dir.unit();
-    let cos_theta = f64::min((-unit_dir).dot(&rec.normal), 1.0);
-    let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
-    
-    let cannot_refract = (ri * sin_theta) > 1.0;
-    let direction = if cannot_refract || reflectance(cos_theta, ri) > rand() { 
-      unit_dir.reflect(&rec.normal) 
-    } else { 
-      unit_dir.refract(&rec.normal, ri) 
-    };
+        let unit_dir = r_in.dir.unit();
+        let cos_theta = f64::min((-unit_dir).dot(&rec.normal), 1.0);
+        let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
-    return Scattered {
-      ray: Ray::new(rec.point, direction, r_in.time),
-      attenuation: Color::new(1.0, 1.0, 1.0),
-    };
-  }
+        let cannot_refract = (ri * sin_theta) > 1.0;
+        let direction = if cannot_refract || reflectance(cos_theta, ri) > rand() {
+            unit_dir.reflect(&rec.normal)
+        } else {
+            unit_dir.refract(&rec.normal, ri)
+        };
+
+        return Scattered {
+            ray: Ray::new(rec.point, direction, r_in.time),
+            attenuation: Color::new(1.0, 1.0, 1.0),
+        };
+    }
 }
 
 pub fn dielectric(refraction_idx: f64) -> Dielectric {
-  return Dielectric {
-    refraction_idx: refraction_idx,
-  };
+    return Dielectric {
+        refraction_idx: refraction_idx,
+    };
 }
 
 fn reflectance(cosine: f64, refraction_idx: f64) -> f64 {
-  let r0_tmp = (1.0 - refraction_idx) / (1.0 + refraction_idx);
-  let r0 = r0_tmp * r0_tmp;
-  return r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0);
+    let r0_tmp = (1.0 - refraction_idx) / (1.0 + refraction_idx);
+    let r0 = r0_tmp * r0_tmp;
+    return r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0);
 }

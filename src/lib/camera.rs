@@ -1,6 +1,3 @@
-use std::f64::consts::PI;
-use std::thread;
-use std::sync::{Arc, Mutex};
 use crate::lib::color::Color;
 use crate::lib::interval::Interval;
 use crate::lib::random::rand;
@@ -9,173 +6,184 @@ use crate::lib::scene::Scene;
 use crate::lib::vec3::Vec3;
 use crate::lib::viewport::Viewport;
 use crate::lib::writer::Writer;
+use std::f64::consts::PI;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 #[derive(Clone, Copy)]
 pub struct CameraOptions {
-  pub img_width: u32,
-  pub img_height: u32,
-  pub vfov: f64,
-  pub lookfrom: Vec3,
-  pub lookat: Vec3,
-  pub vup: Vec3,
-  pub defocus_angle: f64,
-  pub focus_dist: f64,
-  pub samples_per_pixel: u32,
-  pub max_depth: u32,
-  pub use_multithreading: bool,
+    pub img_width: u32,
+    pub img_height: u32,
+    pub vfov: f64,
+    pub lookfrom: Vec3,
+    pub lookat: Vec3,
+    pub vup: Vec3,
+    pub defocus_angle: f64,
+    pub focus_dist: f64,
+    pub samples_per_pixel: u32,
+    pub max_depth: u32,
+    pub use_multithreading: bool,
 }
 
 pub struct Camera {
-  pub options: CameraOptions,
-  pub center: Vec3,
-  viewport: Viewport,
-  defocus_disk_u: Vec3,
-  defocus_disk_v: Vec3,
+    pub options: CameraOptions,
+    pub center: Vec3,
+    viewport: Viewport,
+    defocus_disk_u: Vec3,
+    defocus_disk_v: Vec3,
 }
 
 impl Camera {
+    pub fn new(options: CameraOptions) -> Camera {
+        let theta = degrees_to_radians(options.vfov);
+        let h = (theta / 2.0).tan();
+        let viewport_height = 2.0 * h * options.focus_dist;
+        let viewport_width =
+            viewport_height * (options.img_width as f64) / (options.img_height as f64);
+        let w = (options.lookfrom - options.lookat).unit();
+        let u = options.vup.cross(&w).unit();
+        let v = w.cross(&u);
+        let viewport = Viewport::new(
+            options.img_width,
+            options.img_height,
+            viewport_width,
+            viewport_height,
+            u,
+            v,
+            w,
+        );
 
-  pub fn new(options: CameraOptions) -> Camera {
-    let theta = degrees_to_radians(options.vfov);
-    let h = (theta / 2.0).tan();
-    let viewport_height = 2.0 * h * options.focus_dist;
-    let viewport_width = viewport_height * (options.img_width as f64) / (options.img_height as f64);
-    let w = (options.lookfrom - options.lookat).unit();
-    let u = options.vup.cross(&w).unit();
-    let v = w.cross(&u);
-    let viewport = Viewport::new(options.img_width, options.img_height, viewport_width, viewport_height, u, v, w);
+        let defocus_radius =
+            options.focus_dist * degrees_to_radians(options.defocus_angle / 2.0).tan();
 
-    let defocus_radius = options.focus_dist * degrees_to_radians(options.defocus_angle / 2.0).tan();
-
-    Camera {
-      options: options,
-      center: options.lookfrom,
-      viewport: viewport,
-      defocus_disk_u: u.scale(defocus_radius),
-      defocus_disk_v: v.scale(defocus_radius),
+        Camera {
+            options: options,
+            center: options.lookfrom,
+            viewport: viewport,
+            defocus_disk_u: u.scale(defocus_radius),
+            defocus_disk_v: v.scale(defocus_radius),
+        }
     }
-  }
 
-  pub fn render(&self, scene: Arc<Scene>, writer: Arc<dyn Writer>) {
-    let num_threads = if self.options.use_multithreading {
-      std::thread::available_parallelism().unwrap().get()
-    } else {
-      1
-    };
+    pub fn render(&self, scene: Arc<Scene>, writer: Arc<dyn Writer>) {
+        let num_threads = if self.options.use_multithreading {
+            std::thread::available_parallelism().unwrap().get()
+        } else {
+            1
+        };
 
-    let lines: Arc<Mutex<Vec<u32>>> = Arc::new(Mutex::new(
-      (0..self.options.img_height).collect()
-    ));
-    
-    thread::scope(|s| {
-      for _ in 0..num_threads {
-        let scene_clone = Arc::clone(&scene);
-        let writer_clone = Arc::clone(&writer);
-        let lines_clone = Arc::clone(&lines);
+        let lines: Arc<Mutex<Vec<u32>>> =
+            Arc::new(Mutex::new((0..self.options.img_height).collect()));
 
-        s.spawn(move || {
-          loop {
-            let maybe_line = lines_clone.lock().unwrap().pop();
-            match maybe_line {
-              None => break,
-              Some(line) => {
-                self.render_line(line, &scene_clone, &writer_clone);
-                let remaining_lines = lines_clone.lock().unwrap().len();
-                eprint!("\rLines remaining: {}       ", remaining_lines); 
-              }
+        thread::scope(|s| {
+            for _ in 0..num_threads {
+                let scene_clone = Arc::clone(&scene);
+                let writer_clone = Arc::clone(&writer);
+                let lines_clone = Arc::clone(&lines);
+
+                s.spawn(move || {
+                    loop {
+                        let maybe_line = lines_clone.lock().unwrap().pop();
+                        match maybe_line {
+                            None => break,
+                            Some(line) => {
+                                self.render_line(line, &scene_clone, &writer_clone);
+                                let remaining_lines = lines_clone.lock().unwrap().len();
+                                eprint!("\rLines remaining: {}       ", remaining_lines);
+                            }
+                        }
+                    }
+                });
             }
-          }
         });
-      }
-    });
 
-    eprintln!("\n\rDone.");
-  }
-
-  fn render_line(&self, line: u32, scene: &Arc<Scene>, writer: &Arc<dyn Writer>) {
-    let mut data: Vec<[u8; 3]> = vec![];
-    for i in 0..self.options.img_width {
-      let pixel_color = self.sample_pixel(scene, i, line).to_gamma();
-      data.push(pixel_color.to_u8());
-    }
-    
-    writer.write_line(line as usize, &data);
-  }
-
-  fn sample_pixel(&self, scene: &Arc<Scene>, i: u32, j: u32) -> Color {
-    let mut pixel_color = Color::new(0.0, 0.0, 0.0);
-    for _ in 0..self.options.samples_per_pixel {
-      let r = self.get_ray(i, j);
-      pixel_color = pixel_color + self.ray_color(&r, self.options.max_depth, scene);
-    }
-    return pixel_color.scale(1.0 / (self.options.samples_per_pixel as f64));
-  }
-
-  fn sample_square(&self) -> Vec3 {
-    return Vec3::new(
-      rand() - 0.5,
-      rand() - 0.5,
-      0.0
-    );
-  }
-
-  fn defocus_disk_sample(&self) -> Vec3 {
-    let p = Vec3::rand_in_unit_disk();
-    return self.center + self.defocus_disk_u.scale(p.x()) + self.defocus_disk_v.scale(p.y());
-  }
-
-  fn get_ray(&self, i: u32, j: u32) -> Ray {
-    let offset = self.sample_square();
-    let pixel_sample = self.viewport.pixel00_loc(self)
-      + self.viewport.delta_u().scale(i as f64 + offset.x())
-      + self.viewport.delta_v().scale(j as f64 + offset.y());
-
-    let ray_origin = if self.options.defocus_angle <= 0.0 { self.center } else { self.defocus_disk_sample() };
-    let ray_dir = pixel_sample - ray_origin;
-    let ray_time = rand();
-
-    Ray::new(ray_origin, ray_dir, ray_time)
-  }
-
-  fn ray_color(&self, ray: &Ray, depth: u32, scene: &Arc<Scene>) -> Color {
-    if depth <= 0 {
-      return Color::new(0.0, 0.0, 0.0);
+        eprintln!("\n\rDone.");
     }
 
-    let interval = Interval::new(0.001, 1000000.0);
-    let hit_record = scene.hit(ray, interval);
-    match hit_record {
-      Some(rec) => {
-        let scattered = rec.mat.scatter(ray, &rec);
-        scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene)
-      },
-      None => self.background(ray),
-    }
-  }
+    fn render_line(&self, line: u32, scene: &Arc<Scene>, writer: &Arc<dyn Writer>) {
+        let mut data: Vec<[u8; 3]> = vec![];
+        for i in 0..self.options.img_width {
+            let pixel_color = self.sample_pixel(scene, i, line).to_gamma();
+            data.push(pixel_color.to_u8());
+        }
 
-  fn background(&self, ray: &Ray) -> Color {
-    let a = 0.5 * (ray.dir.unit().y() + 1.0);
-    let white = Color::wrap_vec(Vec3::ones());
-    let blue = Color::new(0.5, 0.7, 1.0);
-    return white.scale(1.0 - a) + blue.scale(a);
-  }
+        writer.write_line(line as usize, &data);
+    }
+
+    fn sample_pixel(&self, scene: &Arc<Scene>, i: u32, j: u32) -> Color {
+        let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+        for _ in 0..self.options.samples_per_pixel {
+            let r = self.get_ray(i, j);
+            pixel_color = pixel_color + self.ray_color(&r, self.options.max_depth, scene);
+        }
+        return pixel_color.scale(1.0 / (self.options.samples_per_pixel as f64));
+    }
+
+    fn sample_square(&self) -> Vec3 {
+        return Vec3::new(rand() - 0.5, rand() - 0.5, 0.0);
+    }
+
+    fn defocus_disk_sample(&self) -> Vec3 {
+        let p = Vec3::rand_in_unit_disk();
+        return self.center + self.defocus_disk_u.scale(p.x()) + self.defocus_disk_v.scale(p.y());
+    }
+
+    fn get_ray(&self, i: u32, j: u32) -> Ray {
+        let offset = self.sample_square();
+        let pixel_sample = self.viewport.pixel00_loc(self)
+            + self.viewport.delta_u().scale(i as f64 + offset.x())
+            + self.viewport.delta_v().scale(j as f64 + offset.y());
+
+        let ray_origin = if self.options.defocus_angle <= 0.0 {
+            self.center
+        } else {
+            self.defocus_disk_sample()
+        };
+        let ray_dir = pixel_sample - ray_origin;
+        let ray_time = rand();
+
+        Ray::new(ray_origin, ray_dir, ray_time)
+    }
+
+    fn ray_color(&self, ray: &Ray, depth: u32, scene: &Arc<Scene>) -> Color {
+        if depth <= 0 {
+            return Color::new(0.0, 0.0, 0.0);
+        }
+
+        let interval = Interval::new(0.001, 1000000.0);
+        let hit_record = scene.hit(ray, interval);
+        match hit_record {
+            Some(rec) => {
+                let scattered = rec.mat.scatter(ray, &rec);
+                scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene)
+            }
+            None => self.background(ray),
+        }
+    }
+
+    fn background(&self, ray: &Ray) -> Color {
+        let a = 0.5 * (ray.dir.unit().y() + 1.0);
+        let white = Color::wrap_vec(Vec3::ones());
+        let blue = Color::new(0.5, 0.7, 1.0);
+        return white.scale(1.0 - a) + blue.scale(a);
+    }
 }
 
 fn degrees_to_radians(degrees: f64) -> f64 {
-  return degrees * PI / 180.0;
+    return degrees * PI / 180.0;
 }
 
 fn segment_lines(num_lines: u32, num_segments: u32) -> Vec<(u32, u32)> {
-  let segment_size = num_lines / num_segments;
-  let mut segments = Vec::new();
-  for i in 0..num_segments {
-    let start = i * segment_size;
-    let end = if i < (num_segments - 1) {
-      (i + 1) * segment_size
-    } else {
-      num_lines
-    };
-    segments.push((start, end));
-  }
-  return segments;
+    let segment_size = num_lines / num_segments;
+    let mut segments = Vec::new();
+    for i in 0..num_segments {
+        let start = i * segment_size;
+        let end = if i < (num_segments - 1) {
+            (i + 1) * segment_size
+        } else {
+            num_lines
+        };
+        segments.push((start, end));
+    }
+    return segments;
 }
