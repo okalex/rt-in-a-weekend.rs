@@ -5,8 +5,9 @@ use std::sync::Arc;
 use crate::lib::bvh_node::BvhNode;
 use crate::lib::camera::CameraBuilder;
 use crate::lib::color::Color;
+use crate::lib::constant_medium::ConstantMedium;
 use crate::lib::hittable::{Hittable, RotateY, Translate, rotate_y, translate};
-use crate::lib::material::{DiffuseLight, Lambertian, Material, dielectric, metal};
+use crate::lib::material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
 use crate::lib::quad::Quad;
 use crate::lib::random::{rand, rand_range};
 use crate::lib::scene::{Box3d, Scene};
@@ -16,7 +17,7 @@ use crate::lib::vec3::Vec3;
 use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
-    let scene_idx = 7;
+    let scene_idx = 9;
     let render_settings = CameraBuilder::new()
         .width(400)
         .samples_per_pixel(500)
@@ -31,6 +32,7 @@ fn main() {
         6 => (camera_f(render_settings), scene_f()),
         7 => (camera_g(render_settings), scene_g()),
         8 => (camera_cornell(render_settings), scene_cornell()),
+        9 => (camera_cornell(render_settings), scene_cornell_smoke()),
         _ => panic!(),
     };
     let camera = camera_builder.build();
@@ -103,9 +105,9 @@ fn scene_a() -> Scene {
         Arc::new(Lambertian::from_color_values([0.8, 0.8, 0.0]));
     let material_center: Arc<dyn Material> =
         Arc::new(Lambertian::from_color_values([0.1, 0.2, 0.5]));
-    let material_left: Arc<dyn Material> = Arc::new(dielectric(1.5));
-    let material_bubble: Arc<dyn Material> = Arc::new(dielectric(1.0 / 1.5));
-    let material_right: Arc<dyn Material> = Arc::new(metal([0.8, 0.6, 0.2], 0.2));
+    let material_left: Arc<dyn Material> = Arc::new(Dielectric::new(1.5));
+    let material_bubble: Arc<dyn Material> = Arc::new(Dielectric::new(1.0 / 1.5));
+    let material_right: Arc<dyn Material> = Arc::new(Metal::new([0.8, 0.6, 0.2], 0.2));
 
     let sphere1: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
         Vec3::new(1.0, -100.5, -1.0),
@@ -161,9 +163,9 @@ fn scene_b() -> Scene {
 
     // Materials
     let mat_ground: Arc<dyn Material> = Arc::new(Lambertian::new(checker_texture.clone()));
-    let mat1: Arc<dyn Material> = Arc::new(dielectric(1.5));
+    let mat1: Arc<dyn Material> = Arc::new(Dielectric::new(1.5));
     let mat2: Arc<dyn Material> = Arc::new(Lambertian::from_color_values([0.4, 0.2, 0.1]));
-    let mat3: Arc<dyn Material> = Arc::new(metal([0.7, 0.6, 0.5], 0.0));
+    let mat3: Arc<dyn Material> = Arc::new(Metal::new([0.7, 0.6, 0.5], 0.0));
 
     // Objects
     let sphere_ground: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
@@ -216,13 +218,13 @@ fn scene_b() -> Scene {
                     // Metal
                     let albedo = rand_arr3();
                     let fuzz = rand_range(0.0, 0.5);
-                    let mat_sphere: Arc<dyn Material> = Arc::new(metal(albedo, fuzz));
+                    let mat_sphere: Arc<dyn Material> = Arc::new(Metal::new(albedo, fuzz));
                     let sphere: Arc<dyn Hittable> =
                         Arc::new(Sphere::stationary(center, 0.2, Arc::clone(&mat_sphere)));
                     scene.add(Arc::clone(&sphere));
                 } else if choose_mat < 0.8 {
                     // Glass
-                    let mat_sphere: Arc<dyn Material> = Arc::new(dielectric(1.5));
+                    let mat_sphere: Arc<dyn Material> = Arc::new(Dielectric::new(1.5));
                     let sphere: Arc<dyn Hittable> =
                         Arc::new(Sphere::stationary(center, 0.2, Arc::clone(&mat_sphere)));
                     scene.add(Arc::clone(&sphere));
@@ -470,6 +472,71 @@ fn scene_cornell() -> Scene {
     let mut box_left = box3d([0.0, 0.0, 0.0], [165.0, 330.0, 165.0], Arc::clone(&white));
     box_left = rotate_y(box_left, 15.0);
     box_left = translate(box_left, [265.0, 0.0, 295.0]);
+
+    let mut scene = Scene::new();
+    scene.add(Arc::clone(&left));
+    scene.add(Arc::clone(&right));
+    scene.add(Arc::clone(&floor));
+    scene.add(Arc::clone(&ceiling));
+    scene.add(Arc::clone(&back));
+    scene.add(Arc::clone(&light));
+    scene.add(Arc::clone(&box_right));
+    scene.add(Arc::clone(&box_left));
+    scene
+}
+
+fn scene_cornell_smoke() -> Scene {
+    let red = lambertian([0.65, 0.05, 0.05]);
+    let white = lambertian([0.73, 0.73, 0.73]);
+    let green = lambertian([0.12, 0.45, 0.15]);
+    let light = diffuse_light([15.0, 15.0, 15.0]);
+
+    let light = quad(
+        [343.0, 554.0, 332.0],
+        [-130.0, 0.0, 0.0],
+        [0.0, 0.0, -105.0],
+        Arc::clone(&light),
+    );
+    let left = quad(
+        [555.0, 0.0, 0.0],
+        [0.0, 555.0, 0.0],
+        [0.0, 0.0, 555.0],
+        Arc::clone(&green),
+    );
+    let right = quad(
+        [0.0, 0.0, 0.0],
+        [0.0, 555.0, 0.0],
+        [0.0, 0.0, 555.0],
+        Arc::clone(&red),
+    );
+    let floor = quad(
+        [0.0, 0.0, 0.0],
+        [555.0, 0.0, 0.0],
+        [0.0, 0.0, 555.0],
+        Arc::clone(&white),
+    );
+    let ceiling = quad(
+        [555.0, 555.0, 555.0],
+        [-555.0, 0.0, 0.0],
+        [0.0, 0.0, -555.0],
+        Arc::clone(&white),
+    );
+    let back = quad(
+        [0.0, 0.0, 555.0],
+        [555.0, 0.0, 0.0],
+        [0.0, 555.0, 0.0],
+        Arc::clone(&white),
+    );
+
+    let mut box_right_boundary = box3d([0.0, 0.0, 0.0], [165.0, 165.0, 165.0], Arc::clone(&white));
+    box_right_boundary = rotate_y(box_right_boundary, -18.0);
+    box_right_boundary = translate(box_right_boundary, [130.0, 0.0, 65.0]);
+    let box_right: Arc<dyn Hittable> = Arc::new(ConstantMedium::from_color(box_right_boundary, 0.01, Color::new(1.0, 1.0, 1.0)));
+
+    let mut box_left_boundary = box3d([0.0, 0.0, 0.0], [165.0, 330.0, 165.0], Arc::clone(&white));
+    box_left_boundary = rotate_y(box_left_boundary, 15.0);
+    box_left_boundary = translate(box_left_boundary, [265.0, 0.0, 295.0]);
+    let box_left: Arc<dyn Hittable> = Arc::new(ConstantMedium::from_color(box_left_boundary, 0.01, Color::new(0.0, 0.0, 0.0)));
 
     let mut scene = Scene::new();
     scene.add(Arc::clone(&left));

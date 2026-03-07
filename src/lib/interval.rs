@@ -1,3 +1,5 @@
+use core::f64;
+
 #[derive(Clone, Copy)]
 pub struct Interval {
     pub min: f64,
@@ -11,6 +13,10 @@ impl Interval {
 
     pub fn empty() -> Interval {
         Self::new(0.0, 0.0)
+    }
+
+    pub fn universe() -> Interval {
+        Self::new(-f64::INFINITY, f64::INFINITY)
     }
 
     pub fn union(a: &Interval, b: &Interval) -> Interval {

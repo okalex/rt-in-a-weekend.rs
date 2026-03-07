@@ -68,6 +68,15 @@ pub struct Metal {
     fuzz: f64,
 }
 
+impl Metal {
+    pub fn new(albedo: [f64; 3], fuzz: f64) -> Self {
+        return Self {
+            albedo: Color::new(albedo[0], albedo[1], albedo[2]),
+            fuzz: if fuzz < 1.0 { fuzz } else { 1.0 },
+        };
+    }
+}
+
 impl Material for Metal {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
         let reflected = r_in.dir.reflect(&rec.normal).unit() + Vec3::rand_unit().scale(self.fuzz);
@@ -79,15 +88,16 @@ impl Material for Metal {
     }
 }
 
-pub fn metal(albedo: [f64; 3], fuzz: f64) -> Metal {
-    return Metal {
-        albedo: Color::new(albedo[0], albedo[1], albedo[2]),
-        fuzz: if fuzz < 1.0 { fuzz } else { 1.0 },
-    };
-}
-
 pub struct Dielectric {
     refraction_idx: f64,
+}
+
+impl Dielectric {
+    pub fn new(refraction_idx: f64) -> Self {
+        Self {
+            refraction_idx: refraction_idx,
+        }
+    }
 }
 
 impl Material for Dielectric {
@@ -114,12 +124,6 @@ impl Material for Dielectric {
             attenuation: Color::new(1.0, 1.0, 1.0),
         })
     }
-}
-
-pub fn dielectric(refraction_idx: f64) -> Dielectric {
-    return Dielectric {
-        refraction_idx: refraction_idx,
-    };
 }
 
 fn reflectance(cosine: f64, refraction_idx: f64) -> f64 {
@@ -154,5 +158,33 @@ impl Clone for DiffuseLight {
         Self {
             texture: Arc::clone(&self.texture),
         }
+    }
+}
+
+pub struct Isotropic {
+    texture: Arc<dyn Texture>,
+}
+
+impl Isotropic {
+    pub fn new(texture: Arc<dyn Texture>) -> Self {
+        Self {
+            texture: Arc::clone(&texture),
+        }
+    }
+
+    pub fn from_color(albedo: Color) -> Self {
+        let texture: Arc<dyn Texture> = Arc::new(SolidColor::new(albedo));
+        Self::new(texture)
+    }
+}
+
+impl Material for Isotropic {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
+        let scattered = Ray::new(rec.point, Vec3::rand_unit(), r_in.time);
+        let attenuation = self.texture.value(rec.u, rec.v, &rec.point);
+        Some(Scattered {
+            ray: scattered,
+            attenuation,
+        })
     }
 }

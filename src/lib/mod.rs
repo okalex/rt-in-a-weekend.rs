@@ -2,6 +2,7 @@ pub mod aabb;
 pub mod bvh_node;
 pub mod camera;
 pub mod color;
+pub mod constant_medium;
 pub mod frame_buffer;
 pub mod hittable;
 pub mod image;
