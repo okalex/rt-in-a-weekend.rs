@@ -16,8 +16,25 @@ use crate::lib::vec3::Vec3;
 use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
-    let camera = camera_cornell().build();
-    let scene: Arc<dyn Hittable> = make_scene(scene_cornell());
+    let scene_idx = 7;
+    let render_settings = CameraBuilder::new()
+        .width(400)
+        .samples_per_pixel(500)
+        .max_depth(50);
+
+    let (camera_builder, raw_scene) = match scene_idx {
+        1 => (camera_a(render_settings), scene_a()),
+        2 => (camera_b(render_settings), scene_b()),
+        3 => (camera_c(render_settings), scene_c()),
+        4 => (camera_d(render_settings), scene_d()),
+        5 => (camera_e(render_settings), scene_e()),
+        6 => (camera_f(render_settings), scene_f()),
+        7 => (camera_g(render_settings), scene_g()),
+        8 => (camera_cornell(render_settings), scene_cornell()),
+        _ => panic!(),
+    };
+    let camera = camera_builder.build();
+    let scene = wrap_scene(raw_scene);
 
     let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(camera.width(), camera.height(), 255));
     writer.init();
@@ -29,7 +46,7 @@ fn rand_arr3() -> [f64; 3] {
     [rand(), rand(), rand()]
 }
 
-fn make_scene(scene: Scene) -> Arc<Scene> {
+fn wrap_scene(scene: Scene) -> Arc<dyn Hittable> {
     let bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_scene(scene));
     Arc::new(Scene::new_obj(Arc::clone(&bvh)))
 }
@@ -72,8 +89,8 @@ fn diffuse_light(color: [f64; 3]) -> Arc<dyn Material> {
     Arc::new(DiffuseLight::from_color(Color::from_arr(color)))
 }
 
-fn camera_a() -> CameraBuilder {
-    CameraBuilder::new()
+fn camera_a(builder: CameraBuilder) -> CameraBuilder {
+    builder
         .vfov(50.0)
         .lookfrom([-1.0, 1.0, 1.0])
         .lookat([0.0, 0.0, -1.0])
@@ -125,8 +142,8 @@ fn scene_a() -> Scene {
     scene
 }
 
-fn camera_b() -> CameraBuilder {
-    CameraBuilder::new()
+fn camera_b(builder: CameraBuilder) -> CameraBuilder {
+    builder
         .lookfrom([13.0, 2.0, 3.0])
         .lookat([0.0, 0.0, 0.0])
         .defocus_angle(0.6)
@@ -224,10 +241,8 @@ fn scene_b() -> Scene {
     scene
 }
 
-fn camera_c() -> CameraBuilder {
-    CameraBuilder::new()
-        .lookfrom([13.0, 2.0, 3.0])
-        .lookat([0.0, 0.0, 0.0])
+fn camera_c(builder: CameraBuilder) -> CameraBuilder {
+    builder.lookfrom([13.0, 2.0, 3.0]).lookat([0.0, 0.0, 0.0])
 }
 
 fn scene_c() -> Scene {
@@ -255,10 +270,8 @@ fn scene_c() -> Scene {
     scene
 }
 
-fn camera_d() -> CameraBuilder {
-    CameraBuilder::new()
-        .lookfrom([0.0, 4.0, 16.0])
-        .lookat([0.0, 1.5, 0.0])
+fn camera_d(builder: CameraBuilder) -> CameraBuilder {
+    builder.lookfrom([0.0, 4.0, 16.0]).lookat([0.0, 1.5, 0.0])
 }
 
 fn scene_d() -> Scene {
@@ -290,10 +303,8 @@ fn scene_d() -> Scene {
     scene
 }
 
-fn camera_e() -> CameraBuilder {
-    CameraBuilder::new()
-        .lookfrom([13.0, 2.0, 3.0])
-        .lookat([0.0, 0.0, 0.0])
+fn camera_e(builder: CameraBuilder) -> CameraBuilder {
+    builder.lookfrom([13.0, 2.0, 3.0]).lookat([0.0, 0.0, 0.0])
 }
 
 fn scene_e() -> Scene {
@@ -316,8 +327,8 @@ fn scene_e() -> Scene {
     scene
 }
 
-fn camera_f() -> CameraBuilder {
-    CameraBuilder::new()
+fn camera_f(builder: CameraBuilder) -> CameraBuilder {
+    builder
         .aspect_ratio(1.0)
         .vfov(80.0)
         .lookfrom([0.0, 0.0, 9.0])
@@ -371,12 +382,11 @@ fn scene_f() -> Scene {
     scene
 }
 
-fn camera_g() -> CameraBuilder {
-    CameraBuilder::new()
+fn camera_g(builder: CameraBuilder) -> CameraBuilder {
+    builder
         .lookfrom([26.0, 3.0, 6.0])
         .lookat([0.0, 2.0, 0.0])
         .background([0.0, 0.0, 0.0])
-        .width(400)
 }
 
 fn scene_g() -> Scene {
@@ -401,11 +411,9 @@ fn scene_g() -> Scene {
     scene
 }
 
-fn camera_cornell() -> CameraBuilder {
-    CameraBuilder::new()
+fn camera_cornell(builder: CameraBuilder) -> CameraBuilder {
+    builder
         .aspect_ratio(1.0)
-        .width(400)
-        .samples_per_pixel(50)
         .background([0.0, 0.0, 0.0])
         .vfov(40.0)
         .lookfrom([278.0, 278.0, -800.0])

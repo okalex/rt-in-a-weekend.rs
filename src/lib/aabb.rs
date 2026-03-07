@@ -123,8 +123,4 @@ impl AABB {
             z: Interval::new(self.z.min + amount.z(), self.z.max + amount.z()),
         }
     }
-
-    pub fn rotate_y(&self) -> Self {
-        
-    }
 }
