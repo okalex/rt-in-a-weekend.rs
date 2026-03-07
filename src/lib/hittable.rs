@@ -1,6 +1,6 @@
 use crate::lib::aabb::AABB;
 use crate::lib::interval::Interval;
-use crate::lib::material::Material;
+use crate::lib::materials::material::Material;
 use crate::lib::ray::Ray;
 use crate::lib::util::degrees_to_radians;
 use crate::lib::vec3::Vec3;

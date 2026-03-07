@@ -4,10 +4,11 @@ use crate::lib::aabb::AABB;
 use crate::lib::color::Color;
 use crate::lib::hittable::{HitRecord, Hittable};
 use crate::lib::interval::Interval;
-use crate::lib::material::{Isotropic, Material};
+use crate::lib::materials::{isotropic::Isotropic, material::Material};
 use crate::lib::random::rand;
 use crate::lib::ray::Ray;
-use crate::lib::texture::{SolidColor, Texture};
+use crate::lib::textures::solid_color::SolidColor;
+use crate::lib::textures::texture::Texture;
 use crate::lib::vec3::Vec3;
 
 pub struct ConstantMedium {

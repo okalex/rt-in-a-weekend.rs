@@ -6,13 +6,19 @@ use crate::lib::bvh_node::BvhNode;
 use crate::lib::camera::CameraBuilder;
 use crate::lib::color::Color;
 use crate::lib::constant_medium::ConstantMedium;
-use crate::lib::hittable::{Hittable, RotateY, Translate, rotate_y, translate};
-use crate::lib::material::{Dielectric, DiffuseLight, Lambertian, Material, Metal};
+use crate::lib::hittable::{Hittable, rotate_y, translate};
+use crate::lib::materials::{
+    dielectric::Dielectric, diffuse_light::DiffuseLight, lambertian::Lambertian,
+    material::Material, metal::Metal,
+};
 use crate::lib::quad::Quad;
 use crate::lib::random::{rand, rand_range};
 use crate::lib::scene::{Box3d, Scene};
 use crate::lib::sphere::Sphere;
-use crate::lib::texture::{CheckerTexture, ImageTexture, NoiseTexture, Texture};
+use crate::lib::textures::checkered::Checkered;
+use crate::lib::textures::image_map::ImageMap;
+use crate::lib::textures::noise::Noise;
+use crate::lib::textures::texture::Texture;
 use crate::lib::vec3::Vec3;
 use crate::lib::writer::{PpmWriter, Writer};
 
@@ -33,7 +39,10 @@ fn main() {
         7 => (camera_g(render_settings), scene_g()),
         8 => (camera_cornell(render_settings), scene_cornell()),
         9 => (camera_cornell(render_settings), scene_cornell_smoke()),
-        10 => (camera_book2_final(render_settings), scene_book2_final(false)),
+        10 => (
+            camera_book2_final(render_settings),
+            scene_book2_final(false),
+        ),
         _ => panic!(),
     };
     let camera = camera_builder.build();
@@ -155,12 +164,12 @@ fn camera_b(builder: CameraBuilder) -> CameraBuilder {
 
 fn scene_b() -> Scene {
     // Textures
-    let checker_texture: Arc<dyn Texture> = Arc::new(CheckerTexture::from_color_values(
+    let checker_texture: Arc<dyn Texture> = Arc::new(Checkered::from_color_values(
         0.32,
         [0.2, 0.3, 0.1],
         [0.9, 0.9, 0.9],
     ));
-    let perlin_texture: Arc<dyn Texture> = Arc::new(NoiseTexture::new(8.0));
+    let perlin_texture: Arc<dyn Texture> = Arc::new(Noise::new(8.0));
 
     // Materials
     let mat_ground: Arc<dyn Material> = Arc::new(Lambertian::new(checker_texture.clone()));
@@ -249,7 +258,7 @@ fn camera_c(builder: CameraBuilder) -> CameraBuilder {
 }
 
 fn scene_c() -> Scene {
-    let checker_texture: Arc<dyn Texture> = Arc::new(CheckerTexture::from_color_values(
+    let checker_texture: Arc<dyn Texture> = Arc::new(Checkered::from_color_values(
         0.32,
         [0.2, 0.3, 0.1],
         [0.9, 0.9, 0.9],
@@ -278,7 +287,7 @@ fn camera_d(builder: CameraBuilder) -> CameraBuilder {
 }
 
 fn scene_d() -> Scene {
-    let earth_texture: Arc<dyn Texture> = Arc::new(ImageTexture::new(
+    let earth_texture: Arc<dyn Texture> = Arc::new(ImageMap::new(
         "/Users/alex/src/okalex/rt-in-a-weekend/img/earthmap.jpg",
     ));
     let earth_surface: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::clone(&earth_texture)));
@@ -288,7 +297,7 @@ fn scene_d() -> Scene {
         earth_surface.clone(),
     ));
 
-    let checker_texture: Arc<dyn Texture> = Arc::new(CheckerTexture::from_color_values(
+    let checker_texture: Arc<dyn Texture> = Arc::new(Checkered::from_color_values(
         0.32,
         [0.2, 0.3, 0.1],
         [0.9, 0.9, 0.9],
@@ -311,7 +320,7 @@ fn camera_e(builder: CameraBuilder) -> CameraBuilder {
 }
 
 fn scene_e() -> Scene {
-    let perlin_texture: Arc<dyn Texture> = Arc::new(NoiseTexture::new(4.0));
+    let perlin_texture: Arc<dyn Texture> = Arc::new(Noise::new(4.0));
     let perlin_surface: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::clone(&perlin_texture)));
     let sphere1: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
         Vec3::new(0.0, -1000.0, 0.0),
@@ -393,7 +402,7 @@ fn camera_g(builder: CameraBuilder) -> CameraBuilder {
 }
 
 fn scene_g() -> Scene {
-    let pertext: Arc<dyn Texture> = Arc::new(NoiseTexture::new(4.0));
+    let pertext: Arc<dyn Texture> = Arc::new(Noise::new(4.0));
     let ground = textured_sphere([0.0, -1000.0, 0.0], 1000.0, Arc::clone(&pertext));
     let sphere = textured_sphere([0.0, 2.0, 0.0], 2.0, Arc::clone(&pertext));
 
@@ -641,24 +650,25 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     // Haze
     if with_haze {
         let boundary = new_sphere([0.0, 0.0, 0.0], 5000.0, Arc::clone(&glass));
-        let medium: Arc<dyn Hittable> = Arc::new(ConstantMedium::from_color(
-            boundary,
-            0.001,
-            Color::white(),
-        ));
+        let medium: Arc<dyn Hittable> =
+            Arc::new(ConstantMedium::from_color(boundary, 0.001, Color::white()));
         scene.add(Arc::clone(&medium));
     }
 
     // Globe
-    let earth_texture: Arc<dyn Texture> = Arc::new(ImageTexture::new(
+    let earth_texture: Arc<dyn Texture> = Arc::new(ImageMap::new(
         "/Users/alex/src/okalex/rt-in-a-weekend/img/earthmap.jpg",
     ));
     let earth_surface: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::clone(&earth_texture)));
-    let globe: Arc<dyn Hittable> = new_sphere([400.0, 200.0, 400.0], 100.0, Arc::clone(&earth_surface.clone()));
+    let globe: Arc<dyn Hittable> = new_sphere(
+        [400.0, 200.0, 400.0],
+        100.0,
+        Arc::clone(&earth_surface.clone()),
+    );
     scene.add(Arc::clone(&globe));
 
     // Noisy ball
-    let pertext: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::new(NoiseTexture::new(0.2))));
+    let pertext: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::new(Noise::new(0.2))));
     let sphere = new_sphere([220.0, 280.0, 300.0], 80.0, Arc::clone(&pertext));
     scene.add(Arc::clone(&sphere));
 

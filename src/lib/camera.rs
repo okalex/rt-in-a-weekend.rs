@@ -147,14 +147,11 @@ impl Camera {
             return Color::black();
         }
 
-        let interval = Interval::new(0.001, f64::INFINITY);
-        let maybe_hit_record = scene.hit(ray, interval);
-        match maybe_hit_record {
+        match scene.hit(ray, Interval::new(0.001, f64::INFINITY)) {
             Some(hit_record) => {
-                let emitted_color =
-                    hit_record
-                        .mat
-                        .emitted(hit_record.u, hit_record.v, &hit_record.point);
+                let emitted = hit_record
+                    .mat
+                    .emitted(hit_record.u, hit_record.v, &hit_record.point);
                 let scattered_color = match hit_record.mat.scatter(ray, &hit_record) {
                     Some(scattered) => {
                         scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene)
@@ -162,7 +159,7 @@ impl Camera {
                     None => Color::black(),
                 };
 
-                emitted_color + scattered_color
+                emitted + scattered_color
             }
 
             None => self.options.background,
