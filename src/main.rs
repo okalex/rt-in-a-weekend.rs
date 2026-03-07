@@ -16,8 +16,8 @@ use crate::lib::vec3::Vec3;
 use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
-    let camera = camera_g().build();
-    let scene = make_scene(scene_g());
+    let camera = camera_cornell().build();
+    let scene = make_scene(scene_cornell());
 
     let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(camera.width(), camera.height(), 255));
     writer.init();
@@ -54,6 +54,10 @@ fn quad(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat: Arc<dyn Material>) -> Arc<dy
         Vec3::new_arr(v),
         mat,
     ))
+}
+
+fn lambertian(color: [f64; 3]) -> Arc<dyn Material> {
+    Arc::new(Lambertian::from_color_values(color))
 }
 
 fn diffuse_light(color: [f64; 3]) -> Arc<dyn Material> {
@@ -386,5 +390,69 @@ fn scene_g() -> Scene {
     scene.add(Arc::clone(&sphere));
     scene.add(Arc::clone(&quad_light));
     scene.add(Arc::clone(&sphere_light));
+    scene
+}
+
+fn camera_cornell() -> CameraBuilder {
+    CameraBuilder::new()
+        .aspect_ratio(1.0)
+        .width(600)
+        .samples_per_pixel(200)
+        .background([0.0, 0.0, 0.0])
+        .vfov(40.0)
+        .lookfrom([278.0, 278.0, -800.0])
+        .lookat([278.0, 278.0, 0.0])
+}
+
+fn scene_cornell() -> Scene {
+    let red = lambertian([0.65, 0.05, 0.05]);
+    let white = lambertian([0.73, 0.73, 0.73]);
+    let green = lambertian([0.12, 0.45, 0.15]);
+    let light = diffuse_light([15.0, 15.0, 15.0]);
+
+    let left = quad(
+        [555.0, 0.0, 0.0],
+        [0.0, 555.0, 0.0],
+        [0.0, 0.0, 555.0],
+        Arc::clone(&green),
+    );
+    let right = quad(
+        [0.0, 0.0, 0.0],
+        [0.0, 555.0, 0.0],
+        [0.0, 0.0, 555.0],
+        Arc::clone(&red),
+    );
+    let w1 = quad(
+        [0.0, 0.0, 0.0],
+        [555.0, 0.0, 0.0],
+        [0.0, 0.0, 555.0],
+        Arc::clone(&white),
+    );
+    let w2 = quad(
+        [555.0, 555.0, 555.0],
+        [-555.0, 0.0, 0.0],
+        [0.0, 0.0, -555.0],
+        Arc::clone(&white),
+    );
+    let w3 = quad(
+        [0.0, 0.0, 555.0],
+        [555.0, 0.0, 0.0],
+        [0.0, 555.0, 0.0],
+        Arc::clone(&white),
+    );
+    let light = quad(
+        [343.0, 554.0, 332.0],
+        [-130.0, 0.0, 0.0],
+        [0.0, 0.0, -105.0],
+        Arc::clone(&light),
+    );
+
+    let mut scene = Scene::new();
+    scene.add(Arc::clone(&left));
+    scene.add(Arc::clone(&right));
+    scene.add(Arc::clone(&w1));
+    scene.add(Arc::clone(&w2));
+    scene.add(Arc::clone(&w3));
+    scene.add(Arc::clone(&light));
     scene
 }
