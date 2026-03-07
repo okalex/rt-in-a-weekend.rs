@@ -20,7 +20,7 @@ the CPU, which is slowwwwwwwww.
   - Longest axis: 28.51s user 0.34s system 578% cpu 4.987 total
 - ~~Texture mapping~~
 - ~~Lighting~~
-- Volumetrics
+- ~~Volumetrics~~
 - GPU-rendering, using [wgpu](https://wgpu.rs/)
 - [Physically-based rendering](https://en.wikipedia.org/wiki/Physically_based_rendering)
 - Support common modeling formats
