@@ -56,7 +56,7 @@ impl Perlin {
         for i in 0..depth {
             accum += weight * self.noise(&temp_p);
             weight *= 0.5;
-            temp_p = temp_p.scale(2.0);
+            temp_p = temp_p * 2.0;
         }
 
         accum.abs()

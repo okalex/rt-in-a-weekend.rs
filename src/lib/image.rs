@@ -19,7 +19,7 @@ impl Image {
         let height = img.height();
 
         let mut pixels: Vec<Vec<Color>> =
-            vec![vec![Color::zeroes(); width as usize]; height as usize];
+            vec![vec![Color::black(); width as usize]; height as usize];
         for j in 0..height {
             for i in 0..height {
                 let pixel = img.get_pixel(i, j); // Note: this is not safe - ignoring errors for now

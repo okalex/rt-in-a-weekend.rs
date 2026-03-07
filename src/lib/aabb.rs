@@ -29,21 +29,9 @@ impl AABB {
 
     pub fn from_vecs(a: Vec3, b: Vec3) -> Self {
         Self::new(
-            if a.x() <= b.x() {
-                Interval::new(a.x(), b.x())
-            } else {
-                Interval::new(b.x(), a.x())
-            },
-            if a.y() <= b.y() {
-                Interval::new(a.y(), b.y())
-            } else {
-                Interval::new(b.y(), a.y())
-            },
-            if a.z() <= b.z() {
-                Interval::new(a.z(), b.z())
-            } else {
-                Interval::new(b.z(), a.z())
-            },
+            Interval::new(a.x(), b.x()),
+            Interval::new(a.y(), b.y()),
+            Interval::new(a.z(), b.z()),
         )
     }
 
@@ -65,13 +53,12 @@ impl AABB {
     }
 
     pub fn axis_interval(&self, n: usize) -> &Interval {
-        if n == 1 {
-            return &self.y;
+        match n {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!(),
         }
-        if n == 2 {
-            return &self.z;
-        }
-        return &self.x;
     }
 
     pub fn longest_axis(&self) -> usize {
@@ -113,14 +100,14 @@ impl AABB {
             }
         }
 
-        return true;
+        true
     }
 
     pub fn offset(&self, amount: Vec3) -> Self {
         Self {
-            x: Interval::new(self.x.min + amount.x(), self.x.max + amount.x()),
-            y: Interval::new(self.y.min + amount.y(), self.y.max + amount.y()),
-            z: Interval::new(self.z.min + amount.z(), self.z.max + amount.z()),
+            x: self.x + amount.x(),
+            y: self.y + amount.y(),
+            z: self.z + amount.z(),
         }
     }
 }

@@ -1,7 +1,7 @@
 use crate::lib::interval::Interval;
 use crate::lib::random::rand;
 use crate::lib::vec3::Vec3;
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 #[derive(Clone, Copy)]
 pub struct Color {
@@ -29,8 +29,16 @@ impl Color {
         Self::new(rand(), rand(), rand())
     }
 
-    pub fn zeroes() -> Color {
-        Self::new(0.0, 0.0, 0.0)
+    pub fn fill(c: f64) -> Color {
+        Self::new(c, c, c)
+    }
+
+    pub fn black() -> Color {
+        Self::fill(0.0)
+    }
+
+    pub fn white() -> Color {
+        Self::fill(1.0)
     }
 
     pub fn r(&self) -> f64 {
@@ -53,12 +61,6 @@ impl Color {
         )
     }
 
-    pub fn scale(&self, scale_factor: f64) -> Color {
-        Color {
-            base: self.base.scale(scale_factor),
-        }
-    }
-
     pub fn to_string(&self) -> String {
         let color = self.to_u8();
         return format!("{} {} {} ", color[0], color[1], color[2]);
@@ -77,6 +79,14 @@ impl Add for Color {
     }
 }
 
+impl Add<f64> for Color {
+    type Output = Self;
+
+    fn add(self, b: f64) -> Self {
+        self + Self::fill(b)
+    }
+}
+
 impl Sub for Color {
     type Output = Self;
 
@@ -85,11 +95,43 @@ impl Sub for Color {
     }
 }
 
+impl Sub<f64> for Color {
+    type Output = Self;
+
+    fn sub(self, b: f64) -> Self {
+        self - Self::fill(b)
+    }
+}
+
 impl Mul for Color {
     type Output = Self;
 
     fn mul(self, b: Self) -> Self {
         Self::wrap_vec(self.base * b.base)
+    }
+}
+
+impl Mul<f64> for Color {
+    type Output = Self;
+
+    fn mul(self, b: f64) -> Self {
+        self * Self::fill(b)
+    }
+}
+
+impl Div for Color {
+    type Output = Self;
+
+    fn div(self, b: Self) -> Self {
+        Self::wrap_vec(self.base / b.base)
+    }
+}
+
+impl Div<f64> for Color {
+    type Output = Self;
+
+    fn div(self, b: f64) -> Self {
+        self / Self::fill(b)
     }
 }
 

@@ -27,14 +27,14 @@ impl Sphere {
 
     pub fn stationary(center: Vec3, radius: f64, mat: Arc<dyn Material>) -> Sphere {
         let ray = Ray::new(center, Vec3::zeroes(), 0.0);
-        let rvec = Vec3::new(radius, radius, radius);
+        let rvec = Vec3::fill(radius);
         let bbox = AABB::from_vecs(center - rvec, center + rvec);
         Self::new(ray, radius, mat, bbox)
     }
 
     pub fn moving(center1: Vec3, center2: Vec3, radius: f64, mat: Arc<dyn Material>) -> Sphere {
         let ray = Ray::new(center1, center2 - center1, 0.0);
-        let rvec = Vec3::new(radius, radius, radius);
+        let rvec = Vec3::fill(radius);
         let box1 = AABB::from_vecs(ray.at(0.0) - rvec, ray.at(0.0) + rvec);
         let box2 = AABB::from_vecs(ray.at(1.0) - rvec, ray.at(1.0) + rvec);
         let bbox = AABB::from_boxes(&box1, &box2);
@@ -77,7 +77,7 @@ impl Hittable for Sphere {
         }
 
         let point = ray.at(root);
-        let outward_normal = (point - curr_center).scale(1.0 / self.radius);
+        let outward_normal = (point - curr_center) / self.radius;
         let (front_face, face_normal) = HitRecord::get_front_face(ray, outward_normal);
         let (u, v) = Sphere::get_uv(&face_normal); // Why is this not &point?
 

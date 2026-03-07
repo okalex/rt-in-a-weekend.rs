@@ -7,7 +7,7 @@ use crate::lib::interval::Interval;
 use crate::lib::material::{Isotropic, Material};
 use crate::lib::random::rand;
 use crate::lib::ray::Ray;
-use crate::lib::texture::Texture;
+use crate::lib::texture::{SolidColor, Texture};
 use crate::lib::vec3::Vec3;
 
 pub struct ConstantMedium {
@@ -17,8 +17,7 @@ pub struct ConstantMedium {
 }
 
 impl ConstantMedium {
-    pub fn new(boundary: Arc<dyn Hittable>, density: f64, texture: Arc<dyn Texture>) -> Self {
-        let mat: Arc<dyn Material> = Arc::new(Isotropic::new(texture));
+    pub fn new(boundary: Arc<dyn Hittable>, density: f64, mat: Arc<dyn Material>) -> Self {
         Self {
             boundary: Arc::clone(&boundary),
             neg_inv_density: -1.0 / density,
@@ -26,13 +25,18 @@ impl ConstantMedium {
         }
     }
 
+    pub fn from_texture(
+        boundary: Arc<dyn Hittable>,
+        density: f64,
+        texture: Arc<dyn Texture>,
+    ) -> Self {
+        let mat: Arc<dyn Material> = Arc::new(Isotropic::new(texture));
+        Self::new(Arc::clone(&boundary), density, Arc::clone(&mat))
+    }
+
     pub fn from_color(boundary: Arc<dyn Hittable>, density: f64, albedo: Color) -> Self {
-        let mat: Arc<dyn Material> = Arc::new(Isotropic::from_color(albedo));
-        Self {
-            boundary: Arc::clone(&boundary),
-            neg_inv_density: -1.0 / density,
-            phase_fn: Arc::clone(&mat),
-        }
+        let texture: Arc<dyn Texture> = Arc::new(SolidColor::new(albedo));
+        Self::from_texture(Arc::clone(&boundary), density, Arc::clone(&texture))
     }
 }
 
@@ -42,10 +46,8 @@ impl Hittable for ConstantMedium {
             .boundary
             .hit(ray, Interval::universe())
             .and_then(|rec1| {
-                match self
-                    .boundary
-                    .hit(ray, Interval::new(rec1.t + 0.001, f64::INFINITY))
-                {
+                let exit_interval = Interval::new(rec1.t + 0.001, f64::INFINITY);
+                match self.boundary.hit(ray, exit_interval) {
                     None => None,
                     Some(rec2) => Some((rec1, rec2)),
                 }

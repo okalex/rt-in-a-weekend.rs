@@ -26,7 +26,7 @@ impl Quad {
         let n = u.cross(&v);
         let normal = n.unit();
         let d = normal.dot(&q);
-        let w = n.scale(1.0 / n.dot(&n));
+        let w = n / n.dot(&n);
         Self {
             q,
             u,

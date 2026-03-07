@@ -1,4 +1,5 @@
 use core::f64;
+use std::ops::Add;
 
 #[derive(Clone, Copy)]
 pub struct Interval {
@@ -8,7 +9,11 @@ pub struct Interval {
 
 impl Interval {
     pub fn new(min: f64, max: f64) -> Interval {
-        Interval { min: min, max: max }
+        if min <= max {
+            Interval { min, max }
+        } else {
+            Interval { min: max, max: min }
+        }
     }
 
     pub fn empty() -> Interval {
@@ -59,5 +64,13 @@ impl Interval {
     pub fn expand(&self, delta: f64) -> Interval {
         let padding = delta / 2.0;
         Self::new(self.min - padding, self.max + padding)
+    }
+}
+
+impl Add<f64> for Interval {
+    type Output = Self;
+
+    fn add(self, b: f64) -> Self {
+        Self::new(self.min + b, self.max + b)
     }
 }

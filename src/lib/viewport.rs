@@ -24,8 +24,8 @@ impl Viewport {
         Viewport {
             width: viewport_width,
             height: viewport_height,
-            viewport_u: u.scale(viewport_width as f64),
-            viewport_v: -v.scale(viewport_height as f64),
+            viewport_u: u * (viewport_width as f64),
+            viewport_v: -v * (viewport_height as f64),
             w: w,
             img_width: img_width,
             img_height: img_height,
@@ -33,27 +33,27 @@ impl Viewport {
     }
 
     pub fn delta_u(&self) -> Vec3 {
-        return self.viewport_u.scale(1.0 / self.img_width as f64);
+        return self.viewport_u / (self.img_width as f64);
     }
 
     pub fn delta_v(&self) -> Vec3 {
-        return self.viewport_v.scale(1.0 / self.img_height as f64);
+        return self.viewport_v / (self.img_height as f64);
     }
 
     pub fn upper_left(&self, camera: &Camera) -> Vec3 {
         return camera.center
-            - self.w.scale(camera.focus_dist())
-            - self.viewport_u.scale(0.5)
-            - self.viewport_v.scale(0.5);
+            - self.w * camera.focus_dist()
+            - self.viewport_u / 2.0
+            - self.viewport_v / 2.0;
     }
 
     pub fn pixel00_loc(&self, camera: &Camera) -> Vec3 {
-        return self.upper_left(camera) + (self.delta_u() + self.delta_v()).scale(0.5);
+        return self.upper_left(camera) + (self.delta_u() + self.delta_v()) / 2.0;
     }
 
     pub fn pixel_loc(&self, camera: &Camera, x_idx: u32, y_idx: u32) -> Vec3 {
         return self.pixel00_loc(camera)
-            + self.delta_u().scale(x_idx as f64)
-            + self.delta_v().scale(y_idx as f64);
+            + self.delta_u() * (x_idx as f64)
+            + self.delta_v() * (y_idx as f64);
     }
 }

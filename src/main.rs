@@ -17,10 +17,10 @@ use crate::lib::vec3::Vec3;
 use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
-    let scene_idx = 10;
+    let scene_idx = 2;
     let render_settings = CameraBuilder::new()
-        .width(800)
-        .samples_per_pixel(4000)
+        .width(400)
+        .samples_per_pixel(100)
         .max_depth(40);
 
     let (camera_builder, raw_scene) = match scene_idx {
@@ -544,7 +544,7 @@ fn scene_cornell_smoke() -> Scene {
     let box_left: Arc<dyn Hittable> = Arc::new(ConstantMedium::from_color(
         box_left_boundary,
         0.01,
-        Color::new(0.0, 0.0, 0.0),
+        Color::black(),
     ));
 
     let mut scene = Scene::new();
@@ -639,23 +639,23 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     scene.add(Arc::clone(&medium));
 
     // Haze
-    // if with_haze {
-    //     let boundary = new_sphere([0.0, 0.0, 0.0], 5000.0, Arc::clone(&glass));
-    //     let medium: Arc<dyn Hittable> = Arc::new(ConstantMedium::from_color(
-    //         boundary,
-    //         0.001,
-    //         Color::new(1.0, 1.0, 1.0),
-    //     ));
-    //     scene.add(Arc::clone(&medium));
-    // }
+    if with_haze {
+        let boundary = new_sphere([0.0, 0.0, 0.0], 5000.0, Arc::clone(&glass));
+        let medium: Arc<dyn Hittable> = Arc::new(ConstantMedium::from_color(
+            boundary,
+            0.001,
+            Color::white(),
+        ));
+        scene.add(Arc::clone(&medium));
+    }
 
     // Globe
-    // let earth_texture: Arc<dyn Texture> = Arc::new(ImageTexture::new(
-    //     "/Users/alex/src/okalex/rt-in-a-weekend/img/earthmap.jpg",
-    // ));
-    // let earth_surface: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::clone(&earth_texture)));
-    // let globe: Arc<dyn Hittable> = new_sphere([400.0, 200.0, 400.0],100.0, Arc::clone(&earth_surface.clone()));
-    // scene.add(Arc::clone(&globe));
+    let earth_texture: Arc<dyn Texture> = Arc::new(ImageTexture::new(
+        "/Users/alex/src/okalex/rt-in-a-weekend/img/earthmap.jpg",
+    ));
+    let earth_surface: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::clone(&earth_texture)));
+    let globe: Arc<dyn Hittable> = new_sphere([400.0, 200.0, 400.0], 100.0, Arc::clone(&earth_surface.clone()));
+    scene.add(Arc::clone(&globe));
 
     // Noisy ball
     let pertext: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::new(NoiseTexture::new(0.2))));

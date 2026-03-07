@@ -123,8 +123,8 @@ impl RotateY {
         let cos_theta = radians.cos();
 
         let bbox = object.bounding_box();
-        let mut min = Vec3::new(f64::INFINITY, f64::INFINITY, f64::INFINITY);
-        let mut max = Vec3::new(-f64::INFINITY, -f64::INFINITY, -f64::INFINITY);
+        let mut min = Vec3::fill(f64::INFINITY);
+        let mut max = Vec3::fill(-f64::INFINITY);
 
         for i in 0..2 {
             for j in 0..2 {
@@ -157,17 +157,25 @@ impl RotateY {
             bbox: AABB::from_vecs(min, max),
         }
     }
+
+    fn rotate_y(vec: &Vec3, sin_theta: f64, cos_theta: f64) -> Vec3 {
+        Vec3::new(
+            cos_theta * vec.x() - sin_theta * vec.z(),
+            vec.y(),
+            sin_theta * vec.x() + cos_theta * vec.z(),
+        )
+    }
 }
 
 impl Hittable for RotateY {
     fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        let orig = ray.orig.rotate_y(self.sin_theta, self.cos_theta);
-        let dir = ray.dir.rotate_y(self.sin_theta, self.cos_theta);
+        let orig = Self::rotate_y(&ray.orig, self.sin_theta, self.cos_theta);
+        let dir = Self::rotate_y(&ray.dir, self.sin_theta, self.cos_theta);
         let rotated_ray = Ray::new(orig, dir, ray.time);
 
         self.object.hit(&rotated_ray, ray_t).map(|hit_record| {
-            let new_point = hit_record.point.rotate_y(-self.sin_theta, self.cos_theta);
-            let new_normal = hit_record.normal.rotate_y(-self.sin_theta, self.cos_theta);
+            let new_point = Self::rotate_y(&hit_record.point, -self.sin_theta, self.cos_theta);
+            let new_normal = Self::rotate_y(&hit_record.normal, -self.sin_theta, self.cos_theta);
             hit_record.set_point(new_point).set_normal(new_normal)
         })
     }

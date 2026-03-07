@@ -7,6 +7,7 @@ use crate::lib::util::degrees_to_radians;
 use crate::lib::vec3::Vec3;
 use crate::lib::viewport::Viewport;
 use crate::lib::writer::Writer;
+use core::f64;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -44,8 +45,8 @@ impl Camera {
             options: options,
             center: options.lookfrom,
             viewport: viewport,
-            defocus_disk_u: u.scale(defocus_radius),
-            defocus_disk_v: v.scale(defocus_radius),
+            defocus_disk_u: u * defocus_radius,
+            defocus_disk_v: v * defocus_radius,
         }
     }
 
@@ -106,13 +107,13 @@ impl Camera {
     }
 
     fn sample_pixel(&self, scene: Arc<dyn Hittable>, i: u32, j: u32) -> Color {
-        let mut pixel_color = Color::new(0.0, 0.0, 0.0);
+        let mut pixel_color = Color::black();
         for _ in 0..self.options.samples_per_pixel {
             let r = self.get_ray(i, j);
             pixel_color =
                 pixel_color + self.ray_color(&r, self.options.max_depth, Arc::clone(&scene));
         }
-        return pixel_color.scale(1.0 / (self.options.samples_per_pixel as f64));
+        return pixel_color / (self.options.samples_per_pixel as f64);
     }
 
     fn sample_square(&self) -> Vec3 {
@@ -121,14 +122,14 @@ impl Camera {
 
     fn defocus_disk_sample(&self) -> Vec3 {
         let p = Vec3::rand_in_unit_disk();
-        return self.center + self.defocus_disk_u.scale(p.x()) + self.defocus_disk_v.scale(p.y());
+        return self.center + (self.defocus_disk_u * p.x()) + (self.defocus_disk_v * p.y());
     }
 
     fn get_ray(&self, i: u32, j: u32) -> Ray {
         let offset = self.sample_square();
         let pixel_sample = self.viewport.pixel00_loc(self)
-            + self.viewport.delta_u().scale(i as f64 + offset.x())
-            + self.viewport.delta_v().scale(j as f64 + offset.y());
+            + self.viewport.delta_u() * (i as f64 + offset.x())
+            + self.viewport.delta_v() * (j as f64 + offset.y());
 
         let ray_origin = if self.options.defocus_angle <= 0.0 {
             self.center
@@ -143,10 +144,10 @@ impl Camera {
 
     fn ray_color(&self, ray: &Ray, depth: u32, scene: Arc<dyn Hittable>) -> Color {
         if depth <= 0 {
-            return Color::new(0.0, 0.0, 0.0);
+            return Color::black();
         }
 
-        let interval = Interval::new(0.001, 1000000.0);
+        let interval = Interval::new(0.001, f64::INFINITY);
         let maybe_hit_record = scene.hit(ray, interval);
         match maybe_hit_record {
             Some(hit_record) => {
@@ -158,7 +159,7 @@ impl Camera {
                     Some(scattered) => {
                         scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene)
                     }
-                    None => Color::new(0.0, 0.0, 0.0),
+                    None => Color::black(),
                 };
 
                 emitted_color + scattered_color

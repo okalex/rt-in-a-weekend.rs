@@ -129,10 +129,10 @@ impl NoiseTexture {
 
 impl Texture for NoiseTexture {
     fn value(&self, u: f64, v: f64, point: &Vec3) -> Color {
-        let scaled = point.scale(self.scale);
+        let scaled = *point * self.scale;
         // let noise = 0.5 * (1.0 + self.noise.noise(&point.scale(self.scale))); // Perlin noise
         let noise = self.noise.turb(&scaled, 7); // Turbulent noise
         // let noise = 0.5 * (1.0 + (self.scale * point.z() + 10.0 * self.noise.turb(point, 7)).sin());
-        Color::wrap_vec(Vec3::ones().scale(noise))
+        Color::wrap_vec(Vec3::ones() * noise)
     }
 }
