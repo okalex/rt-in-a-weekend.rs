@@ -13,7 +13,9 @@ pub struct Scattered {
 }
 
 pub trait Material: Send + Sync {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered;
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
+        None
+    }
 
     fn emitted(&self, u: f64, v: f64, point: &Vec3) -> Color {
         Color::new(0.0, 0.0, 0.0)
@@ -40,16 +42,16 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
         let mut scatter_dir = rec.normal + Vec3::rand_unit();
         if scatter_dir.near_zero() {
             scatter_dir = rec.normal;
         }
 
-        return Scattered {
+        Some(Scattered {
             ray: Ray::new(rec.point, scatter_dir, r_in.time),
             attenuation: self.texture.value(rec.u, rec.v, &rec.point),
-        };
+        })
     }
 }
 
@@ -67,13 +69,13 @@ pub struct Metal {
 }
 
 impl Material for Metal {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
         let reflected = r_in.dir.reflect(&rec.normal).unit() + Vec3::rand_unit().scale(self.fuzz);
 
-        return Scattered {
+        Some(Scattered {
             ray: Ray::new(rec.point, reflected, r_in.time),
             attenuation: self.albedo,
-        };
+        })
     }
 }
 
@@ -89,7 +91,7 @@ pub struct Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Scattered {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
         let ri = if rec.front_face {
             1.0 / self.refraction_idx
         } else {
@@ -107,10 +109,10 @@ impl Material for Dielectric {
             unit_dir.refract(&rec.normal, ri)
         };
 
-        return Scattered {
+        Some(Scattered {
             ray: Ray::new(rec.point, direction, r_in.time),
             attenuation: Color::new(1.0, 1.0, 1.0),
-        };
+        })
     }
 }
 
@@ -124,4 +126,33 @@ fn reflectance(cosine: f64, refraction_idx: f64) -> f64 {
     let r0_tmp = (1.0 - refraction_idx) / (1.0 + refraction_idx);
     let r0 = r0_tmp * r0_tmp;
     return r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0);
+}
+
+pub struct DiffuseLight {
+    texture: Arc<dyn Texture>,
+}
+
+impl DiffuseLight {
+    pub fn new(texture: Arc<dyn Texture>) -> Self {
+        Self { texture }
+    }
+
+    pub fn from_color(color: Color) -> Self {
+        let arc: Arc<dyn Texture> = Arc::new(SolidColor::new(color));
+        Self::new(Arc::clone(&arc))
+    }
+}
+
+impl Material for DiffuseLight {
+    fn emitted(&self, u: f64, v: f64, point: &Vec3) -> Color {
+        self.texture.value(u, v, point)
+    }
+}
+
+impl Clone for DiffuseLight {
+    fn clone(&self) -> Self {
+        Self {
+            texture: Arc::clone(&self.texture),
+        }
+    }
 }

@@ -148,21 +148,20 @@ impl Camera {
         }
 
         let interval = Interval::new(0.001, 1000000.0);
-        let hit_record = scene.hit(ray, interval);
-        match hit_record {
-            Some(rec) => {
-                let scattered = rec.mat.scatter(ray, &rec);
-                scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene)
-            }
-            None => self.background(ray),
-        }
-    }
+        let maybe_hit_record = scene.hit(ray, interval);
+        match maybe_hit_record {
+            Some(hit_record) => {
+                let emitted_color = hit_record.mat.emitted(hit_record.u, hit_record.v, &hit_record.point);
+                let scattered_color = match hit_record.mat.scatter(ray, &hit_record) {
+                    Some(scattered) => scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene),
+                    None => Color::new(0.0, 0.0, 0.0),
+                };
 
-    fn background(&self, ray: &Ray) -> Color {
-        let a = 0.5 * (ray.dir.unit().y() + 1.0);
-        let white = Color::wrap_vec(Vec3::ones());
-        let blue = Color::new(0.5, 0.7, 1.0);
-        return white.scale(1.0 - a) + blue.scale(a);
+                emitted_color + scattered_color
+            },
+
+            None => self.options.background,
+        }
     }
 }
 
@@ -170,39 +169,26 @@ fn degrees_to_radians(degrees: f64) -> f64 {
     return degrees * PI / 180.0;
 }
 
-fn segment_lines(num_lines: u32, num_segments: u32) -> Vec<(u32, u32)> {
-    let segment_size = num_lines / num_segments;
-    let mut segments = Vec::new();
-    for i in 0..num_segments {
-        let start = i * segment_size;
-        let end = if i < (num_segments - 1) {
-            (i + 1) * segment_size
-        } else {
-            num_lines
-        };
-        segments.push((start, end));
-    }
-    return segments;
-}
-
 #[derive(Clone, Copy)]
-pub struct CameraOptions {
-    pub width: u32,
-    pub height: u32,
-    pub vfov: f64,
-    pub lookfrom: Vec3,
-    pub lookat: Vec3,
-    pub vup: Vec3,
-    pub defocus_angle: f64,
-    pub focus_dist: f64,
-    pub samples_per_pixel: u32,
-    pub max_depth: u32,
-    pub use_multithreading: bool,
+struct CameraOptions {
+    width: u32,
+    height: u32,
+    background: Color,
+    vfov: f64,
+    lookfrom: Vec3,
+    lookat: Vec3,
+    vup: Vec3,
+    defocus_angle: f64,
+    focus_dist: f64,
+    samples_per_pixel: u32,
+    max_depth: u32,
+    use_multithreading: bool,
 }
 
 pub struct CameraBuilder {
     width: u32,
     aspect_ratio: f64,
+    background: Color,
     vfov: f64,
     lookfrom: Vec3,
     lookat: Vec3,
@@ -219,6 +205,7 @@ impl CameraBuilder {
         CameraBuilder {
             width: 400,
             aspect_ratio: 16.0 / 9.0,
+            background: Color::new(0.7, 0.8, 1.0),
             vfov: 20.0,
             lookfrom: Vec3::new(0.0, 1.0, 0.0),
             lookat: Vec3::new(0.0, 0.0, 0.0),
@@ -241,6 +228,7 @@ impl CameraBuilder {
         CameraOptions {
             width: self.width,
             height: height,
+            background: self.background,
             vfov: self.vfov,
             lookfrom: self.lookfrom,
             lookat: self.lookat,
@@ -260,6 +248,11 @@ impl CameraBuilder {
 
     pub fn aspect_ratio(mut self, new_aspect_ratio: f64) -> Self {
         self.aspect_ratio = new_aspect_ratio;
+        self
+    }
+
+    pub fn background(mut self, new_background: [f64; 3]) -> Self {
+        self.background = Color::from_arr(new_background);
         self
     }
 

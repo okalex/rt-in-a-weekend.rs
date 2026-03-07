@@ -4,8 +4,9 @@ use std::sync::Arc;
 
 use crate::lib::bvh_node::BvhNode;
 use crate::lib::camera::CameraBuilder;
+use crate::lib::color::Color;
 use crate::lib::hittable::Hittable;
-use crate::lib::material::{Lambertian, Material, dielectric, metal};
+use crate::lib::material::{DiffuseLight, Lambertian, Material, dielectric, metal};
 use crate::lib::quad::Quad;
 use crate::lib::random::{rand, rand_range};
 use crate::lib::scene::Scene;
@@ -15,8 +16,8 @@ use crate::lib::vec3::Vec3;
 use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
-    let camera = camera_f().width(800).build();
-    let scene = make_scene(scene_f());
+    let camera = camera_g().build();
+    let scene = make_scene(scene_g());
 
     let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(camera.width(), camera.height(), 255));
     writer.init();
@@ -31,6 +32,32 @@ fn rand_arr3() -> [f64; 3] {
 fn make_scene(scene: Scene) -> Arc<Scene> {
     let bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_scene(scene));
     Arc::new(Scene::new_obj(Arc::clone(&bvh)))
+}
+
+fn new_sphere(center: [f64; 3], radius: f64, mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
+    Arc::new(Sphere::stationary(
+        Vec3::new_arr(center),
+        radius,
+        Arc::clone(&mat),
+    ))
+}
+
+fn textured_sphere(center: [f64; 3], radius: f64, texture: Arc<dyn Texture>) -> Arc<dyn Hittable> {
+    let mat: Arc<dyn Material> = Arc::new(Lambertian::new(texture));
+    new_sphere(center, radius, mat)
+}
+
+fn quad(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
+    Arc::new(Quad::new(
+        Vec3::new_arr(q),
+        Vec3::new_arr(u),
+        Vec3::new_arr(v),
+        mat,
+    ))
+}
+
+fn diffuse_light(color: [f64; 3]) -> Arc<dyn Material> {
+    Arc::new(DiffuseLight::from_color(Color::from_arr(color)))
 }
 
 fn camera_a() -> CameraBuilder {
@@ -329,5 +356,35 @@ fn scene_f() -> Scene {
     scene.add(Arc::clone(&right));
     scene.add(Arc::clone(&upper));
     scene.add(Arc::clone(&lower));
+    scene
+}
+
+fn camera_g() -> CameraBuilder {
+    CameraBuilder::new()
+        .lookfrom([26.0, 3.0, 6.0])
+        .lookat([0.0, 2.0, 0.0])
+        .background([0.0, 0.0, 0.0])
+        .width(400)
+}
+
+fn scene_g() -> Scene {
+    let pertext: Arc<dyn Texture> = Arc::new(NoiseTexture::new(4.0));
+    let ground = textured_sphere([0.0, -1000.0, 0.0], 1000.0, Arc::clone(&pertext));
+    let sphere = textured_sphere([0.0, 2.0, 0.0], 2.0, Arc::clone(&pertext));
+
+    let difflight = diffuse_light([8.0, 8.0, 8.0]);
+    let quad_light = quad(
+        [3.0, 1.0, -2.0],
+        [2.0, 0.0, 0.0],
+        [0.0, 2.0, 0.0],
+        Arc::clone(&difflight),
+    );
+    let sphere_light = new_sphere([0.0, 6.5, 0.0], 0.5, Arc::clone(&difflight));
+
+    let mut scene = Scene::new();
+    scene.add(Arc::clone(&ground));
+    scene.add(Arc::clone(&sphere));
+    scene.add(Arc::clone(&quad_light));
+    scene.add(Arc::clone(&sphere_light));
     scene
 }
