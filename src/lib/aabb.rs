@@ -115,4 +115,16 @@ impl AABB {
 
         return true;
     }
+
+    pub fn offset(&self, amount: Vec3) -> Self {
+        Self {
+            x: Interval::new(self.x.min + amount.x(), self.x.max + amount.x()),
+            y: Interval::new(self.y.min + amount.y(), self.y.max + amount.y()),
+            z: Interval::new(self.z.min + amount.z(), self.z.max + amount.z()),
+        }
+    }
+
+    pub fn rotate_y(&self) -> Self {
+        
+    }
 }

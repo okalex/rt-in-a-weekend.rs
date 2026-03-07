@@ -1,12 +1,12 @@
 use crate::lib::color::Color;
+use crate::lib::hittable::Hittable;
 use crate::lib::interval::Interval;
 use crate::lib::random::rand;
 use crate::lib::ray::Ray;
-use crate::lib::scene::Scene;
+use crate::lib::util::degrees_to_radians;
 use crate::lib::vec3::Vec3;
 use crate::lib::viewport::Viewport;
 use crate::lib::writer::Writer;
-use std::f64::consts::PI;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -23,8 +23,7 @@ impl Camera {
         let theta = degrees_to_radians(options.vfov);
         let h = (theta / 2.0).tan();
         let viewport_height = 2.0 * h * options.focus_dist;
-        let viewport_width =
-            viewport_height * (options.width as f64) / (options.height as f64);
+        let viewport_width = viewport_height * (options.width as f64) / (options.height as f64);
         let w = (options.lookfrom - options.lookat).unit();
         let u = options.vup.cross(&w).unit();
         let v = w.cross(&u);
@@ -50,19 +49,18 @@ impl Camera {
         }
     }
 
-    pub fn render(&self, scene: Arc<Scene>, writer: Arc<dyn Writer>) {
+    pub fn render(&self, scene: Arc<dyn Hittable>, writer: Arc<dyn Writer>) {
         let num_threads = if self.options.use_multithreading {
             std::thread::available_parallelism().unwrap().get()
         } else {
             1
         };
 
-        let lines: Arc<Mutex<Vec<u32>>> =
-            Arc::new(Mutex::new((0..self.options.height).collect()));
+        let lines: Arc<Mutex<Vec<u32>>> = Arc::new(Mutex::new((0..self.options.height).collect()));
 
         thread::scope(|s| {
             for _ in 0..num_threads {
-                let scene_clone = Arc::clone(&scene);
+                let scene_clone: Arc<dyn Hittable> = Arc::clone(&scene);
                 let writer_clone = Arc::clone(&writer);
                 let lines_clone = Arc::clone(&lines);
 
@@ -97,21 +95,22 @@ impl Camera {
         self.options.focus_dist
     }
 
-    fn render_line(&self, line: u32, scene: &Arc<Scene>, writer: &Arc<dyn Writer>) {
+    fn render_line(&self, line: u32, scene: &Arc<dyn Hittable>, writer: &Arc<dyn Writer>) {
         let mut data: Vec<[u8; 3]> = vec![];
         for i in 0..self.options.width {
-            let pixel_color = self.sample_pixel(scene, i, line).to_gamma();
+            let pixel_color = self.sample_pixel(Arc::clone(&scene), i, line).to_gamma();
             data.push(pixel_color.to_u8());
         }
 
         writer.write_line(line as usize, &data);
     }
 
-    fn sample_pixel(&self, scene: &Arc<Scene>, i: u32, j: u32) -> Color {
+    fn sample_pixel(&self, scene: Arc<dyn Hittable>, i: u32, j: u32) -> Color {
         let mut pixel_color = Color::new(0.0, 0.0, 0.0);
         for _ in 0..self.options.samples_per_pixel {
             let r = self.get_ray(i, j);
-            pixel_color = pixel_color + self.ray_color(&r, self.options.max_depth, scene);
+            pixel_color =
+                pixel_color + self.ray_color(&r, self.options.max_depth, Arc::clone(&scene));
         }
         return pixel_color.scale(1.0 / (self.options.samples_per_pixel as f64));
     }
@@ -142,7 +141,7 @@ impl Camera {
         Ray::new(ray_origin, ray_dir, ray_time)
     }
 
-    fn ray_color(&self, ray: &Ray, depth: u32, scene: &Arc<Scene>) -> Color {
+    fn ray_color(&self, ray: &Ray, depth: u32, scene: Arc<dyn Hittable>) -> Color {
         if depth <= 0 {
             return Color::new(0.0, 0.0, 0.0);
         }
@@ -151,22 +150,23 @@ impl Camera {
         let maybe_hit_record = scene.hit(ray, interval);
         match maybe_hit_record {
             Some(hit_record) => {
-                let emitted_color = hit_record.mat.emitted(hit_record.u, hit_record.v, &hit_record.point);
+                let emitted_color =
+                    hit_record
+                        .mat
+                        .emitted(hit_record.u, hit_record.v, &hit_record.point);
                 let scattered_color = match hit_record.mat.scatter(ray, &hit_record) {
-                    Some(scattered) => scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene),
+                    Some(scattered) => {
+                        scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene)
+                    }
                     None => Color::new(0.0, 0.0, 0.0),
                 };
 
                 emitted_color + scattered_color
-            },
+            }
 
             None => self.options.background,
         }
     }
-}
-
-fn degrees_to_radians(degrees: f64) -> f64 {
-    return degrees * PI / 180.0;
 }
 
 #[derive(Clone, Copy)]

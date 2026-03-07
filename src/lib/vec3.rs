@@ -1,5 +1,5 @@
 use crate::lib::random;
-use std::ops::{Add, Div, Index, Mul, Neg, Sub};
+use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 
 pub type Float = f64; // Change to f32 for less precision/better performance
 
@@ -152,6 +152,14 @@ impl Vec3 {
         let r_out_parallel = n.scale(-(1.0 - r_out_perp.length_squared()).abs().sqrt());
         return r_out_perp + r_out_parallel;
     }
+
+    pub fn rotate_y(&self, sin_theta: f64, cos_theta: f64) -> Vec3 {
+        Self::new(
+            cos_theta * self.x() - sin_theta * self.z(),
+            self.y(),
+            sin_theta * self.x() + cos_theta * self.z(),
+        )
+    }
 }
 
 impl Index<usize> for Vec3 {
@@ -159,6 +167,12 @@ impl Index<usize> for Vec3 {
 
     fn index(&self, idx: usize) -> &Float {
         return &self.e[idx];
+    }
+}
+
+impl IndexMut<usize> for Vec3 {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.e[index]
     }
 }
 

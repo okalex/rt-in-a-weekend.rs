@@ -5,11 +5,11 @@ use std::sync::Arc;
 use crate::lib::bvh_node::BvhNode;
 use crate::lib::camera::CameraBuilder;
 use crate::lib::color::Color;
-use crate::lib::hittable::Hittable;
+use crate::lib::hittable::{Hittable, RotateY, Translate, rotate_y, translate};
 use crate::lib::material::{DiffuseLight, Lambertian, Material, dielectric, metal};
 use crate::lib::quad::Quad;
 use crate::lib::random::{rand, rand_range};
-use crate::lib::scene::Scene;
+use crate::lib::scene::{Box3d, Scene};
 use crate::lib::sphere::Sphere;
 use crate::lib::texture::{CheckerTexture, ImageTexture, NoiseTexture, Texture};
 use crate::lib::vec3::Vec3;
@@ -17,7 +17,7 @@ use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
     let camera = camera_cornell().build();
-    let scene = make_scene(scene_cornell());
+    let scene: Arc<dyn Hittable> = make_scene(scene_cornell());
 
     let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(camera.width(), camera.height(), 255));
     writer.init();
@@ -53,6 +53,14 @@ fn quad(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat: Arc<dyn Material>) -> Arc<dy
         Vec3::new_arr(u),
         Vec3::new_arr(v),
         mat,
+    ))
+}
+
+fn box3d(a: [f64; 3], b: [f64; 3], mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
+    Arc::new(Box3d::new(
+        Vec3::new_arr(a),
+        Vec3::new_arr(b),
+        Arc::clone(&mat),
     ))
 }
 
@@ -396,8 +404,8 @@ fn scene_g() -> Scene {
 fn camera_cornell() -> CameraBuilder {
     CameraBuilder::new()
         .aspect_ratio(1.0)
-        .width(600)
-        .samples_per_pixel(200)
+        .width(400)
+        .samples_per_pixel(50)
         .background([0.0, 0.0, 0.0])
         .vfov(40.0)
         .lookfrom([278.0, 278.0, -800.0])
@@ -410,6 +418,12 @@ fn scene_cornell() -> Scene {
     let green = lambertian([0.12, 0.45, 0.15]);
     let light = diffuse_light([15.0, 15.0, 15.0]);
 
+    let light = quad(
+        [343.0, 554.0, 332.0],
+        [-130.0, 0.0, 0.0],
+        [0.0, 0.0, -105.0],
+        Arc::clone(&light),
+    );
     let left = quad(
         [555.0, 0.0, 0.0],
         [0.0, 555.0, 0.0],
@@ -422,37 +436,41 @@ fn scene_cornell() -> Scene {
         [0.0, 0.0, 555.0],
         Arc::clone(&red),
     );
-    let w1 = quad(
+    let floor = quad(
         [0.0, 0.0, 0.0],
         [555.0, 0.0, 0.0],
         [0.0, 0.0, 555.0],
         Arc::clone(&white),
     );
-    let w2 = quad(
+    let ceiling = quad(
         [555.0, 555.0, 555.0],
         [-555.0, 0.0, 0.0],
         [0.0, 0.0, -555.0],
         Arc::clone(&white),
     );
-    let w3 = quad(
+    let back = quad(
         [0.0, 0.0, 555.0],
         [555.0, 0.0, 0.0],
         [0.0, 555.0, 0.0],
         Arc::clone(&white),
     );
-    let light = quad(
-        [343.0, 554.0, 332.0],
-        [-130.0, 0.0, 0.0],
-        [0.0, 0.0, -105.0],
-        Arc::clone(&light),
-    );
+
+    let mut box_right = box3d([0.0, 0.0, 0.0], [165.0, 165.0, 165.0], Arc::clone(&white));
+    box_right = rotate_y(box_right, -18.0);
+    box_right = translate(box_right, [130.0, 0.0, 65.0]);
+
+    let mut box_left = box3d([0.0, 0.0, 0.0], [165.0, 330.0, 165.0], Arc::clone(&white));
+    box_left = rotate_y(box_left, 15.0);
+    box_left = translate(box_left, [265.0, 0.0, 295.0]);
 
     let mut scene = Scene::new();
     scene.add(Arc::clone(&left));
     scene.add(Arc::clone(&right));
-    scene.add(Arc::clone(&w1));
-    scene.add(Arc::clone(&w2));
-    scene.add(Arc::clone(&w3));
+    scene.add(Arc::clone(&floor));
+    scene.add(Arc::clone(&ceiling));
+    scene.add(Arc::clone(&back));
     scene.add(Arc::clone(&light));
+    scene.add(Arc::clone(&box_right));
+    scene.add(Arc::clone(&box_left));
     scene
 }

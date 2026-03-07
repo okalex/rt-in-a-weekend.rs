@@ -14,6 +14,7 @@ pub mod ray;
 pub mod scene;
 pub mod sphere;
 pub mod texture;
+pub mod util;
 pub mod vec3;
 pub mod viewport;
 pub mod writer;
