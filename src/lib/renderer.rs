@@ -3,8 +3,10 @@ use std::thread;
 
 use crate::lib::camera::Camera;
 use crate::lib::color::Color;
-use crate::lib::hittable::Hittable;
+use crate::lib::hittable::{HitRecord, Hittable};
 use crate::lib::interval::Interval;
+use crate::lib::materials::lambertian::Lambertian;
+use crate::lib::materials::material::Material;
 use crate::lib::random::rand;
 use crate::lib::ray::Ray;
 use crate::lib::vec3::Vec3;
@@ -120,23 +122,20 @@ impl Renderer {
             return Color::black();
         }
 
-        match scene.hit(ray, Interval::new(0.001, f64::INFINITY)) {
-            Some(hit_record) => {
-                let emitted = hit_record
-                    .mat
-                    .emitted(hit_record.u, hit_record.v, &hit_record.point);
+        let mat: Arc<dyn Material> = Arc::new(Lambertian::from_color(Color::black()));
+        let mut rec = HitRecord::empty(Arc::clone(&mat));
 
-                let scattered_color = match hit_record.mat.scatter(ray, &hit_record) {
-                    Some(scattered) => {
-                        scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene)
-                    }
-                    None => Color::black(),
-                };
-
-                emitted + scattered_color
-            }
-
-            None => self.options.background,
+        if scene.hit(ray, Interval::new(0.001, f64::INFINITY), &mut rec) {
+            let emitted = rec.mat.emitted(rec.u, rec.v, &rec.point);
+            let scattered_color = match rec.mat.scatter(ray, &rec) {
+                Some(scattered) => {
+                    scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene)
+                }
+                None => Color::black(),
+            };
+            emitted + scattered_color
+        } else {
+            self.options.background
         }
     }
 }

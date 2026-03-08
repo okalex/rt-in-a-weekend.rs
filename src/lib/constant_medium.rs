@@ -42,54 +42,42 @@ impl ConstantMedium {
 }
 
 impl Hittable for ConstantMedium {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        let result = self
-            .boundary
-            .hit(ray, Interval::universe())
-            .and_then(|rec1| {
-                let exit_interval = Interval::new(rec1.t + 0.001, f64::INFINITY);
-                match self.boundary.hit(ray, exit_interval) {
-                    None => None,
-                    Some(rec2) => Some((rec1, rec2)),
-                }
-            });
+    fn hit(&self, ray: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
+        let mut rec1: HitRecord = HitRecord::empty(Arc::clone(&rec.mat));
+        let mut rec2: HitRecord = HitRecord::empty(Arc::clone(&rec.mat));
 
-        if result.is_none() {
-            return None;
+        if !self.boundary.hit(ray, Interval::universe(), &mut rec1) {
+            return false;
         }
 
-        let (rec1, rec2) = result.unwrap();
-        let mut entry = f64::max(rec1.t, ray_t.min);
-        let exit = f64::min(rec2.t, ray_t.max);
-
-        if entry >= exit {
-            return None;
+        if !self.boundary.hit(ray, Interval::new(rec1.t + 0.0001, f64::INFINITY), &mut rec2) {
+            return false;
         }
 
-        if entry < 0.0 {
-            entry = 0.0;
+        if rec1.t < ray_t.min { rec1.t = ray_t.min; }
+        if rec2.t > ray_t.max { rec1.t = ray_t.max; }
+
+        if rec1.t >= rec2.t {
+            return false;
         }
+
+        if rec1.t < 0.0 { rec1.t = 0.0; }
 
         let ray_len = ray.dir.length();
-        let dist_inside = (exit - entry) * ray_len;
+        let dist_inside = (rec2.t - rec1.t) * ray_len;
         let hit_dist = self.neg_inv_density * rand().ln();
 
         if hit_dist > dist_inside {
-            return None;
+            return false;
         }
 
-        let t = entry + hit_dist / ray_len;
-        let point = ray.at(t);
-        let normal = Vec3::new(1.0, 0.0, 0.0); // arbitrary
-        Some(HitRecord::new(
-            point,
-            normal,
-            true,
-            t,
-            0.0,
-            0.0,
-            Arc::clone(&self.phase_fn),
-        ))
+        rec.t = rec1.t + hit_dist / ray_len;
+        rec.point = ray.at(rec.t);
+        rec.normal = Vec3::new(1.0, 0.0, 0.0);
+        rec.front_face = true;
+        rec.mat = Arc::clone(&self.phase_fn);
+
+        true
     }
 
     fn bounding_box(&self) -> AABB {

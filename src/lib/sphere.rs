@@ -55,7 +55,7 @@ impl Sphere {
 }
 
 impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         let curr_center = self.center.at(ray.time);
         let oc = curr_center - ray.orig;
         let a = ray.dir.length_squared();
@@ -64,7 +64,7 @@ impl Hittable for Sphere {
         let discriminant = (h * h) - (a * c);
 
         if discriminant < 0.0 {
-            return None;
+            return false;
         }
 
         let sqrtd = discriminant.sqrt();
@@ -72,7 +72,7 @@ impl Hittable for Sphere {
         if !ray_t.surrounds(root) {
             root = (h + sqrtd) / a;
             if !ray_t.surrounds(root) {
-                return None;
+                return false;
             }
         }
 
@@ -81,15 +81,15 @@ impl Hittable for Sphere {
         let (front_face, face_normal) = HitRecord::get_front_face(ray, outward_normal);
         let (u, v) = Sphere::get_uv(&face_normal); // Why is this not &point?
 
-        Some(HitRecord::new(
-            point,
-            face_normal,
-            front_face,
-            root,
-            u,
-            v,
-            Arc::clone(&self.mat),
-        ))
+        rec.point = point;
+        rec.normal = face_normal;
+        rec.front_face = front_face;
+        rec.t = root;
+        rec.u = u;
+        rec.v = v;
+        rec.mat = Arc::clone(&self.mat);
+
+        true
     }
 
     fn bounding_box(&self) -> AABB {

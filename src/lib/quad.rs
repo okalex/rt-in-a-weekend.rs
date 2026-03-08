@@ -41,18 +41,18 @@ impl Quad {
 }
 
 impl Hittable for Quad {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         let denom = self.normal.dot(&ray.dir);
 
         // Ray is parallel to plane, no hit
         if denom.abs() < 1e-8 {
-            return None;
+            return false;
         }
 
         // t is outside ray interval, no hit
         let t = (self.d - self.normal.dot(&ray.orig)) / denom;
         if !ray_t.contains(t) {
-            return None;
+            return false;
         }
 
         let intersection = ray.at(t);
@@ -64,20 +64,20 @@ impl Hittable for Quad {
         // Check if is interior
         let unit_interval = Interval::new(0.0, 1.0);
         if !unit_interval.contains(alpha) || !unit_interval.contains(beta) {
-            return None;
+            return false;
         }
 
         let (front_face, face_normal) = HitRecord::get_front_face(ray, self.normal);
 
-        Some(HitRecord::new(
-            intersection,
-            face_normal,
-            front_face,
-            t,
-            alpha,
-            beta,
-            Arc::clone(&self.mat),
-        ))
+        rec.point = intersection;
+        rec.normal = face_normal;
+        rec.front_face = front_face;
+        rec.t = t;
+        rec.u = alpha;
+        rec.v = beta;
+        rec.mat = Arc::clone(&self.mat);
+
+        true
     }
 
     fn bounding_box(&self) -> AABB {

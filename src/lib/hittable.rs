@@ -38,6 +38,10 @@ impl HitRecord {
         }
     }
 
+    pub fn empty(mat: Arc<dyn Material>) -> Self {
+        Self::new(Vec3::zeroes(), Vec3::zeroes(), false, 0.0, 0.0, 0.0, mat)
+    }
+
     pub fn get_front_face(ray: &Ray, outward_normal: Vec3) -> (bool, Vec3) {
         let front_face = ray.dir.dot(&outward_normal) < 0.0;
         let face_normal = if front_face {
@@ -74,7 +78,7 @@ impl HitRecord {
 }
 
 pub trait Hittable: Send + Sync {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord>;
+    fn hit(&self, ray: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool;
     fn bounding_box(&self) -> AABB;
 }
 
@@ -95,13 +99,15 @@ impl Translate {
 }
 
 impl Hittable for Translate {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         let offset_ray = Ray::new(ray.orig - self.offset, ray.dir, ray.time);
 
-        self.object.hit(&offset_ray, ray_t).map(|hit_record| {
-            let offset_point = hit_record.point + self.offset;
-            hit_record.set_point(offset_point)
-        })
+        let is_hit = self.object.hit(&offset_ray, ray_t, rec);
+        if is_hit {
+            rec.point = rec.point + self.offset;
+        }
+
+        is_hit
     }
 
     fn bounding_box(&self) -> AABB {
@@ -168,16 +174,18 @@ impl RotateY {
 }
 
 impl Hittable for RotateY {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         let orig = Self::rotate_y(&ray.orig, self.sin_theta, self.cos_theta);
         let dir = Self::rotate_y(&ray.dir, self.sin_theta, self.cos_theta);
         let rotated_ray = Ray::new(orig, dir, ray.time);
 
-        self.object.hit(&rotated_ray, ray_t).map(|hit_record| {
-            let new_point = Self::rotate_y(&hit_record.point, -self.sin_theta, self.cos_theta);
-            let new_normal = Self::rotate_y(&hit_record.normal, -self.sin_theta, self.cos_theta);
-            hit_record.set_point(new_point).set_normal(new_normal)
-        })
+        let is_hit = self.object.hit(&rotated_ray, ray_t, rec);
+        if is_hit {
+            rec.point = Self::rotate_y(&rec.point, -self.sin_theta, self.cos_theta);
+            rec.normal = Self::rotate_y(&rec.normal, -self.sin_theta, self.cos_theta);
+        }
+
+        is_hit
     }
 
     fn bounding_box(&self) -> AABB {

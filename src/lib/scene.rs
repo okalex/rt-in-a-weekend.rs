@@ -36,21 +36,28 @@ impl Scene {
 }
 
 impl Hittable for Scene {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         let mut closest_so_far = ray_t.max;
-        let mut hit_record: Option<HitRecord> = None;
+        let mut temp_rec = HitRecord::empty(Arc::clone(&rec.mat));
+        let mut hit_anything = false;
 
         for object in &self.objects {
-            match object.hit(ray, ray_t.update_max(closest_so_far)) {
-                None => {}
-                Some(rec) => {
-                    closest_so_far = rec.t;
-                    hit_record = Some(rec);
-                }
-            };
+            let is_hit = object.hit(ray, ray_t.update_max(closest_so_far), &mut temp_rec);
+            if is_hit {
+                hit_anything = true;
+                closest_so_far = temp_rec.t;
+
+                rec.point = temp_rec.point;
+                rec.normal = temp_rec.normal;
+                rec.front_face = temp_rec.front_face;
+                rec.t = temp_rec.t;
+                rec.u = temp_rec.u;
+                rec.v = temp_rec.v;
+                rec.mat = Arc::clone(&temp_rec.mat);
+            }
         }
 
-        return hit_record;
+        return hit_anything;
     }
 
     fn bounding_box(&self) -> AABB {

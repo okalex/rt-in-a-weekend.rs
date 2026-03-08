@@ -58,19 +58,17 @@ impl BvhNode {
 }
 
 impl Hittable for BvhNode {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    fn hit(&self, ray: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         if !self.bbox.hit(ray, ray_t) {
-            return None;
+            return false;
         }
 
-        let rec_left = self.left.hit(ray, ray_t);
-        let int_max = match rec_left.as_ref() {
-            Some(rec) => rec.t,
-            None => ray_t.max,
-        };
-        let rec_right = self.right.hit(ray, Interval::new(ray_t.min, int_max));
+        let hit_left = self.left.hit(ray, ray_t, rec);
+        let int_max = if hit_left { rec.t } else { ray_t.max };
+        let interval = Interval::new(ray_t.min, int_max);
+        let hit_right = self.right.hit(ray, interval, rec);
 
-        rec_right.or(rec_left)
+        hit_left || hit_right
     }
 
     fn bounding_box(&self) -> AABB {
