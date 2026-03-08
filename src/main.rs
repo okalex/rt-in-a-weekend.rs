@@ -25,30 +25,15 @@ use crate::lib::viewport::Viewport;
 use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
-    let scene_idx = 2;
 
-    let (camera_options, raw_scene) = match scene_idx {
-        1 => (camera_a(), scene_a()),
-        2 => (camera_b(), scene_b()),
-        3 => (camera_c(), scene_c()),
-        4 => (camera_d(), scene_d()),
-        5 => (camera_e(), scene_e()),
-        6 => (camera_f(), scene_f()),
-        7 => (camera_g(), scene_g()),
-        8 => (camera_cornell(), scene_cornell()),
-        9 => (camera_cornell(), scene_cornell_smoke()),
-        10 => (camera_book2_final(), scene_book2_final(false)),
-        _ => panic!(),
-    };
-    let camera = Arc::new(Camera::new(&camera_options));
-    let scene = wrap_scene(raw_scene);
+    let (camera, scene) = get_camera_and_scene(10);
 
     let render_options = RenderOptionsBuilder::new()
         .width(400)
         .samples_per_pixel(100)
         .max_depth(50)
         .use_multithreading(true)
-        // .background(Color::black())
+        .background(Color::black())
         .build(&camera);
 
     let viewport = Arc::new(Viewport::new(
@@ -71,6 +56,26 @@ fn main() {
     );
 
     renderer.render(Arc::clone(&scene));
+     
+}
+
+fn get_camera_and_scene(scene_idx: i32) -> (Arc<Camera>, Arc<dyn Hittable>) {
+    let (camera_options, raw_scene) = match scene_idx {
+        1 => (camera_a(), scene_a()),
+        2 => (camera_b(), scene_b()),
+        3 => (camera_c(), scene_c()),
+        4 => (camera_d(), scene_d()),
+        5 => (camera_e(), scene_e()),
+        6 => (camera_f(), scene_f()),
+        7 => (camera_g(), scene_g()),
+        8 => (camera_cornell(), scene_cornell()),
+        9 => (camera_cornell(), scene_cornell_smoke()),
+        10 => (camera_book2_final(), scene_book2_final(false)),
+        _ => panic!(),
+    };
+    let camera = Arc::new(Camera::new(&camera_options));
+    let scene = wrap_scene(raw_scene);
+    (camera, scene)
 }
 
 fn rand_arr3() -> [f64; 3] {
@@ -524,12 +529,12 @@ fn scene_cornell_smoke() -> Scene {
     let red = lambertian([0.65, 0.05, 0.05]);
     let white = lambertian([0.73, 0.73, 0.73]);
     let green = lambertian([0.12, 0.45, 0.15]);
-    let light = diffuse_light([15.0, 15.0, 15.0]);
+    let light = diffuse_light([7.0, 7.0, 7.0]);
 
     let light = quad(
-        [343.0, 554.0, 332.0],
-        [-130.0, 0.0, 0.0],
-        [0.0, 0.0, -105.0],
+        [113.0, 554.0, 127.0],
+        [330.0, 0.0, 0.0],
+        [0.0, 0.0, 305.0],
         Arc::clone(&light),
     );
     let left = quad(

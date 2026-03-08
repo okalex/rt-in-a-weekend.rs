@@ -21,7 +21,7 @@ impl Image {
         let mut pixels: Vec<Vec<Color>> =
             vec![vec![Color::black(); width as usize]; height as usize];
         for j in 0..height {
-            for i in 0..height {
+            for i in 0..width {
                 let pixel = img.get_pixel(i, j); // Note: this is not safe - ignoring errors for now
                 let color = Color::new(pixel[0] as f64, pixel[1] as f64, pixel[2] as f64);
                 pixels[j as usize][i as usize] = color;

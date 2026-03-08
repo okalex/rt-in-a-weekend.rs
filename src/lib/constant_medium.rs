@@ -78,7 +78,7 @@ impl Hittable for ConstantMedium {
             return None;
         }
 
-        let t = rec1.t + hit_dist / ray_len;
+        let t = entry + hit_dist / ray_len;
         let point = ray.at(t);
         let normal = Vec3::new(1.0, 0.0, 0.0); // arbitrary
         Some(HitRecord::new(

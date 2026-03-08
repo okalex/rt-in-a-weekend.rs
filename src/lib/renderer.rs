@@ -48,7 +48,6 @@ impl Renderer {
         thread::scope(|s| {
             for _ in 0..num_threads {
                 let scene_clone: Arc<dyn Hittable> = Arc::clone(&scene);
-                let writer_clone = Arc::clone(&self.writer);
                 let lines_clone = Arc::clone(&lines);
 
                 s.spawn(move || {
