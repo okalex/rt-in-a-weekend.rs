@@ -3,7 +3,7 @@ mod lib;
 use std::sync::Arc;
 
 use crate::lib::bvh_node::BvhNode;
-use crate::lib::camera::CameraBuilder;
+use crate::lib::camera::{Camera, CameraOptions};
 use crate::lib::color::Color;
 use crate::lib::constant_medium::ConstantMedium;
 use crate::lib::hittable::{Hittable, rotate_y, translate};
@@ -13,6 +13,7 @@ use crate::lib::materials::{
 };
 use crate::lib::quad::Quad;
 use crate::lib::random::{rand, rand_range};
+use crate::lib::renderer::{RenderOptionsBuilder, Renderer};
 use crate::lib::scene::{Box3d, Scene};
 use crate::lib::sphere::Sphere;
 use crate::lib::textures::checkered::Checkered;
@@ -20,38 +21,56 @@ use crate::lib::textures::image_map::ImageMap;
 use crate::lib::textures::noise::Noise;
 use crate::lib::textures::texture::Texture;
 use crate::lib::vec3::Vec3;
+use crate::lib::viewport::Viewport;
 use crate::lib::writer::{PpmWriter, Writer};
 
 fn main() {
     let scene_idx = 2;
-    let render_settings = CameraBuilder::new()
-        .width(400)
-        .samples_per_pixel(100)
-        .max_depth(40);
 
-    let (camera_builder, raw_scene) = match scene_idx {
-        1 => (camera_a(render_settings), scene_a()),
-        2 => (camera_b(render_settings), scene_b()),
-        3 => (camera_c(render_settings), scene_c()),
-        4 => (camera_d(render_settings), scene_d()),
-        5 => (camera_e(render_settings), scene_e()),
-        6 => (camera_f(render_settings), scene_f()),
-        7 => (camera_g(render_settings), scene_g()),
-        8 => (camera_cornell(render_settings), scene_cornell()),
-        9 => (camera_cornell(render_settings), scene_cornell_smoke()),
-        10 => (
-            camera_book2_final(render_settings),
-            scene_book2_final(false),
-        ),
+    let (camera_options, raw_scene) = match scene_idx {
+        1 => (camera_a(), scene_a()),
+        2 => (camera_b(), scene_b()),
+        3 => (camera_c(), scene_c()),
+        4 => (camera_d(), scene_d()),
+        5 => (camera_e(), scene_e()),
+        6 => (camera_f(), scene_f()),
+        7 => (camera_g(), scene_g()),
+        8 => (camera_cornell(), scene_cornell()),
+        9 => (camera_cornell(), scene_cornell_smoke()),
+        10 => (camera_book2_final(), scene_book2_final(false)),
         _ => panic!(),
     };
-    let camera = camera_builder.build();
+    let camera = Arc::new(Camera::new(&camera_options));
     let scene = wrap_scene(raw_scene);
 
-    let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(camera.width(), camera.height(), 255));
-    writer.init();
-    camera.render(Arc::clone(&scene), Arc::clone(&writer));
-    writer.close();
+    let render_options = RenderOptionsBuilder::new()
+        .width(400)
+        .samples_per_pixel(100)
+        .max_depth(50)
+        .use_multithreading(true)
+        // .background(Color::black())
+        .build(&camera);
+
+    let viewport = Arc::new(Viewport::new(
+        render_options.img_width,
+        render_options.img_height,
+        &camera,
+    ));
+
+    let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(
+        render_options.img_width,
+        render_options.img_height,
+        255,
+    ));
+
+    let renderer = Renderer::new(
+        render_options,
+        Arc::clone(&camera),
+        Arc::clone(&viewport),
+        Arc::clone(&writer),
+    );
+
+    renderer.render(Arc::clone(&scene));
 }
 
 fn rand_arr3() -> [f64; 3] {
@@ -101,8 +120,8 @@ fn diffuse_light(color: [f64; 3]) -> Arc<dyn Material> {
     Arc::new(DiffuseLight::from_color(Color::from_arr(color)))
 }
 
-fn camera_a(builder: CameraBuilder) -> CameraBuilder {
-    builder
+fn camera_a() -> CameraOptions {
+    CameraOptions::new()
         .vfov(50.0)
         .lookfrom([-1.0, 1.0, 1.0])
         .lookat([0.0, 0.0, -1.0])
@@ -154,8 +173,8 @@ fn scene_a() -> Scene {
     scene
 }
 
-fn camera_b(builder: CameraBuilder) -> CameraBuilder {
-    builder
+fn camera_b() -> CameraOptions {
+    CameraOptions::new()
         .lookfrom([13.0, 2.0, 3.0])
         .lookat([0.0, 0.0, 0.0])
         .defocus_angle(0.6)
@@ -253,8 +272,10 @@ fn scene_b() -> Scene {
     scene
 }
 
-fn camera_c(builder: CameraBuilder) -> CameraBuilder {
-    builder.lookfrom([13.0, 2.0, 3.0]).lookat([0.0, 0.0, 0.0])
+fn camera_c() -> CameraOptions {
+    CameraOptions::new()
+        .lookfrom([13.0, 2.0, 3.0])
+        .lookat([0.0, 0.0, 0.0])
 }
 
 fn scene_c() -> Scene {
@@ -282,8 +303,10 @@ fn scene_c() -> Scene {
     scene
 }
 
-fn camera_d(builder: CameraBuilder) -> CameraBuilder {
-    builder.lookfrom([0.0, 4.0, 16.0]).lookat([0.0, 1.5, 0.0])
+fn camera_d() -> CameraOptions {
+    CameraOptions::new()
+        .lookfrom([0.0, 4.0, 16.0])
+        .lookat([0.0, 1.5, 0.0])
 }
 
 fn scene_d() -> Scene {
@@ -315,8 +338,10 @@ fn scene_d() -> Scene {
     scene
 }
 
-fn camera_e(builder: CameraBuilder) -> CameraBuilder {
-    builder.lookfrom([13.0, 2.0, 3.0]).lookat([0.0, 0.0, 0.0])
+fn camera_e() -> CameraOptions {
+    CameraOptions::new()
+        .lookfrom([13.0, 2.0, 3.0])
+        .lookat([0.0, 0.0, 0.0])
 }
 
 fn scene_e() -> Scene {
@@ -339,8 +364,8 @@ fn scene_e() -> Scene {
     scene
 }
 
-fn camera_f(builder: CameraBuilder) -> CameraBuilder {
-    builder
+fn camera_f() -> CameraOptions {
+    CameraOptions::new()
         .aspect_ratio(1.0)
         .vfov(80.0)
         .lookfrom([0.0, 0.0, 9.0])
@@ -394,11 +419,11 @@ fn scene_f() -> Scene {
     scene
 }
 
-fn camera_g(builder: CameraBuilder) -> CameraBuilder {
-    builder
+fn camera_g() -> CameraOptions {
+    CameraOptions::new()
         .lookfrom([26.0, 3.0, 6.0])
         .lookat([0.0, 2.0, 0.0])
-        .background([0.0, 0.0, 0.0])
+    // .background([0.0, 0.0, 0.0])
 }
 
 fn scene_g() -> Scene {
@@ -423,13 +448,13 @@ fn scene_g() -> Scene {
     scene
 }
 
-fn camera_cornell(builder: CameraBuilder) -> CameraBuilder {
-    builder
+fn camera_cornell() -> CameraOptions {
+    CameraOptions::new()
         .aspect_ratio(1.0)
-        .background([0.0, 0.0, 0.0])
         .vfov(40.0)
         .lookfrom([278.0, 278.0, -800.0])
         .lookat([278.0, 278.0, 0.0])
+    // .background([0.0, 0.0, 0.0])
 }
 
 fn scene_cornell() -> Scene {
@@ -568,13 +593,13 @@ fn scene_cornell_smoke() -> Scene {
     scene
 }
 
-fn camera_book2_final(builder: CameraBuilder) -> CameraBuilder {
-    builder
+fn camera_book2_final() -> CameraOptions {
+    CameraOptions::new()
         .aspect_ratio(1.0)
-        .background([0.01, 0.01, 0.01])
         .vfov(40.0)
         .lookfrom([478.0, 278.0, -600.0])
         .lookat([278.0, 278.0, 0.0])
+    // .background([0.01, 0.01, 0.01])
 }
 
 fn scene_book2_final(with_haze: bool) -> Scene {

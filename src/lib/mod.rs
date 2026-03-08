@@ -12,6 +12,7 @@ pub mod perlin;
 pub mod quad;
 pub mod random;
 pub mod ray;
+pub mod renderer;
 pub mod scene;
 pub mod sphere;
 pub mod textures;
