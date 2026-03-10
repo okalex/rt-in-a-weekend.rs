@@ -1,4 +1,4 @@
-mod lib;
+mod rt;
 
 use std::sync::Arc;
 
@@ -6,28 +6,28 @@ use clap::Parser;
 use nalgebra::{Point3, Vector3};
 use winit::event_loop::EventLoop;
 
-use crate::lib::app::app::App;
-use crate::lib::bvh_node::BvhNode;
-use crate::lib::camera::Camera;
-use crate::lib::color::Color;
-use crate::lib::constant_medium::ConstantMedium;
-use crate::lib::frame_buffer::FrameBuffer;
-use crate::lib::hittable::{Hittable, rotate_y, translate};
-use crate::lib::materials::{
+use crate::rt::app::app::App;
+use crate::rt::bvh_node::BvhNode;
+use crate::rt::camera::Camera;
+use crate::rt::color::Color;
+use crate::rt::constant_medium::ConstantMedium;
+use crate::rt::frame_buffer::FrameBuffer;
+use crate::rt::hittable::{Hittable, rotate_y, translate};
+use crate::rt::materials::{
     dielectric::Dielectric, diffuse_light::DiffuseLight, lambertian::Lambertian,
     material::Material, metal::Metal,
 };
-use crate::lib::ppm_writer::PpmWriter;
-use crate::lib::quad::Quad;
-use crate::lib::random::{rand, rand_range, rand_range_vector};
-use crate::lib::renderer::{LineServer, RenderOptionsBuilder, Renderer};
-use crate::lib::scene::{Box3d, Scene};
-use crate::lib::sphere::Sphere;
-use crate::lib::textures::checkered::Checkered;
-use crate::lib::textures::image_map::ImageMap;
-use crate::lib::textures::noise::Noise;
-use crate::lib::textures::texture::Texture;
-use crate::lib::viewport::Viewport;
+use crate::rt::ppm_writer::PpmWriter;
+use crate::rt::quad::Quad;
+use crate::rt::random::{rand, rand_range, rand_range_vector};
+use crate::rt::renderer::{LineServer, RenderOptionsBuilder, Renderer};
+use crate::rt::scene::{Box3d, Scene};
+use crate::rt::sphere::Sphere;
+use crate::rt::textures::checkered::Checkered;
+use crate::rt::textures::image_map::ImageMap;
+use crate::rt::textures::noise::Noise;
+use crate::rt::textures::texture::Texture;
+use crate::rt::viewport::Viewport;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -82,7 +82,7 @@ fn main() {
             .samples_per_pixel(args.samples)
             .max_depth(args.depth)
             .use_multithreading(args.multithreading)
-            // .background(Color::black())
+            .background(Color::black())
             .build(args.aspect as f64),
     );
 
@@ -700,7 +700,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     // Bubbly box
     let white = lambertian([0.73, 0.73, 0.73]);
     let mut boxes2 = Scene::new();
-    for j in 0..1000 {
+    for _ in 0..1000 {
         let sphere: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
             Point3::from(rand_range_vector(0.0, 165.0)),
             10.0,
