@@ -1,4 +1,5 @@
 pub mod aabb;
+pub mod app;
 pub mod bvh_node;
 pub mod camera;
 pub mod color;
@@ -19,4 +20,4 @@ pub mod textures;
 pub mod util;
 pub mod vec3;
 pub mod viewport;
-pub mod writer;
+pub mod ppm_writer;

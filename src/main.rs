@@ -2,10 +2,15 @@ mod lib;
 
 use std::sync::Arc;
 
+use clap::Parser;
+use winit::event_loop::EventLoop;
+
+use crate::lib::app::app::App;
 use crate::lib::bvh_node::BvhNode;
 use crate::lib::camera::{Camera, CameraOptions};
 use crate::lib::color::Color;
 use crate::lib::constant_medium::ConstantMedium;
+use crate::lib::frame_buffer::FrameBuffer;
 use crate::lib::hittable::{Hittable, rotate_y, translate};
 use crate::lib::materials::{
     dielectric::Dielectric, diffuse_light::DiffuseLight, lambertian::Lambertian,
@@ -13,7 +18,7 @@ use crate::lib::materials::{
 };
 use crate::lib::quad::Quad;
 use crate::lib::random::{rand, rand_range};
-use crate::lib::renderer::{RenderOptionsBuilder, Renderer};
+use crate::lib::renderer::{LineServer, RenderOptionsBuilder, Renderer};
 use crate::lib::scene::{Box3d, Scene};
 use crate::lib::sphere::Sphere;
 use crate::lib::textures::checkered::Checkered;
@@ -22,19 +27,67 @@ use crate::lib::textures::noise::Noise;
 use crate::lib::textures::texture::Texture;
 use crate::lib::vec3::Vec3;
 use crate::lib::viewport::Viewport;
-use crate::lib::writer::{PpmWriter, Writer};
+use crate::lib::ppm_writer::{PpmWriter};
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    #[arg(short, long, default_value_t = false)]
+    interactive: bool,
+
+    #[arg(short, long, default_value_t = 2)]
+    scene: u32,
+
+    #[arg(short, long, default_value_t = 400)]
+    width: u32,
+
+    #[arg(short, long, default_value_t = 16.0/9.0)]
+    aspect: f32,
+
+    #[arg(long, default_value_t = 100)]
+    samples: u32,
+
+    #[arg(short, long, default_value_t = 10)]
+    depth: u32,
+
+    #[arg(short, long, default_value_t = true)]
+    multithreading: bool,
+}
+
+fn run_windowed(
+    width: u32, 
+    height: u32, 
+    renderer: Arc<Renderer>,
+    scene: Arc<dyn Hittable>,
+) -> anyhow::Result<()> {
+    let event_loop = EventLoop::with_user_event().build()?;
+    let mut app = App::new(width, height, Arc::clone(&renderer), scene);
+    event_loop.run_app(&mut app)?;
+
+    Ok(())
+}
 
 fn main() {
+    env_logger::init();
 
-    let (camera, scene) = get_camera_and_scene(10);
+    let args = Args::parse();
 
-    let render_options = RenderOptionsBuilder::new()
-        .width(400)
-        .samples_per_pixel(100)
-        .max_depth(50)
-        .use_multithreading(true)
-        .background(Color::black())
-        .build(&camera);
+    let (camera_options, raw_scene) = get_camera_and_scene(args.scene);
+
+    let camera = Arc::new(Camera::new(
+        &camera_options.aspect_ratio(args.aspect as f64),
+    ));
+    let scene = wrap_scene(raw_scene);
+
+    let render_options = Arc::new(
+        RenderOptionsBuilder::new()
+            .width(args.width)
+            .samples_per_pixel(args.samples)
+            .max_depth(args.depth)
+            .use_multithreading(args.multithreading)
+            // .background(Color::black())
+            .build(&camera),
+    );
 
     let viewport = Arc::new(Viewport::new(
         render_options.img_width,
@@ -42,24 +95,39 @@ fn main() {
         &camera,
     ));
 
-    let writer: Arc<dyn Writer> = Arc::new(PpmWriter::new(
-        render_options.img_width,
-        render_options.img_height,
-        255,
+    let frame_buffer = Arc::new(FrameBuffer::new(
+        render_options.img_width as usize,
+        render_options.img_height as usize,
     ));
 
-    let renderer = Renderer::new(
-        render_options,
+    let line_server = Arc::new(LineServer::new(render_options.img_height));
+
+    let renderer = Arc::new(Renderer::new(
+        Arc::clone(&render_options),
         Arc::clone(&camera),
         Arc::clone(&viewport),
-        Arc::clone(&writer),
-    );
+        Arc::clone(&frame_buffer),
+        Arc::clone(&line_server),
+    ));
 
-    renderer.render(Arc::clone(&scene));
-     
+    if args.interactive {
+        let _ = run_windowed(
+            render_options.img_width,
+            render_options.img_height,
+            Arc::clone(&renderer),
+            scene,
+        );
+    } else {
+        let writer = PpmWriter::new(Arc::clone(&frame_buffer), 255);
+
+        let thread_handles = renderer.render(Arc::clone(&scene));
+        thread_handles.into_iter().for_each(|h| h.join().unwrap());
+
+        writer.write();
+    }
 }
 
-fn get_camera_and_scene(scene_idx: i32) -> (Arc<Camera>, Arc<dyn Hittable>) {
+fn get_camera_and_scene(scene_idx: u32) -> (CameraOptions, Scene) {
     let (camera_options, raw_scene) = match scene_idx {
         1 => (camera_a(), scene_a()),
         2 => (camera_b(), scene_b()),
@@ -70,12 +138,10 @@ fn get_camera_and_scene(scene_idx: i32) -> (Arc<Camera>, Arc<dyn Hittable>) {
         7 => (camera_g(), scene_g()),
         8 => (camera_cornell(), scene_cornell()),
         9 => (camera_cornell(), scene_cornell_smoke()),
-        10 => (camera_book2_final(), scene_book2_final(false)),
+        10 => (camera_book2_final(), scene_book2_final(true)),
         _ => panic!(),
     };
-    let camera = Arc::new(Camera::new(&camera_options));
-    let scene = wrap_scene(raw_scene);
-    (camera, scene)
+    (camera_options, raw_scene)
 }
 
 fn rand_arr3() -> [f64; 3] {
@@ -681,7 +747,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     if with_haze {
         let boundary = new_sphere([0.0, 0.0, 0.0], 5000.0, Arc::clone(&glass));
         let medium: Arc<dyn Hittable> =
-            Arc::new(ConstantMedium::from_color(boundary, 0.001, Color::white()));
+            Arc::new(ConstantMedium::from_color(boundary, 0.0001, Color::white()));
         scene.add(Arc::clone(&medium));
     }
 

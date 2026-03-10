@@ -1,81 +1,115 @@
 use std::sync::{Arc, Mutex};
-use std::thread;
+use std::thread::JoinHandle;
 
 use crate::lib::camera::Camera;
 use crate::lib::color::Color;
+use crate::lib::frame_buffer::FrameBuffer;
 use crate::lib::hittable::Hittable;
 use crate::lib::interval::Interval;
 use crate::lib::random::rand;
 use crate::lib::ray::Ray;
 use crate::lib::vec3::Vec3;
 use crate::lib::viewport::Viewport;
-use crate::lib::writer::Writer;
 
 pub struct Renderer {
-    options: RenderOptions,
+    options: Arc<RenderOptions>,
     camera: Arc<Camera>,
     viewport: Arc<Viewport>,
-    writer: Arc<dyn Writer>,
+    pub frame_buffer: Arc<FrameBuffer>,
+    line_server: Arc<LineServer>,
 }
 
 impl Renderer {
     pub fn new(
-        options: RenderOptions,
+        options: Arc<RenderOptions>,
         camera: Arc<Camera>,
         viewport: Arc<Viewport>,
-        writer: Arc<dyn Writer>,
+        frame_buffer: Arc<FrameBuffer>,
+        line_server: Arc<LineServer>,
     ) -> Self {
         Self {
             options,
             camera,
             viewport,
-            writer,
+            frame_buffer,
+            line_server,
         }
     }
 
-    pub fn render(&self, scene: Arc<dyn Hittable>) {
+    pub fn render(&self, scene: Arc<dyn Hittable>) -> Vec<JoinHandle<()>> {
         let num_threads = if self.options.use_multithreading {
             std::thread::available_parallelism().unwrap().get()
         } else {
             1
         };
 
-        let lines: Arc<Mutex<Vec<u32>>> =
-            Arc::new(Mutex::new((0..self.options.img_height).collect()));
+        (0..num_threads)
+            .map(|_| {
+                let worker = RenderWorker::new(
+                    Arc::clone(&self.options),
+                    Arc::clone(&self.camera),
+                    Arc::clone(&self.viewport),
+                    Arc::clone(&self.frame_buffer),
+                    Arc::clone(&self.line_server),
+                    Arc::clone(&scene),
+                );
+                std::thread::spawn(move || {
+                    worker.render();
+                })
+            })
+            .collect()
+    }
+}
 
-        self.writer.init();
+pub struct RenderWorker {
+    options: Arc<RenderOptions>,
+    camera: Arc<Camera>,
+    viewport: Arc<Viewport>,
+    frame_buffer: Arc<FrameBuffer>,
+    line_server: Arc<LineServer>,
+    scene: Arc<dyn Hittable>,
+}
 
-        thread::scope(|s| {
-            for _ in 0..num_threads {
-                let scene_clone: Arc<dyn Hittable> = Arc::clone(&scene);
-                let lines_clone = Arc::clone(&lines);
+impl RenderWorker {
+    pub fn new(
+        options: Arc<RenderOptions>,
+        camera: Arc<Camera>,
+        viewport: Arc<Viewport>,
+        frame_buffer: Arc<FrameBuffer>,
+        line_server: Arc<LineServer>,
+        scene: Arc<dyn Hittable>,
+    ) -> Self {
+        Self {
+            options,
+            camera,
+            viewport,
+            frame_buffer,
+            line_server,
+            scene,
+        }
+    }
 
-                s.spawn(move || {
-                    loop {
-                        let maybe_line = lines_clone.lock().unwrap().pop();
-                        match maybe_line {
-                            None => break,
-                            Some(line_idx) => {
-                                self.render_line(&scene_clone, line_idx);
-                                let remaining_lines = lines_clone.lock().unwrap().len();
-                                eprint!("\rLines remaining: {}       ", remaining_lines);
-                            }
-                        }
-                    }
-                });
+    pub fn render(&self) {
+        loop {
+            let maybe_line = self.line_server.next_line();
+            match maybe_line {
+                None => break,
+                Some(line_idx) => {
+                    self.render_line(&self.scene, line_idx);
+
+                    let remaining_lines = self.line_server.len();
+                    eprint!("\rLines remaining: {}       ", remaining_lines);
+                }
             }
-        });
-
-        self.writer.close();
-        eprintln!("\n\rDone.");
+        }
     }
 
     fn render_line(&self, scene: &Arc<dyn Hittable>, line_idx: u32) {
-        let data = (0..self.options.img_width)
+        let data: Vec<[u8; 3]> = (0..self.options.img_width)
             .map(|i| self.sample_pixel(&scene, i, line_idx).to_gamma().to_u8())
             .collect();
 
-        self.writer.write_line(line_idx as usize, &data);
+        self.frame_buffer.set_line(line_idx as usize, &data);
     }
 
     fn sample_pixel(&self, scene: &Arc<dyn Hittable>, i: u32, j: u32) -> Color {
@@ -203,5 +237,24 @@ impl RenderOptionsBuilder {
     pub fn background(mut self, new_background: Color) -> Self {
         self.background = new_background;
         self
+    }
+}
+
+pub struct LineServer {
+    lines: Arc<Mutex<Vec<u32>>>,
+}
+
+impl LineServer {
+    pub fn new(num_lines: u32) -> Self {
+        let lines: Arc<Mutex<Vec<u32>>> = Arc::new(Mutex::new((0..num_lines).rev().collect()));
+        Self { lines }
+    }
+
+    pub fn next_line(&self) -> Option<u32> {
+        self.lines.lock().unwrap().pop()
+    }
+
+    pub fn len(&self) -> u32 {
+        self.lines.lock().unwrap().len() as u32
     }
 }
