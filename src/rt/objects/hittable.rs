@@ -1,10 +1,11 @@
 use nalgebra::{Point3, Vector3};
+use parry3d_f64::bounding_volume::Aabb;
+use parry3d_f64::math::{Pose, Vec3};
 
-use crate::rt::aabb::AABB;
 use crate::rt::interval::Interval;
 use crate::rt::materials::material::Material;
 use crate::rt::ray::Ray;
-use crate::rt::util::degrees_to_radians;
+use crate::rt::util::{degrees_to_radians, to_parry_vec};
 use core::f64;
 use std::sync::Arc;
 
@@ -76,13 +77,13 @@ impl HitRecord {
 
 pub trait Hittable: Send + Sync {
     fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord>;
-    fn bounding_box(&self) -> AABB;
+    fn bounding_box(&self) -> &Aabb;
 }
 
 pub struct Translate {
     object: Arc<dyn Hittable>,
     offset: Vector3<f64>,
-    bbox: AABB,
+    bbox: Aabb,
 }
 
 impl Translate {
@@ -90,7 +91,7 @@ impl Translate {
         Self {
             object: Arc::clone(&object),
             offset,
-            bbox: object.bounding_box().offset(offset),
+            bbox: object.bounding_box().translated(to_parry_vec(offset)),
         }
     }
 }
@@ -105,8 +106,8 @@ impl Hittable for Translate {
         })
     }
 
-    fn bounding_box(&self) -> AABB {
-        self.bbox
+    fn bounding_box(&self) -> &Aabb {
+        &self.bbox
     }
 }
 
@@ -114,7 +115,7 @@ pub struct RotateY {
     object: Arc<dyn Hittable>,
     sin_theta: f64,
     cos_theta: f64,
-    bbox: AABB,
+    bbox: Aabb,
 }
 
 impl RotateY {
@@ -124,38 +125,13 @@ impl RotateY {
         let cos_theta = radians.cos();
 
         let bbox = object.bounding_box();
-        let mut min = Vector3::from_element(f64::INFINITY);
-        let mut max = Vector3::from_element(-f64::INFINITY);
-
-        for i in 0..2 {
-            for j in 0..2 {
-                for k in 0..2 {
-                    let fi = i as f64;
-                    let fj = j as f64;
-                    let fk = k as f64;
-
-                    let x = fi * bbox.x.max + (1.0 - fi) * bbox.x.min;
-                    let y = fj * bbox.y.max + (1.0 - fj) * bbox.y.min;
-                    let z = fk * bbox.z.max + (1.0 - fk) * bbox.z.min;
-
-                    let new_x = cos_theta * x + sin_theta * z;
-                    let new_z = -sin_theta * x + cos_theta * z;
-
-                    let tester = Vector3::new(new_x, y, new_z);
-
-                    for c in 0..3 {
-                        min[c] = f64::min(min[c], tester[c]);
-                        max[c] = f64::max(max[c], tester[c]);
-                    }
-                }
-            }
-        }
+        let rotation = Pose::rotation(Vec3::new(0.0, degrees_to_radians(angle), 0.0));
 
         Self {
             object: Arc::clone(&object),
             sin_theta,
             cos_theta,
-            bbox: AABB::from_vectors(min, max),
+            bbox: bbox.transform_by(&rotation),
         }
     }
 
@@ -170,24 +146,32 @@ impl RotateY {
 
 impl Hittable for RotateY {
     fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        let orig = Point3::from(Self::rotate_y(&ray.orig.coords, self.sin_theta, self.cos_theta));
+        let orig = Point3::from(Self::rotate_y(
+            &ray.orig.coords,
+            self.sin_theta,
+            self.cos_theta,
+        ));
         let dir = Self::rotate_y(&ray.dir, self.sin_theta, self.cos_theta);
         let rotated_ray = Ray::new(orig, dir, ray.time);
 
         self.object.hit(&rotated_ray, ray_t).map(|hit_record| {
-            let new_point = Point3::from(Self::rotate_y(&hit_record.point.coords, -self.sin_theta, self.cos_theta));
+            let new_point = Point3::from(Self::rotate_y(
+                &hit_record.point.coords,
+                -self.sin_theta,
+                self.cos_theta,
+            ));
             let new_normal = Self::rotate_y(&hit_record.normal, -self.sin_theta, self.cos_theta);
             hit_record.set_point(new_point).set_normal(new_normal)
         })
     }
 
-    fn bounding_box(&self) -> AABB {
-        self.bbox
+    fn bounding_box(&self) -> &Aabb {
+        &self.bbox
     }
 }
 
-pub fn rotate_y(object: Arc<dyn Hittable>, angle: f64) -> Arc<dyn Hittable> {
-    Arc::new(RotateY::new(object, angle))
+pub fn rotate_y(object: Arc<dyn Hittable>, degrees: f64) -> Arc<dyn Hittable> {
+    Arc::new(RotateY::new(object, degrees))
 }
 
 pub fn translate(object: Arc<dyn Hittable>, offset: [f64; 3]) -> Arc<dyn Hittable> {

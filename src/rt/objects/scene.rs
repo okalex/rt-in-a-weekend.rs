@@ -2,37 +2,37 @@ use std::sync::Arc;
 
 use nalgebra::{Point3, Vector3};
 use nalgebra_glm::{max2, min2};
+use parry3d_f64::bounding_volume::{Aabb, BoundingVolume};
 
 use super::hittable::{HitRecord, Hittable};
 use super::quad::Quad;
-use crate::rt::aabb::AABB;
 use crate::rt::interval::Interval;
 use crate::rt::materials::material::Material;
 use crate::rt::ray::Ray;
 
 pub struct Scene {
     pub objects: Vec<Arc<dyn Hittable>>,
-    pub bbox: AABB,
+    pub bbox: Aabb,
 }
 
 impl Scene {
     pub fn new() -> Scene {
         Scene {
             objects: vec![],
-            bbox: AABB::empty(),
+            bbox: Aabb::new_invalid(),
         }
     }
 
     pub fn new_obj(object: Arc<dyn Hittable>) -> Scene {
         let bbox = object.bounding_box();
         Scene {
-            objects: vec![object],
-            bbox,
+            objects: vec![Arc::clone(&object)],
+            bbox: *bbox,
         }
     }
 
     pub fn add(&mut self, object: Arc<dyn Hittable>) {
-        self.bbox = AABB::from_boxes(&self.bbox, &object.bounding_box());
+        self.bbox = self.bbox.merged(object.bounding_box());
         self.objects.push(object);
     }
 }
@@ -55,8 +55,8 @@ impl Hittable for Scene {
         return hit_record;
     }
 
-    fn bounding_box(&self) -> AABB {
-        self.bbox
+    fn bounding_box(&self) -> &Aabb {
+        &self.bbox
     }
 }
 

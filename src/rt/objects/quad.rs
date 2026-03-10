@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use nalgebra::{Point3, Vector3};
+use parry3d_f64::bounding_volume::Aabb;
 
 use super::hittable::{HitRecord, Hittable};
-use crate::rt::aabb::AABB;
 use crate::rt::interval::Interval;
 use crate::rt::materials::material::Material;
 use crate::rt::ray::Ray;
+use crate::rt::util::to_parry_vec;
 
 pub struct Quad {
     q: Point3<f64>,
@@ -14,16 +15,21 @@ pub struct Quad {
     v: Vector3<f64>,
     w: Vector3<f64>,
     pub mat: Arc<dyn Material>,
-    bbox: AABB,
+    bbox: Aabb,
     normal: Vector3<f64>,
     d: f64,
 }
 
 impl Quad {
     pub fn new(q: Point3<f64>, u: Vector3<f64>, v: Vector3<f64>, mat: Arc<dyn Material>) -> Self {
-        let diag1 = AABB::from_points(q, q + u + v);
-        let diag2 = AABB::from_points(q + u, q + v);
-        let bbox = AABB::from_boxes(&diag1, &diag2);
+        let points = vec![
+            to_parry_vec(q.coords),
+            to_parry_vec((q + u).coords),
+            to_parry_vec((q + v).coords),
+            to_parry_vec((q + u + v).coords),
+        ];
+        let bbox = Aabb::from_points(points);
+
         let n = u.cross(&v);
         let normal = n.normalize();
         let d = normal.dot(&q.coords);
@@ -85,7 +91,7 @@ impl Hittable for Quad {
         ))
     }
 
-    fn bounding_box(&self) -> AABB {
-        self.bbox
+    fn bounding_box(&self) -> &Aabb {
+        &self.bbox
     }
 }

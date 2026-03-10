@@ -16,6 +16,7 @@ impl Interval {
         }
     }
 
+    #[allow(dead_code)]
     pub fn empty() -> Interval {
         Self::new(0.0, 0.0)
     }
@@ -24,6 +25,7 @@ impl Interval {
         Self::new(-f64::INFINITY, f64::INFINITY)
     }
 
+    #[allow(dead_code)]
     pub fn union(a: &Interval, b: &Interval) -> Interval {
         Self::new(
             if a.min <= b.min { a.min } else { b.min },
@@ -40,6 +42,7 @@ impl Interval {
         Self::new(self.min, new_max)
     }
 
+    #[allow(dead_code)]
     pub fn size(&self) -> f64 {
         self.max - self.min
     }
@@ -62,6 +65,7 @@ impl Interval {
         x
     }
 
+    #[allow(dead_code)]
     pub fn expand(&self, delta: f64) -> Interval {
         let padding = delta / 2.0;
         Self::new(self.min - padding, self.max + padding)

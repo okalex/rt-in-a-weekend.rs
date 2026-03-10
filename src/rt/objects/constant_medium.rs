@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use nalgebra::Vector3;
+use parry3d_f64::bounding_volume::Aabb;
 
 use super::hittable::{HitRecord, Hittable};
-use crate::rt::aabb::AABB;
 use crate::rt::color::Color;
 use crate::rt::interval::Interval;
 use crate::rt::materials::{isotropic::Isotropic, material::Material};
@@ -93,7 +93,7 @@ impl Hittable for ConstantMedium {
         ))
     }
 
-    fn bounding_box(&self) -> AABB {
+    fn bounding_box(&self) -> &Aabb {
         self.boundary.bounding_box()
     }
 }
