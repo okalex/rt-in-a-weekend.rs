@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
+use nalgebra::Point3;
+
 use crate::lib::color::Color;
-use crate::lib::vec3::Vec3;
 
 use super::solid_color::SolidColor;
 use super::texture::Texture;
@@ -38,10 +39,10 @@ impl Checkered {
 }
 
 impl Texture for Checkered {
-    fn value(&self, u: f64, v: f64, point: &Vec3) -> Color {
-        let x_int = (self.inv_scale * point.x()).floor() as i64;
-        let y_int = (self.inv_scale * point.y()).floor() as i64;
-        let z_int = (self.inv_scale * point.z()).floor() as i64;
+    fn value(&self, u: f64, v: f64, point: &Point3<f64>) -> Color {
+        let x_int = (self.inv_scale * point.x).floor() as i64;
+        let y_int = (self.inv_scale * point.y).floor() as i64;
+        let z_int = (self.inv_scale * point.z).floor() as i64;
         let is_even = (x_int + y_int + z_int) % 2 == 0;
         if is_even {
             self.even.value(u, v, point)

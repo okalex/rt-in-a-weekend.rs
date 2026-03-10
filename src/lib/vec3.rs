@@ -1,3 +1,5 @@
+use nalgebra::{Point3, Vector3};
+
 use crate::lib::random;
 use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 
@@ -9,6 +11,14 @@ pub struct Vec3 {
 impl Vec3 {
     pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
         Vec3 { e: [x, y, z] }
+    }
+
+    pub fn from_vector(vector: Vector3<f64>) -> Vec3 {
+        Self::new(vector.x, vector.y, vector.z)
+    }
+
+    pub fn from_point(point: Point3<f64>) -> Vec3 {
+        Self::new(point.x, point.y, point.z)
     }
 
     pub fn new_arr(e: [f64; 3]) -> Vec3 {

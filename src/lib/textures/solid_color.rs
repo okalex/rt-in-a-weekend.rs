@@ -1,5 +1,6 @@
+use nalgebra::Point3;
+
 use crate::lib::color::Color;
-use crate::lib::vec3::Vec3;
 
 use super::texture::Texture;
 
@@ -18,7 +19,7 @@ impl SolidColor {
 }
 
 impl Texture for SolidColor {
-    fn value(&self, u: f64, v: f64, point: &Vec3) -> Color {
+    fn value(&self, u: f64, v: f64, point: &Point3<f64>) -> Color {
         self.albedo
     }
 }

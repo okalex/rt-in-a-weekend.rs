@@ -1,3 +1,5 @@
+use nalgebra::Point3;
+
 use crate::lib::color::Color;
 use crate::lib::image::Image;
 use crate::lib::interval::Interval;
@@ -17,7 +19,7 @@ impl ImageMap {
 }
 
 impl Texture for ImageMap {
-    fn value(&self, u: f64, v: f64, point: &Vec3) -> Color {
+    fn value(&self, u: f64, v: f64, point: &Point3<f64>) -> Color {
         if self.image.height <= 0 {
             return Color::new(0.0, 1.0, 1.0);
         }

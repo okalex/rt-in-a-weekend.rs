@@ -9,6 +9,8 @@ clap = { version = "4.5.60", features = ["derive"] }
 env_logger = "0.11.9"
 image = "0.25.9"
 log = "0.4.29"
+nalgebra = "0.34.1"
+nalgebra-glm = "0.20.0"
 pollster = "0.4.0"
 rand = "0.10.0"
 wgpu = "28.0.0"

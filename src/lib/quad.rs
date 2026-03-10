@@ -1,31 +1,32 @@
 use std::sync::Arc;
 
+use nalgebra::{Point3, Vector3};
+
 use crate::lib::aabb::AABB;
 use crate::lib::hittable::{HitRecord, Hittable};
 use crate::lib::interval::Interval;
 use crate::lib::materials::material::Material;
 use crate::lib::ray::Ray;
-use crate::lib::vec3::Vec3;
 
 pub struct Quad {
-    q: Vec3,
-    u: Vec3,
-    v: Vec3,
-    w: Vec3,
+    q: Point3<f64>,
+    u: Vector3<f64>,
+    v: Vector3<f64>,
+    w: Vector3<f64>,
     pub mat: Arc<dyn Material>,
     bbox: AABB,
-    normal: Vec3,
+    normal: Vector3<f64>,
     d: f64,
 }
 
 impl Quad {
-    pub fn new(q: Vec3, u: Vec3, v: Vec3, mat: Arc<dyn Material>) -> Self {
-        let diag1 = AABB::from_vecs(q, q + u + v);
-        let diag2 = AABB::from_vecs(q + u, q + v);
+    pub fn new(q: Point3<f64>, u: Vector3<f64>, v: Vector3<f64>, mat: Arc<dyn Material>) -> Self {
+        let diag1 = AABB::from_points(q, q + u + v);
+        let diag2 = AABB::from_points(q + u, q + v);
         let bbox = AABB::from_boxes(&diag1, &diag2);
         let n = u.cross(&v);
-        let normal = n.unit();
-        let d = normal.dot(&q);
+        let normal = n.normalize();
+        let d = normal.dot(&q.coords);
         let w = n / n.dot(&n);
         Self {
             q,
@@ -37,6 +38,10 @@ impl Quad {
             normal,
             d,
         }
+    }
+
+    pub fn from_arr(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat: Arc<dyn Material>) -> Self {
+        Self::new(Point3::from(q), Vector3::from(u), Vector3::from(v), mat)
     }
 }
 
@@ -50,7 +55,7 @@ impl Hittable for Quad {
         }
 
         // t is outside ray interval, no hit
-        let t = (self.d - self.normal.dot(&ray.orig)) / denom;
+        let t = (self.d - self.normal.dot(&ray.orig.coords)) / denom;
         if !ray_t.contains(t) {
             return None;
         }

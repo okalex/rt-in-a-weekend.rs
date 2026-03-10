@@ -1,7 +1,6 @@
-use crate::lib::color::Color;
+use crate::lib::{color::Color, random::rand_unit_vector};
 use crate::lib::hittable::HitRecord;
 use crate::lib::ray::Ray;
-use crate::lib::vec3::Vec3;
 
 use super::material::{Material, reflect, Scattered};
 
@@ -21,7 +20,7 @@ impl Metal {
 
 impl Material for Metal {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
-        let reflected = reflect(&r_in.dir, &rec.normal).unit() + Vec3::rand_unit() * self.fuzz;
+        let reflected = reflect(&r_in.dir, &rec.normal).normalize() + rand_unit_vector() * self.fuzz;
 
         Some(Scattered {
             ray: Ray::new(rec.point, reflected, r_in.time),

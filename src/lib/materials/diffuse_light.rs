@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
+use nalgebra::Point3;
+
 use crate::lib::color::Color;
 use crate::lib::textures::solid_color::SolidColor;
 use crate::lib::textures::texture::Texture;
-use crate::lib::vec3::Vec3;
 
 use super::material::Material;
 
@@ -23,7 +24,7 @@ impl DiffuseLight {
 }
 
 impl Material for DiffuseLight {
-    fn emitted(&self, u: f64, v: f64, point: &Vec3) -> Color {
+    fn emitted(&self, u: f64, v: f64, point: &Point3<f64>) -> Color {
         self.texture.value(u, v, point)
     }
 }

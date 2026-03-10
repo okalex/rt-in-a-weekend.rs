@@ -1,3 +1,5 @@
+use nalgebra::{Point3, Vector3};
+
 use crate::lib::interval::Interval;
 use crate::lib::ray::Ray;
 use crate::lib::vec3::Vec3;
@@ -27,11 +29,28 @@ impl AABB {
         }
     }
 
+    // Deprecated
     pub fn from_vecs(a: Vec3, b: Vec3) -> Self {
         Self::new(
             Interval::new(a.x(), b.x()),
             Interval::new(a.y(), b.y()),
             Interval::new(a.z(), b.z()),
+        )
+    }
+
+    pub fn from_points(a: Point3<f64>, b: Point3<f64>) -> Self {
+        Self::new(
+            Interval::new(a.x, b.x),
+            Interval::new(a.y, b.y),
+            Interval::new(a.z, b.z),
+        )
+    }
+
+    pub fn from_vectors(a: Vector3<f64>, b: Vector3<f64>) -> Self {
+        Self::new(
+            Interval::new(a.x, b.x),
+            Interval::new(a.y, b.y),
+            Interval::new(a.z, b.z),
         )
     }
 
@@ -103,11 +122,11 @@ impl AABB {
         true
     }
 
-    pub fn offset(&self, amount: Vec3) -> Self {
+    pub fn offset(&self, amount: Vector3<f64>) -> Self {
         Self {
-            x: self.x + amount.x(),
-            y: self.y + amount.y(),
-            z: self.z + amount.z(),
+            x: self.x + amount.x,
+            y: self.y + amount.y,
+            z: self.z + amount.z,
         }
     }
 }

@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
+use nalgebra::{Point3, Vector3};
+use nalgebra_glm::{max2, min2};
+
 use crate::lib::aabb::AABB;
 use crate::lib::hittable::{HitRecord, Hittable};
 use crate::lib::interval::Interval;
 use crate::lib::materials::material::Material;
 use crate::lib::quad::Quad;
 use crate::lib::ray::Ray;
-use crate::lib::vec3::Vec3;
 
 pub struct Scene {
     pub objects: Vec<Arc<dyn Hittable>>,
@@ -61,46 +63,46 @@ impl Hittable for Scene {
 pub struct Box3d {}
 
 impl Box3d {
-    pub fn new(a: Vec3, b: Vec3, mat: Arc<dyn Material>) -> Scene {
-        let min = Vec3::min(a, b);
-        let max = Vec3::max(a, b);
+    pub fn new(a: Vector3<f64>, b: Vector3<f64>, mat: Arc<dyn Material>) -> Scene {
+        let min = min2(&a, &b);
+        let max = max2(&a, &b);
 
-        let dx = Vec3::new(max.x() - min.x(), 0.0, 0.0);
-        let dy = Vec3::new(0.0, max.y() - min.y(), 0.0);
-        let dz = Vec3::new(0.0, 0.0, max.z() - min.z());
+        let dx = Vector3::new(max.x - min.x, 0.0, 0.0);
+        let dy = Vector3::new(0.0, max.y - min.y, 0.0);
+        let dz = Vector3::new(0.0, 0.0, max.z - min.z);
 
         let quad1: Arc<dyn Hittable> = Arc::new(Quad::new(
-            Vec3::new(min.x(), min.y(), max.z()),
+            Point3::new(min.x, min.y, max.z),
             dx,
             dy,
             Arc::clone(&mat),
         ));
         let quad2: Arc<dyn Hittable> = Arc::new(Quad::new(
-            Vec3::new(max.x(), min.y(), max.z()),
+            Point3::new(max.x, min.y, max.z),
             -dz,
             dy,
             Arc::clone(&mat),
         ));
         let quad3: Arc<dyn Hittable> = Arc::new(Quad::new(
-            Vec3::new(max.x(), min.y(), min.z()),
+            Point3::new(max.x, min.y, min.z),
             -dx,
             dy,
             Arc::clone(&mat),
         ));
         let quad4: Arc<dyn Hittable> = Arc::new(Quad::new(
-            Vec3::new(min.x(), min.y(), min.z()),
+            Point3::new(min.x, min.y, min.z),
             dz,
             dy,
             Arc::clone(&mat),
         ));
         let quad5: Arc<dyn Hittable> = Arc::new(Quad::new(
-            Vec3::new(min.x(), max.y(), max.z()),
+            Point3::new(min.x, max.y, max.z),
             dx,
             -dz,
             Arc::clone(&mat),
         ));
         let quad6: Arc<dyn Hittable> = Arc::new(Quad::new(
-            Vec3::new(min.x(), min.y(), min.z()),
+            Point3::new(min.x, min.y, min.z),
             dx,
             dz,
             Arc::clone(&mat),

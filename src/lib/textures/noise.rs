@@ -1,3 +1,5 @@
+use nalgebra::Point3;
+
 use crate::lib::color::Color;
 use crate::lib::perlin::Perlin;
 use crate::lib::vec3::Vec3;
@@ -19,7 +21,7 @@ impl Noise {
 }
 
 impl Texture for Noise {
-    fn value(&self, u: f64, v: f64, point: &Vec3) -> Color {
+    fn value(&self, u: f64, v: f64, point: &Point3<f64>) -> Color {
         let scaled = *point * self.scale;
         // let noise = 0.5 * (1.0 + self.noise.noise(&point.scale(self.scale))); // Perlin noise
         let noise = self.noise.turb(&scaled, 7); // Turbulent noise

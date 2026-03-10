@@ -1,6 +1,8 @@
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
+use nalgebra::Point3;
+
 use crate::lib::camera::Camera;
 use crate::lib::color::Color;
 use crate::lib::frame_buffer::FrameBuffer;
@@ -125,18 +127,20 @@ impl RenderWorker {
         return Vec3::new(rand() - 0.5, rand() - 0.5, 0.0);
     }
 
-    fn defocus_disk_sample(&self) -> Vec3 {
+    fn defocus_disk_sample(&self) -> Point3<f64> {
         let p = Vec3::rand_in_unit_disk();
-        return self.camera.position
-            + (self.camera.defocus_disk.u * p.x())
-            + (self.camera.defocus_disk.v * p.y());
+        return Point3::from(
+            self.camera.position.coords
+                + (self.viewport.defocus_disk.u * p.x())
+                + (self.viewport.defocus_disk.v * p.y()),
+        );
     }
 
     fn get_ray(&self, i: u32, j: u32) -> Ray {
         let offset = self.sample_square();
-        let pixel_sample = self.viewport.pixel00_loc(&self.camera)
-            + self.viewport.delta_u * (i as f64 + offset.x())
-            + self.viewport.delta_v * (j as f64 + offset.y());
+        let pixel_sample = self
+            .viewport
+            .pixel_loc(i as f64 + offset.x(), j as f64 + offset.y());
 
         let ray_origin = if self.camera.defocus_angle <= 0.0 {
             self.camera.position
@@ -203,10 +207,10 @@ impl RenderOptionsBuilder {
         }
     }
 
-    pub fn build(&self, camera: &Camera) -> RenderOptions {
+    pub fn build(&self, aspect_ratio: f64) -> RenderOptions {
         RenderOptions {
             img_width: self.img_width,
-            img_height: (self.img_width as f64 / camera.aspect_ratio) as u32,
+            img_height: (self.img_width as f64 / aspect_ratio) as u32,
             samples_per_pixel: self.samples_per_pixel,
             max_depth: self.max_depth,
             use_multithreading: self.use_multithreading,

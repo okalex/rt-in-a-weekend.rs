@@ -3,11 +3,12 @@ mod lib;
 use std::sync::Arc;
 
 use clap::Parser;
+use nalgebra::{Point3, Vector3};
 use winit::event_loop::EventLoop;
 
 use crate::lib::app::app::App;
 use crate::lib::bvh_node::BvhNode;
-use crate::lib::camera::{Camera, CameraOptions};
+use crate::lib::camera::Camera;
 use crate::lib::color::Color;
 use crate::lib::constant_medium::ConstantMedium;
 use crate::lib::frame_buffer::FrameBuffer;
@@ -16,8 +17,9 @@ use crate::lib::materials::{
     dielectric::Dielectric, diffuse_light::DiffuseLight, lambertian::Lambertian,
     material::Material, metal::Metal,
 };
+use crate::lib::ppm_writer::PpmWriter;
 use crate::lib::quad::Quad;
-use crate::lib::random::{rand, rand_range};
+use crate::lib::random::{rand, rand_range, rand_range_vector};
 use crate::lib::renderer::{LineServer, RenderOptionsBuilder, Renderer};
 use crate::lib::scene::{Box3d, Scene};
 use crate::lib::sphere::Sphere;
@@ -25,9 +27,7 @@ use crate::lib::textures::checkered::Checkered;
 use crate::lib::textures::image_map::ImageMap;
 use crate::lib::textures::noise::Noise;
 use crate::lib::textures::texture::Texture;
-use crate::lib::vec3::Vec3;
 use crate::lib::viewport::Viewport;
-use crate::lib::ppm_writer::{PpmWriter};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -55,8 +55,8 @@ struct Args {
 }
 
 fn run_windowed(
-    width: u32, 
-    height: u32, 
+    width: u32,
+    height: u32,
     renderer: Arc<Renderer>,
     scene: Arc<dyn Hittable>,
 ) -> anyhow::Result<()> {
@@ -72,11 +72,8 @@ fn main() {
 
     let args = Args::parse();
 
-    let (camera_options, raw_scene) = get_camera_and_scene(args.scene);
-
-    let camera = Arc::new(Camera::new(
-        &camera_options.aspect_ratio(args.aspect as f64),
-    ));
+    let (raw_camera, raw_scene) = get_camera_and_scene(args.scene);
+    let camera = Arc::new(raw_camera);
     let scene = wrap_scene(raw_scene);
 
     let render_options = Arc::new(
@@ -85,8 +82,8 @@ fn main() {
             .samples_per_pixel(args.samples)
             .max_depth(args.depth)
             .use_multithreading(args.multithreading)
-            .background(Color::black())
-            .build(&camera),
+            // .background(Color::black())
+            .build(args.aspect as f64),
     );
 
     let viewport = Arc::new(Viewport::new(
@@ -127,7 +124,7 @@ fn main() {
     }
 }
 
-fn get_camera_and_scene(scene_idx: u32) -> (CameraOptions, Scene) {
+fn get_camera_and_scene(scene_idx: u32) -> (Camera, Scene) {
     let (camera_options, raw_scene) = match scene_idx {
         1 => (camera_a(), scene_a()),
         2 => (camera_b(), scene_b()),
@@ -155,7 +152,7 @@ fn wrap_scene(scene: Scene) -> Arc<dyn Hittable> {
 
 fn new_sphere(center: [f64; 3], radius: f64, mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
     Arc::new(Sphere::stationary(
-        Vec3::new_arr(center),
+        Point3::from(center),
         radius,
         Arc::clone(&mat),
     ))
@@ -167,18 +164,13 @@ fn textured_sphere(center: [f64; 3], radius: f64, texture: Arc<dyn Texture>) -> 
 }
 
 fn quad(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
-    Arc::new(Quad::new(
-        Vec3::new_arr(q),
-        Vec3::new_arr(u),
-        Vec3::new_arr(v),
-        mat,
-    ))
+    Arc::new(Quad::from_arr(q, u, v, mat))
 }
 
 fn box3d(a: [f64; 3], b: [f64; 3], mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
     Arc::new(Box3d::new(
-        Vec3::new_arr(a),
-        Vec3::new_arr(b),
+        Vector3::from(a),
+        Vector3::from(b),
         Arc::clone(&mat),
     ))
 }
@@ -191,11 +183,11 @@ fn diffuse_light(color: [f64; 3]) -> Arc<dyn Material> {
     Arc::new(DiffuseLight::from_color(Color::from_arr(color)))
 }
 
-fn camera_a() -> CameraOptions {
-    CameraOptions::new()
+fn camera_a() -> Camera {
+    Camera::new()
         .vfov(50.0)
-        .lookfrom([-1.0, 1.0, 1.0])
-        .lookat([0.0, 0.0, -1.0])
+        .position([-1.0, 1.0, 1.0])
+        .target([0.0, 0.0, -1.0])
         .defocus_angle(0.5)
         .focus_dist(3.4)
 }
@@ -209,31 +201,11 @@ fn scene_a() -> Scene {
     let material_bubble: Arc<dyn Material> = Arc::new(Dielectric::new(1.0 / 1.5));
     let material_right: Arc<dyn Material> = Arc::new(Metal::new([0.8, 0.6, 0.2], 0.2));
 
-    let sphere1: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(1.0, -100.5, -1.0),
-        100.0,
-        Arc::clone(&material_ground),
-    ));
-    let sphere2: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(0.0, 0.0, -1.2),
-        0.5,
-        Arc::clone(&material_center),
-    ));
-    let sphere3: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(-1.0, 0.0, -1.0),
-        0.5,
-        Arc::clone(&material_left),
-    ));
-    let sphere4: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(-1.0, 0.0, -1.0),
-        0.4,
-        Arc::clone(&material_bubble),
-    ));
-    let sphere5: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(1.0, 0.0, -1.0),
-        0.5,
-        Arc::clone(&material_right),
-    ));
+    let sphere1 = new_sphere([1.0, -100.5, -1.0], 100.0, material_ground);
+    let sphere2 = new_sphere([0.0, 0.0, -1.2], 0.5, material_center);
+    let sphere3 = new_sphere([-1.0, 0.0, -1.0], 0.5, material_left);
+    let sphere4 = new_sphere([-1.0, 0.0, -1.0], 0.4, material_bubble);
+    let sphere5 = new_sphere([1.0, 0.0, -1.0], 0.5, material_right);
 
     let mut scene = Scene::new();
     scene.add(Arc::clone(&sphere1));
@@ -244,10 +216,10 @@ fn scene_a() -> Scene {
     scene
 }
 
-fn camera_b() -> CameraOptions {
-    CameraOptions::new()
-        .lookfrom([13.0, 2.0, 3.0])
-        .lookat([0.0, 0.0, 0.0])
+fn camera_b() -> Camera {
+    Camera::new()
+        .position([13.0, 2.0, 3.0])
+        .target([0.0, 0.0, 0.0])
         .defocus_angle(0.6)
         .focus_dist(10.0)
 }
@@ -268,26 +240,10 @@ fn scene_b() -> Scene {
     let mat3: Arc<dyn Material> = Arc::new(Metal::new([0.7, 0.6, 0.5], 0.0));
 
     // Objects
-    let sphere_ground: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(0.0, -1000.0, 0.0),
-        1000.0,
-        mat_ground.clone(),
-    ));
-    let sphere1: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(0.0, 1.0, 0.0),
-        1.0,
-        Arc::clone(&mat1),
-    ));
-    let sphere2: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(-4.0, 1.0, 0.0),
-        1.0,
-        Arc::clone(&mat2),
-    ));
-    let sphere3: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(4.0, 1.0, 0.0),
-        1.0,
-        Arc::clone(&mat3),
-    ));
+    let sphere_ground = new_sphere([0.0, -1000.0, 0.0], 1000.0, mat_ground.clone());
+    let sphere1 = new_sphere([0.0, 1.0, 0.0], 1.0, Arc::clone(&mat1));
+    let sphere2 = new_sphere([-4.0, 1.0, 0.0], 1.0, Arc::clone(&mat2));
+    let sphere3 = new_sphere([4.0, 1.0, 0.0], 1.0, Arc::clone(&mat3));
 
     let mut scene = Scene::new();
     scene.add(Arc::clone(&sphere_ground));
@@ -298,15 +254,15 @@ fn scene_b() -> Scene {
     for a in -11..11 {
         for b in -11..11 {
             let choose_mat = rand();
-            let center = Vec3::new(a as f64 + 0.9 * rand(), 0.2, b as f64 + 0.9 * rand());
+            let center = Point3::new(a as f64 + 0.9 * rand(), 0.2, b as f64 + 0.9 * rand());
 
-            if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
+            if (center - Point3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
                 if choose_mat < 0.4 {
                     // Diffuse
                     let albedo = rand_arr3();
                     let mat_sphere: Arc<dyn Material> =
                         Arc::new(Lambertian::from_color_values(albedo));
-                    let center2 = center + Vec3::new(0.0, rand_range(0.0, 0.5), 0.0);
+                    let center2 = center + Vector3::new(0.0, rand_range(0.0, 0.5), 0.0);
                     let sphere: Arc<dyn Hittable> = Arc::new(Sphere::moving(
                         center,
                         center2,
@@ -343,10 +299,10 @@ fn scene_b() -> Scene {
     scene
 }
 
-fn camera_c() -> CameraOptions {
-    CameraOptions::new()
-        .lookfrom([13.0, 2.0, 3.0])
-        .lookat([0.0, 0.0, 0.0])
+fn camera_c() -> Camera {
+    Camera::new()
+        .position([13.0, 2.0, 3.0])
+        .target([0.0, 0.0, 0.0])
 }
 
 fn scene_c() -> Scene {
@@ -357,16 +313,8 @@ fn scene_c() -> Scene {
     ));
     let mat_ground: Arc<dyn Material> = Arc::new(Lambertian::new(checker_texture.clone()));
 
-    let sphere1: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(0.0, -10.0, 0.0),
-        10.0,
-        mat_ground.clone(),
-    ));
-    let sphere2: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(0.0, 10.0, 0.0),
-        10.0,
-        mat_ground.clone(),
-    ));
+    let sphere1 = new_sphere([0.0, -10.0, 0.0], 10.0, mat_ground.clone());
+    let sphere2 = new_sphere([0.0, 10.0, 0.0], 10.0, mat_ground.clone());
 
     let mut scene = Scene::new();
     scene.add(Arc::clone(&sphere1));
@@ -374,10 +322,10 @@ fn scene_c() -> Scene {
     scene
 }
 
-fn camera_d() -> CameraOptions {
-    CameraOptions::new()
-        .lookfrom([0.0, 4.0, 16.0])
-        .lookat([0.0, 1.5, 0.0])
+fn camera_d() -> Camera {
+    Camera::new()
+        .position([0.0, 4.0, 16.0])
+        .target([0.0, 1.5, 0.0])
 }
 
 fn scene_d() -> Scene {
@@ -385,11 +333,7 @@ fn scene_d() -> Scene {
         "/Users/alex/src/okalex/rt-in-a-weekend/img/earthmap.jpg",
     ));
     let earth_surface: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::clone(&earth_texture)));
-    let globe: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(0.0, 2.0, 0.0),
-        2.0,
-        earth_surface.clone(),
-    ));
+    let globe = new_sphere([0.0, 2.0, 0.0], 2.0, earth_surface.clone());
 
     let checker_texture: Arc<dyn Texture> = Arc::new(Checkered::from_color_values(
         0.32,
@@ -397,11 +341,7 @@ fn scene_d() -> Scene {
         [0.9, 0.9, 0.9],
     ));
     let mat_ground: Arc<dyn Material> = Arc::new(Lambertian::new(checker_texture.clone()));
-    let sphere_ground: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(0.0, -1000.0, 0.0),
-        1000.0,
-        mat_ground.clone(),
-    ));
+    let sphere_ground = new_sphere([0.0, -1000.0, 0.0], 1000.0, mat_ground.clone());
 
     let mut scene = Scene::new();
     scene.add(Arc::clone(&globe));
@@ -409,25 +349,17 @@ fn scene_d() -> Scene {
     scene
 }
 
-fn camera_e() -> CameraOptions {
-    CameraOptions::new()
-        .lookfrom([13.0, 2.0, 3.0])
-        .lookat([0.0, 0.0, 0.0])
+fn camera_e() -> Camera {
+    Camera::new()
+        .position([13.0, 2.0, 3.0])
+        .target([0.0, 0.0, 0.0])
 }
 
 fn scene_e() -> Scene {
     let perlin_texture: Arc<dyn Texture> = Arc::new(Noise::new(4.0));
     let perlin_surface: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::clone(&perlin_texture)));
-    let sphere1: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(0.0, -1000.0, 0.0),
-        1000.0,
-        perlin_surface.clone(),
-    ));
-    let sphere2: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-        Vec3::new(0.0, 2.0, 0.0),
-        2.0,
-        perlin_surface.clone(),
-    ));
+    let sphere1 = new_sphere([0.0, -1000.0, 0.0], 1000.0, perlin_surface.clone());
+    let sphere2 = new_sphere([0.0, 2.0, 0.0], 2.0, perlin_surface.clone());
 
     let mut scene = Scene::new();
     scene.add(Arc::clone(&sphere1));
@@ -435,12 +367,11 @@ fn scene_e() -> Scene {
     scene
 }
 
-fn camera_f() -> CameraOptions {
-    CameraOptions::new()
-        .aspect_ratio(1.0)
+fn camera_f() -> Camera {
+    Camera::new()
         .vfov(80.0)
-        .lookfrom([0.0, 0.0, 9.0])
-        .lookat([0.0, 0.0, 0.0])
+        .position([0.0, 0.0, 9.0])
+        .target([0.0, 0.0, 0.0])
 }
 
 fn scene_f() -> Scene {
@@ -450,36 +381,36 @@ fn scene_f() -> Scene {
     let upper_orange: Arc<dyn Material> = Arc::new(Lambertian::from_color_values([1.0, 0.5, 0.0]));
     let lower_teal: Arc<dyn Material> = Arc::new(Lambertian::from_color_values([0.2, 0.8, 0.8]));
 
-    let left: Arc<dyn Hittable> = Arc::new(Quad::new(
-        Vec3::new(-3.0, -2.0, 5.0),
-        Vec3::new(0.0, 0.0, -4.0),
-        Vec3::new(0.0, 4.0, 0.0),
+    let left = quad(
+        [-3.0, -2.0, 5.0],
+        [0.0, 0.0, -4.0],
+        [0.0, 4.0, 0.0],
         Arc::clone(&left_red),
-    ));
-    let back: Arc<dyn Hittable> = Arc::new(Quad::new(
-        Vec3::new(-2.0, -2.0, 0.0),
-        Vec3::new(4.0, 0.0, 0.0),
-        Vec3::new(0.0, 4.0, 0.0),
+    );
+    let back = quad(
+        [-2.0, -2.0, 0.0],
+        [4.0, 0.0, 0.0],
+        [0.0, 4.0, 0.0],
         Arc::clone(&back_green),
-    ));
-    let right: Arc<dyn Hittable> = Arc::new(Quad::new(
-        Vec3::new(3.0, -2.0, 1.0),
-        Vec3::new(0.0, 0.0, 4.0),
-        Vec3::new(0.0, 4.0, 0.0),
+    );
+    let right = quad(
+        [3.0, -2.0, 1.0],
+        [0.0, 0.0, 4.0],
+        [0.0, 4.0, 0.0],
         Arc::clone(&right_blue),
-    ));
-    let upper: Arc<dyn Hittable> = Arc::new(Quad::new(
-        Vec3::new(-2.0, 3.0, 1.0),
-        Vec3::new(4.0, 0.0, 0.0),
-        Vec3::new(0.0, 0.0, 4.0),
+    );
+    let upper = quad(
+        [-2.0, 3.0, 1.0],
+        [4.0, 0.0, 0.0],
+        [0.0, 0.0, 4.0],
         Arc::clone(&upper_orange),
-    ));
-    let lower: Arc<dyn Hittable> = Arc::new(Quad::new(
-        Vec3::new(-2.0, -3.0, 5.0),
-        Vec3::new(4.0, 0.0, 0.0),
-        Vec3::new(0.0, 0.0, -4.0),
+    );
+    let lower = quad(
+        [-2.0, -3.0, 5.0],
+        [4.0, 0.0, 0.0],
+        [0.0, 0.0, -4.0],
         Arc::clone(&lower_teal),
-    ));
+    );
 
     let mut scene = Scene::new();
     scene.add(Arc::clone(&left));
@@ -490,10 +421,10 @@ fn scene_f() -> Scene {
     scene
 }
 
-fn camera_g() -> CameraOptions {
-    CameraOptions::new()
-        .lookfrom([26.0, 3.0, 6.0])
-        .lookat([0.0, 2.0, 0.0])
+fn camera_g() -> Camera {
+    Camera::new()
+        .position([26.0, 3.0, 6.0])
+        .target([0.0, 2.0, 0.0])
     // .background([0.0, 0.0, 0.0])
 }
 
@@ -519,12 +450,11 @@ fn scene_g() -> Scene {
     scene
 }
 
-fn camera_cornell() -> CameraOptions {
-    CameraOptions::new()
-        .aspect_ratio(1.0)
+fn camera_cornell() -> Camera {
+    Camera::new()
         .vfov(40.0)
-        .lookfrom([278.0, 278.0, -800.0])
-        .lookat([278.0, 278.0, 0.0])
+        .position([278.0, 278.0, -800.0])
+        .target([278.0, 278.0, 0.0])
     // .background([0.0, 0.0, 0.0])
 }
 
@@ -664,12 +594,11 @@ fn scene_cornell_smoke() -> Scene {
     scene
 }
 
-fn camera_book2_final() -> CameraOptions {
-    CameraOptions::new()
-        .aspect_ratio(1.0)
+fn camera_book2_final() -> Camera {
+    Camera::new()
         .vfov(40.0)
-        .lookfrom([478.0, 278.0, -600.0])
-        .lookat([278.0, 278.0, 0.0])
+        .position([478.0, 278.0, -600.0])
+        .target([278.0, 278.0, 0.0])
     // .background([0.01, 0.01, 0.01])
 }
 
@@ -712,8 +641,8 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     scene.add(Arc::clone(&light));
 
     // Moving sphere
-    let center1 = Vec3::new(400.0, 400.0, 200.0);
-    let center2 = center1 + Vec3::new(30.0, 0.0, 0.0);
+    let center1 = Point3::new(400.0, 400.0, 200.0);
+    let center2 = center1 + Vector3::new(30.0, 0.0, 0.0);
     let sphere_mat = lambertian([0.7, 0.3, 0.1]);
     let sphere: Arc<dyn Hittable> = Arc::new(Sphere::moving(
         center1,
@@ -773,7 +702,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     let mut boxes2 = Scene::new();
     for j in 0..1000 {
         let sphere: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
-            Vec3::rand_range(0.0, 165.0),
+            Point3::from(rand_range_vector(0.0, 165.0)),
             10.0,
             Arc::clone(&white),
         ));

@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use nalgebra::Vector3;
+
 use crate::lib::aabb::AABB;
 use crate::lib::color::Color;
 use crate::lib::hittable::{HitRecord, Hittable};
@@ -9,7 +11,6 @@ use crate::lib::random::rand;
 use crate::lib::ray::Ray;
 use crate::lib::textures::solid_color::SolidColor;
 use crate::lib::textures::texture::Texture;
-use crate::lib::vec3::Vec3;
 
 pub struct ConstantMedium {
     boundary: Arc<dyn Hittable>,
@@ -70,7 +71,7 @@ impl Hittable for ConstantMedium {
             entry = 0.0;
         }
 
-        let ray_len = ray.dir.length();
+        let ray_len = ray.dir.magnitude();
         let dist_inside = (exit - entry) * ray_len;
         let hit_dist = self.neg_inv_density * rand().ln();
 
@@ -80,7 +81,7 @@ impl Hittable for ConstantMedium {
 
         let t = entry + hit_dist / ray_len;
         let point = ray.at(t);
-        let normal = Vec3::new(1.0, 0.0, 0.0); // arbitrary
+        let normal = Vector3::new(1.0, 0.0, 0.0); // arbitrary
         Some(HitRecord::new(
             point,
             normal,
