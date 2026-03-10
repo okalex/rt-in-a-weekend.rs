@@ -9,7 +9,9 @@ use winit::{
     window::{Window, WindowId},
 };
 
-use crate::lib::{app::state::State, frame_buffer::FrameBuffer, hittable::Hittable, renderer::Renderer};
+use crate::lib::{
+    app::state::State, frame_buffer::FrameBuffer, hittable::Hittable, renderer::Renderer,
+};
 
 pub struct App {
     width: u32,
@@ -43,8 +45,10 @@ impl ApplicationHandler<State> for App {
             .with_resizable(false);
 
         let window = Arc::new(event_loop.create_window(window_attrs).unwrap());
-        self.state =
-            Some(pollster::block_on(State::new(window, Arc::clone(&self.renderer.frame_buffer))).unwrap());
+        self.state = Some(
+            pollster::block_on(State::new(window, Arc::clone(&self.renderer.frame_buffer)))
+                .unwrap(),
+        );
     }
 
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: State) {

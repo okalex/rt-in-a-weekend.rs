@@ -85,7 +85,7 @@ fn main() {
             .samples_per_pixel(args.samples)
             .max_depth(args.depth)
             .use_multithreading(args.multithreading)
-            // .background(Color::black())
+            .background(Color::black())
             .build(&camera),
     );
 
