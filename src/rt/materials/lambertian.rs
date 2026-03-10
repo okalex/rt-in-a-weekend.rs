@@ -3,8 +3,8 @@ use std::sync::Arc;
 use nalgebra::Vector3;
 
 use crate::rt::color::Color;
-use crate::rt::hittable::HitRecord;
 use crate::rt::materials::material::{Material, Scattered};
+use crate::rt::objects::hittable::HitRecord;
 use crate::rt::random::rand_unit_vector;
 use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;
@@ -34,7 +34,6 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
         let mut scatter_dir = rec.normal + rand_unit_vector();
         if Self::all_are_less_than(scatter_dir, 1e-8) {
@@ -46,7 +45,6 @@ impl Material for Lambertian {
             attenuation: self.texture.value(rec.u, rec.v, &rec.point),
         })
     }
-
 }
 
 impl Clone for Lambertian {

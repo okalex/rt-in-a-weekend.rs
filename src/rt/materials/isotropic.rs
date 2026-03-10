@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::rt::hittable::HitRecord;
+use crate::rt::objects::hittable::HitRecord;
 use crate::rt::random::rand_unit_vector;
 use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;

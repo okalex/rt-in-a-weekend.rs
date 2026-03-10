@@ -1,9 +1,9 @@
 use crate::rt::color::Color;
-use crate::rt::hittable::HitRecord;
+use crate::rt::objects::hittable::HitRecord;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;
 
-use super::material::{Material, reflect, reflectance, refract, Scattered};
+use super::material::{Material, Scattered, reflect, reflectance, refract};
 
 pub struct Dielectric {
     refraction_idx: f64,

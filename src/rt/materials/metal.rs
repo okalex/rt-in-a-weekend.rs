@@ -1,8 +1,8 @@
-use crate::rt::{color::Color, random::rand_unit_vector};
-use crate::rt::hittable::HitRecord;
+use crate::rt::objects::hittable::HitRecord;
 use crate::rt::ray::Ray;
+use crate::rt::{color::Color, random::rand_unit_vector};
 
-use super::material::{Material, reflect, Scattered};
+use super::material::{Material, Scattered, reflect};
 
 pub struct Metal {
     albedo: Color,
@@ -20,7 +20,8 @@ impl Metal {
 
 impl Material for Metal {
     fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
-        let reflected = reflect(&r_in.dir, &rec.normal).normalize() + rand_unit_vector() * self.fuzz;
+        let reflected =
+            reflect(&r_in.dir, &rec.normal).normalize() + rand_unit_vector() * self.fuzz;
 
         Some(Scattered {
             ray: Ray::new(rec.point, reflected, r_in.time),

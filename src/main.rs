@@ -7,22 +7,24 @@ use nalgebra::{Point3, Vector3};
 use winit::event_loop::EventLoop;
 
 use crate::rt::app::app::App;
-use crate::rt::bvh_node::BvhNode;
 use crate::rt::camera::Camera;
 use crate::rt::color::Color;
-use crate::rt::constant_medium::ConstantMedium;
 use crate::rt::frame_buffer::FrameBuffer;
-use crate::rt::hittable::{Hittable, rotate_y, translate};
 use crate::rt::materials::{
     dielectric::Dielectric, diffuse_light::DiffuseLight, lambertian::Lambertian,
     material::Material, metal::Metal,
 };
+use crate::rt::objects::{
+    bvh_node::BvhNode,
+    constant_medium::ConstantMedium,
+    hittable::{Hittable, rotate_y, translate},
+    quad::Quad,
+    scene::{Box3d, Scene},
+    sphere::Sphere,
+};
 use crate::rt::ppm_writer::PpmWriter;
-use crate::rt::quad::Quad;
 use crate::rt::random::{rand, rand_range, rand_range_vector};
 use crate::rt::renderer::{LineServer, RenderOptionsBuilder, Renderer};
-use crate::rt::scene::{Box3d, Scene};
-use crate::rt::sphere::Sphere;
 use crate::rt::textures::checkered::Checkered;
 use crate::rt::textures::image_map::ImageMap;
 use crate::rt::textures::noise::Noise;

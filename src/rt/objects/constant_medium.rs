@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use nalgebra::Vector3;
 
+use super::hittable::{HitRecord, Hittable};
 use crate::rt::aabb::AABB;
 use crate::rt::color::Color;
-use crate::rt::hittable::{HitRecord, Hittable};
 use crate::rt::interval::Interval;
 use crate::rt::materials::{isotropic::Isotropic, material::Material};
 use crate::rt::random::rand;

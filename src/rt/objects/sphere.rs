@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use nalgebra::{Point3, Vector3};
 
+use super::hittable::{HitRecord, Hittable};
 use crate::rt::aabb::AABB;
-use crate::rt::hittable::{HitRecord, Hittable};
 use crate::rt::interval::Interval;
 use crate::rt::materials::material::Material;
 use crate::rt::ray::Ray;
@@ -33,7 +33,12 @@ impl Sphere {
         Self::new(ray, radius, mat, bbox)
     }
 
-    pub fn moving(center1: Point3<f64>, center2: Point3<f64>, radius: f64, mat: Arc<dyn Material>) -> Sphere {
+    pub fn moving(
+        center1: Point3<f64>,
+        center2: Point3<f64>,
+        radius: f64,
+        mat: Arc<dyn Material>,
+    ) -> Sphere {
         let ray = Ray::new(center1, center2 - center1, 0.0);
         let rvec = Vector3::from_element(radius);
         let box1 = AABB::from_points(ray.at(0.0) - rvec, ray.at(0.0) + rvec);

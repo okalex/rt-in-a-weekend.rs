@@ -1,7 +1,7 @@
 use nalgebra::{Point3, Vector3};
 
 use crate::rt::color::Color;
-use crate::rt::hittable::HitRecord;
+use crate::rt::objects::hittable::HitRecord;
 use crate::rt::ray::Ray;
 
 pub struct Scattered {

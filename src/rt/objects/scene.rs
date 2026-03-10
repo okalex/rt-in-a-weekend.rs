@@ -3,11 +3,11 @@ use std::sync::Arc;
 use nalgebra::{Point3, Vector3};
 use nalgebra_glm::{max2, min2};
 
+use super::hittable::{HitRecord, Hittable};
+use super::quad::Quad;
 use crate::rt::aabb::AABB;
-use crate::rt::hittable::{HitRecord, Hittable};
 use crate::rt::interval::Interval;
 use crate::rt::materials::material::Material;
-use crate::rt::quad::Quad;
 use crate::rt::ray::Ray;
 
 pub struct Scene {

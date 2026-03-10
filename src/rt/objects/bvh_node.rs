@@ -1,11 +1,11 @@
 use std::cmp::Ordering;
 use std::sync::Arc;
 
+use super::hittable::{HitRecord, Hittable};
+use super::scene::Scene;
 use crate::rt::aabb::AABB;
-use crate::rt::hittable::{HitRecord, Hittable};
 use crate::rt::interval::Interval;
 use crate::rt::ray::Ray;
-use crate::rt::scene::Scene;
 
 pub struct BvhNode {
     left: Arc<dyn Hittable>,

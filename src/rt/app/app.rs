@@ -2,16 +2,14 @@ use std::{sync::Arc, thread::JoinHandle};
 
 use winit::{
     application::ApplicationHandler,
-    dpi::{LogicalSize},
+    dpi::LogicalSize,
     event::{KeyEvent, WindowEvent},
     event_loop::ActiveEventLoop,
     keyboard::PhysicalKey,
     window::{Window, WindowId},
 };
 
-use crate::rt::{
-    app::state::State, hittable::Hittable, renderer::Renderer,
-};
+use crate::rt::{app::state::State, objects::hittable::Hittable, renderer::Renderer};
 
 #[allow(unused)]
 pub struct App {
