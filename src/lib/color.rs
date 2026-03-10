@@ -1,24 +1,27 @@
+use nalgebra::Vector3;
+
 use crate::lib::interval::Interval;
 use crate::lib::random::rand;
-use crate::lib::vec3::Vec3;
 use std::ops::{Add, Div, Mul, Sub};
+
+type Base = Vector3<f64>;
 
 #[derive(Clone, Copy)]
 pub struct Color {
-    base: Vec3,
+    base: Vector3<f64>,
 }
 
 impl Color {
-    pub fn wrap_vec(base: Vec3) -> Color {
+    pub fn wrap_vec(base: Base) -> Color {
         Color { base }
     }
 
     pub fn new(r: f64, g: f64, b: f64) -> Color {
-        Self::wrap_vec(Vec3::new(r, g, b))
+        Self::wrap_vec(Base::new(r, g, b))
     }
 
     pub fn from_arr(values: [f64; 3]) -> Color {
-        Self::wrap_vec(Vec3::new_arr(values))
+        Self::wrap_vec(Base::from(values))
     }
 
     pub fn from_u8(values: [u8; 3]) -> Color {
@@ -42,15 +45,15 @@ impl Color {
     }
 
     pub fn r(&self) -> f64 {
-        self.base.x()
+        self.base.x
     }
 
     pub fn g(&self) -> f64 {
-        self.base.y()
+        self.base.y
     }
 
     pub fn b(&self) -> f64 {
-        self.base.z()
+        self.base.z
     }
 
     pub fn to_gamma(&self) -> Color {
@@ -107,7 +110,7 @@ impl Mul for Color {
     type Output = Self;
 
     fn mul(self, b: Self) -> Self {
-        Self::wrap_vec(self.base * b.base)
+        Self::wrap_vec(self.base.component_mul(&b.base))
     }
 }
 
@@ -115,7 +118,7 @@ impl Mul<f64> for Color {
     type Output = Self;
 
     fn mul(self, b: f64) -> Self {
-        self * Self::fill(b)
+        Self::wrap_vec(self.base * b)
     }
 }
 
@@ -123,7 +126,7 @@ impl Div for Color {
     type Output = Self;
 
     fn div(self, b: Self) -> Self {
-        Self::wrap_vec(self.base / b.base)
+        Self::wrap_vec(self.base.component_div(&b.base))
     }
 }
 
@@ -131,7 +134,7 @@ impl Div<f64> for Color {
     type Output = Self;
 
     fn div(self, b: f64) -> Self {
-        self / Self::fill(b)
+        Self::wrap_vec(self.base / b)
     }
 }
 

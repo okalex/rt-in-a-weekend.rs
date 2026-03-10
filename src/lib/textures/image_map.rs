@@ -3,7 +3,6 @@ use nalgebra::Point3;
 use crate::lib::color::Color;
 use crate::lib::image::Image;
 use crate::lib::interval::Interval;
-use crate::lib::vec3::Vec3;
 
 use super::texture::Texture;
 

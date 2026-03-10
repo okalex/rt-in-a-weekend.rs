@@ -20,5 +20,4 @@ pub mod scene;
 pub mod sphere;
 pub mod textures;
 pub mod util;
-pub mod vec3;
 pub mod viewport;

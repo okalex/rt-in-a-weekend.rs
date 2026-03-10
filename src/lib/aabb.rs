@@ -2,7 +2,6 @@ use nalgebra::{Point3, Vector3};
 
 use crate::lib::interval::Interval;
 use crate::lib::ray::Ray;
-use crate::lib::vec3::Vec3;
 
 #[derive(Clone, Copy)]
 pub struct AABB {
@@ -27,15 +26,6 @@ impl AABB {
             y: Interval::empty(),
             z: Interval::empty(),
         }
-    }
-
-    // Deprecated
-    pub fn from_vecs(a: Vec3, b: Vec3) -> Self {
-        Self::new(
-            Interval::new(a.x(), b.x()),
-            Interval::new(a.y(), b.y()),
-            Interval::new(a.z(), b.z()),
-        )
     }
 
     pub fn from_points(a: Point3<f64>, b: Point3<f64>) -> Self {

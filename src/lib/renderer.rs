@@ -1,16 +1,15 @@
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-use nalgebra::Point3;
+use nalgebra::{Point3, Vector3};
 
 use crate::lib::camera::Camera;
 use crate::lib::color::Color;
 use crate::lib::frame_buffer::FrameBuffer;
 use crate::lib::hittable::Hittable;
 use crate::lib::interval::Interval;
-use crate::lib::random::rand;
+use crate::lib::random::{rand, rand_in_unit_disk};
 use crate::lib::ray::Ray;
-use crate::lib::vec3::Vec3;
 use crate::lib::viewport::Viewport;
 
 pub struct Renderer {
@@ -123,16 +122,16 @@ impl RenderWorker {
         return pixel_color / (self.options.samples_per_pixel as f64);
     }
 
-    fn sample_square(&self) -> Vec3 {
-        return Vec3::new(rand() - 0.5, rand() - 0.5, 0.0);
+    fn sample_square(&self) -> Vector3<f64> {
+        return Vector3::new(rand() - 0.5, rand() - 0.5, 0.0);
     }
 
     fn defocus_disk_sample(&self) -> Point3<f64> {
-        let p = Vec3::rand_in_unit_disk();
+        let p = rand_in_unit_disk();
         return Point3::from(
             self.camera.position.coords
-                + (self.viewport.defocus_disk.u * p.x())
-                + (self.viewport.defocus_disk.v * p.y()),
+                + (self.viewport.defocus_disk.u * p.x)
+                + (self.viewport.defocus_disk.v * p.y),
         );
     }
 
@@ -140,7 +139,7 @@ impl RenderWorker {
         let offset = self.sample_square();
         let pixel_sample = self
             .viewport
-            .pixel_loc(i as f64 + offset.x(), j as f64 + offset.y());
+            .pixel_loc(i as f64 + offset.x, j as f64 + offset.y);
 
         let ray_origin = if self.camera.defocus_angle <= 0.0 {
             self.camera.position

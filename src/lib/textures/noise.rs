@@ -1,8 +1,7 @@
-use nalgebra::Point3;
+use nalgebra::{Point3, Vector3};
 
 use crate::lib::color::Color;
 use crate::lib::perlin::Perlin;
-use crate::lib::vec3::Vec3;
 
 use super::texture::Texture;
 
@@ -26,6 +25,6 @@ impl Texture for Noise {
         // let noise = 0.5 * (1.0 + self.noise.noise(&point.scale(self.scale))); // Perlin noise
         let noise = self.noise.turb(&scaled, 7); // Turbulent noise
         // let noise = 0.5 * (1.0 + (self.scale * point.z() + 10.0 * self.noise.turb(point, 7)).sin());
-        Color::wrap_vec(Vec3::ones() * noise)
+        Color::wrap_vec(Vector3::from_element(1.0) * noise)
     }
 }
