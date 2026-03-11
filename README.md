@@ -33,6 +33,7 @@ the CPU, which is slowwwwwwwww.
   - Save render
   - Load models
 - Importance sampling
+- HDR support
 
 ## Example render
 
