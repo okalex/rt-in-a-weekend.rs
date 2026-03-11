@@ -4,3 +4,4 @@ pub mod hittable;
 pub mod quad;
 pub mod scene;
 pub mod sphere;
+pub mod triangle;

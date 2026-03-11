@@ -14,6 +14,7 @@ use crate::rt::materials::{
     dielectric::Dielectric, diffuse_light::DiffuseLight, lambertian::Lambertian,
     material::Material, metal::Metal,
 };
+use crate::rt::objects::triangle::Triangle;
 use crate::rt::objects::{
     bvh_node::BvhNode,
     constant_medium::ConstantMedium,
@@ -84,7 +85,7 @@ fn main() {
             .samples_per_pixel(args.samples)
             .max_depth(args.depth)
             .use_multithreading(args.multithreading)
-            .background(Color::black())
+            // .background(Color::black())
             .build(args.aspect as f64),
     );
 
@@ -138,6 +139,7 @@ fn get_camera_and_scene(scene_idx: u32) -> (Camera, Scene) {
         8 => (camera_cornell(), scene_cornell()),
         9 => (camera_cornell(), scene_cornell_smoke()),
         10 => (camera_book2_final(), scene_book2_final(true)),
+        11 => (camera_triangle(), scene_triangle()),
         _ => panic!(),
     };
     (camera_options, raw_scene)
@@ -169,6 +171,10 @@ fn quad(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat: Arc<dyn Material>) -> Arc<dy
     Arc::new(Quad::from_arr(q, u, v, mat))
 }
 
+fn triangle(a: [f64; 3], b: [f64; 3], c: [f64; 3], mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
+    Arc::new(Triangle::new(a, b, c, mat))
+}
+
 fn box3d(a: [f64; 3], b: [f64; 3], mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
     Arc::new(Box3d::new(
         Vector3::from(a),
@@ -195,10 +201,8 @@ fn camera_a() -> Camera {
 }
 
 fn scene_a() -> Scene {
-    let material_ground: Arc<dyn Material> =
-        Arc::new(Lambertian::from_color_values([0.8, 0.8, 0.0]));
-    let material_center: Arc<dyn Material> =
-        Arc::new(Lambertian::from_color_values([0.1, 0.2, 0.5]));
+    let material_ground = lambertian([0.8, 0.8, 0.0]);
+    let material_center = lambertian([0.1, 0.2, 0.5]);
     let material_left: Arc<dyn Material> = Arc::new(Dielectric::new(1.5));
     let material_bubble: Arc<dyn Material> = Arc::new(Dielectric::new(1.0 / 1.5));
     let material_right: Arc<dyn Material> = Arc::new(Metal::new([0.8, 0.6, 0.2], 0.2));
@@ -215,6 +219,33 @@ fn scene_a() -> Scene {
     scene.add(Arc::clone(&sphere3));
     scene.add(Arc::clone(&sphere4));
     scene.add(Arc::clone(&sphere5));
+    scene
+}
+
+fn camera_triangle() -> Camera {
+    Camera::new()
+        .vfov(50.0)
+        .position([0.0, 1.0, 2.0])
+        .target([0.0, 0.5, 0.0])
+        .defocus_angle(0.5)
+        .focus_dist(3.4)
+}
+
+fn scene_triangle() -> Scene {
+    let material_ground = lambertian([0.8, 0.8, 0.0]);
+    let material_center = lambertian([0.1, 0.2, 0.5]);
+
+    let sphere1 = new_sphere([1.0, -100.5, -1.0], 100.0, material_ground);
+    let tri1 = triangle(
+        [0.0, 1.0, -1.0],
+        [-1.0, 0.0, -1.0],
+        [1.0, 0.0, -1.0],
+        material_center,
+    );
+
+    let mut scene = Scene::new();
+    scene.add(Arc::clone(&sphere1));
+    scene.add(Arc::clone(&tri1));
     scene
 }
 
