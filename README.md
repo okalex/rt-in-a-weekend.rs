@@ -21,11 +21,17 @@ the CPU, which is slowwwwwwwww.
 - ~~Texture mapping~~
 - ~~Lighting~~
 - ~~Volumetrics~~
-- GPU-rendering, using [wgpu](https://wgpu.rs/)
+- GPU-rendering using [wgpu](https://wgpu.rs/)
 - [Physically-based rendering](https://en.wikipedia.org/wiki/Physically_based_rendering)
 - Support common modeling formats
+  - ~~.obj~~
 - Normal maps
-- Interactive mode supporting progressive rendering display and camera movement
+- Interactive mode
+  - ~~Progressive rendering~~
+  - Camera movement
+  - Update settings
+  - Save render
+  - Load models
 - Importance sampling
 
 ## Example render

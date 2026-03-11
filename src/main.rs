@@ -9,6 +9,7 @@ use winit::event_loop::EventLoop;
 use crate::rt::app::app::App;
 use crate::rt::camera::Camera;
 use crate::rt::color::Color;
+use crate::rt::file::load_model_with_mat;
 use crate::rt::frame_buffer::FrameBuffer;
 use crate::rt::materials::{
     dielectric::Dielectric, diffuse_light::DiffuseLight, lambertian::Lambertian,
@@ -85,7 +86,7 @@ fn main() {
             .samples_per_pixel(args.samples)
             .max_depth(args.depth)
             .use_multithreading(args.multithreading)
-            // .background(Color::black())
+            .background(Color::black())
             .build(args.aspect as f64),
     );
 
@@ -140,6 +141,7 @@ fn get_camera_and_scene(scene_idx: u32) -> (Camera, Scene) {
         9 => (camera_cornell(), scene_cornell_smoke()),
         10 => (camera_book2_final(), scene_book2_final(true)),
         11 => (camera_triangle(), scene_triangle()),
+        12 => (camera_cube(), scene_cube()),
         _ => panic!(),
     };
     (camera_options, raw_scene)
@@ -239,13 +241,58 @@ fn scene_triangle() -> Scene {
     let tri1 = triangle(
         [0.0, 1.0, -1.0],
         [-1.0, 0.0, -1.0],
-        [1.0, 0.0, -1.0],
+        [1.0, 0.5, -1.0],
         material_center,
     );
 
     let mut scene = Scene::new();
     scene.add(Arc::clone(&sphere1));
     scene.add(Arc::clone(&tri1));
+    scene
+}
+
+fn camera_cube() -> Camera {
+    Camera::new()
+        .vfov(50.0)
+        .position([0.0, 4.0, 6.0])
+        .target([0.0, 1.0, 0.0])
+        .defocus_angle(0.5)
+        .focus_dist(3.4)
+}
+
+fn scene_cube() -> Scene {
+    let mut scene = Scene::new();
+
+    let checkers: Arc<dyn Texture> = Arc::new(Checkered::from_color_values(
+        0.32,
+        [0.2, 0.3, 0.1],
+        [0.9, 0.9, 0.9],
+    ));
+    let mat_ground: Arc<dyn Material> = Arc::new(Lambertian::new(checkers.clone()));
+    let sphere1 = new_sphere([1.0, -100.5, -1.0], 100.0, mat_ground);
+    scene.add(Arc::clone(&sphere1));
+
+    let metal: Arc<dyn Material> = Arc::new(Metal::new([0.6, 0.6, 0.7], 0.3));
+    let objs = match load_model_with_mat("teapot.obj", metal) {
+        Ok(os) => os,
+        _ => panic!(),
+    };
+    for obj in objs {
+        let arc: Arc<dyn Hittable> = translate(rotate_y(Arc::new(obj), -15.0), [0.0, 0.0, 0.0]);
+        scene.add(Arc::clone(&arc));
+    }
+
+    let difflight = diffuse_light([8.0, 8.0, 8.0]);
+    let quad_light = quad(
+        [8.0, 1.0, 3.0],
+        [0.0, 0.0, -4.0],
+        [0.0, 2.0, 0.0],
+        Arc::clone(&difflight),
+    );
+    let sphere_light = new_sphere([0.0, 6.5, -2.0], 0.5, Arc::clone(&difflight));
+    scene.add(quad_light);
+    scene.add(sphere_light);
+
     scene
 }
 

@@ -1,6 +1,7 @@
 pub mod app;
 pub mod camera;
 pub mod color;
+pub mod file;
 pub mod frame_buffer;
 pub mod gpu;
 pub mod image;
