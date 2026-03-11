@@ -92,17 +92,20 @@ impl RenderWorker {
 
     pub fn render(&self) {
         loop {
+            let remaining_lines = self.line_server.len();
+            eprint!("\rLines remaining: {}       ", remaining_lines);
+
             let maybe_line = self.line_server.next_line();
             match maybe_line {
                 None => break,
                 Some(line_idx) => {
                     self.render_line(&self.scene, line_idx);
-
-                    let remaining_lines = self.line_server.len();
-                    eprint!("\rLines remaining: {}       ", remaining_lines);
                 }
             }
         }
+
+        let remaining_lines = self.line_server.len();
+        eprint!("\rLines remaining: {}       ", remaining_lines);
     }
 
     fn render_line(&self, scene: &Arc<dyn Hittable>, line_idx: u32) {

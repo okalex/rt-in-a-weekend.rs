@@ -108,13 +108,13 @@ impl Box3d {
             Arc::clone(&mat),
         ));
 
-        let mut sides = Scene::new();
-        sides.add(Arc::clone(&quad1));
-        sides.add(Arc::clone(&quad2));
-        sides.add(Arc::clone(&quad3));
-        sides.add(Arc::clone(&quad4));
-        sides.add(Arc::clone(&quad5));
-        sides.add(Arc::clone(&quad6));
-        sides
+        let mut scene = Scene::new();
+        scene.add(Arc::clone(&quad1));
+        scene.add(Arc::clone(&quad2));
+        scene.add(Arc::clone(&quad3));
+        scene.add(Arc::clone(&quad4));
+        scene.add(Arc::clone(&quad5));
+        scene.add(Arc::clone(&quad6));
+        scene
     }
 }
