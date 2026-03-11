@@ -141,7 +141,7 @@ fn get_camera_and_scene(scene_idx: u32) -> (Camera, Scene) {
         9 => (camera_cornell(), scene_cornell_smoke()),
         10 => (camera_book2_final(), scene_book2_final(true)),
         11 => (camera_triangle(), scene_triangle()),
-        12 => (camera_cube(), scene_cube()),
+        12 => (camera_teapot(), scene_teapot()),
         _ => panic!(),
     };
     (camera_options, raw_scene)
@@ -251,16 +251,16 @@ fn scene_triangle() -> Scene {
     scene
 }
 
-fn camera_cube() -> Camera {
+fn camera_teapot() -> Camera {
     Camera::new()
         .vfov(50.0)
-        .position([0.0, 4.0, 6.0])
+        .position([0.0, 3.0, 4.0])
         .target([0.0, 1.0, 0.0])
         .defocus_angle(0.5)
         .focus_dist(3.4)
 }
 
-fn scene_cube() -> Scene {
+fn scene_teapot() -> Scene {
     let mut scene = Scene::new();
 
     let checkers: Arc<dyn Texture> = Arc::new(Checkered::from_color_values(
@@ -272,25 +272,37 @@ fn scene_cube() -> Scene {
     let sphere1 = new_sphere([1.0, -100.5, -1.0], 100.0, mat_ground);
     scene.add(Arc::clone(&sphere1));
 
-    let metal: Arc<dyn Material> = Arc::new(Metal::new([0.6, 0.6, 0.7], 0.3));
-    let objs = match load_model_with_mat("teapot.obj", metal) {
+    let earth_texture: Arc<dyn Texture> = Arc::new(ImageMap::new(
+        "/Users/alex/src/okalex/rt-in-a-weekend/assets/cube-diffuse.jpg",
+        4.0,
+    ));
+    let earth_surface: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::clone(&earth_texture)));
+    let metal: Arc<dyn Material> = Arc::new(Metal::new([0.3, 0.6, 0.7], 0.5));
+    let objs = match load_model_with_mat("cube.obj", earth_surface) {
         Ok(os) => os,
         _ => panic!(),
     };
     for obj in objs {
-        let arc: Arc<dyn Hittable> = translate(rotate_y(Arc::new(obj), -15.0), [0.0, 0.0, 0.0]);
+        let arc: Arc<dyn Hittable> = translate(rotate_y(Arc::new(obj), 25.0), [0.0, 1.0, 0.0]);
         scene.add(Arc::clone(&arc));
     }
 
-    let difflight = diffuse_light([8.0, 8.0, 8.0]);
+    let difflight = diffuse_light([18.0, 18.0, 18.0]);
     let quad_light = quad(
         [8.0, 1.0, 3.0],
         [0.0, 0.0, -4.0],
         [0.0, 2.0, 0.0],
         Arc::clone(&difflight),
     );
+    let quad_light2 = quad(
+        [-3.0, 8.0, 0.0],
+        [0.0, 0.0, -4.0],
+        [-5.0, 0.0, 0.0],
+        Arc::clone(&difflight),
+    );
     let sphere_light = new_sphere([0.0, 6.5, -2.0], 0.5, Arc::clone(&difflight));
     scene.add(quad_light);
+    scene.add(quad_light2);
     scene.add(sphere_light);
 
     scene
@@ -411,6 +423,7 @@ fn camera_d() -> Camera {
 fn scene_d() -> Scene {
     let earth_texture: Arc<dyn Texture> = Arc::new(ImageMap::new(
         "/Users/alex/src/okalex/rt-in-a-weekend/img/earthmap.jpg",
+        1.0,
     ));
     let earth_surface: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::clone(&earth_texture)));
     let globe = new_sphere([0.0, 2.0, 0.0], 2.0, earth_surface.clone());
@@ -763,6 +776,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     // Globe
     let earth_texture: Arc<dyn Texture> = Arc::new(ImageMap::new(
         "/Users/alex/src/okalex/rt-in-a-weekend/img/earthmap.jpg",
+        1.0,
     ));
     let earth_surface: Arc<dyn Material> = Arc::new(Lambertian::new(Arc::clone(&earth_texture)));
     let globe: Arc<dyn Hittable> = new_sphere(

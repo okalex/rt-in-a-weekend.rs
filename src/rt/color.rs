@@ -66,6 +66,14 @@ impl Color {
         )
     }
 
+    pub fn to_linear(&self) -> Color {
+        Self::new(
+            gamma_to_linear(self.r()),
+            gamma_to_linear(self.g()),
+            gamma_to_linear(self.b()),
+        )
+    }
+
     pub fn to_u8(&self) -> [u8; 3] {
         return [to_u8(self.r()), to_u8(self.g()), to_u8(self.b())];
     }
@@ -149,4 +157,8 @@ fn linear_to_gamma(linear: f64) -> f64 {
         return linear.sqrt();
     }
     return 0.0;
+}
+
+fn gamma_to_linear(gamma: f64) -> f64 {
+    return gamma * gamma;
 }

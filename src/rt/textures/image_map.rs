@@ -8,12 +8,16 @@ use super::texture::Texture;
 
 pub struct ImageMap {
     image: Image,
+    scale_factor: f64,
 }
 
 impl ImageMap {
-    pub fn new(filename: &str) -> Self {
+    pub fn new(filename: &str, scale_factor: f64) -> Self {
         let image = Image::load(filename);
-        Self { image }
+        Self {
+            image,
+            scale_factor,
+        }
     }
 }
 
@@ -28,8 +32,10 @@ impl Texture for ImageMap {
         let u_clamped = interval.clamp(u);
         let v_clamped = 1.0 - interval.clamp(v);
 
-        let i = (u_clamped * (self.image.width as f64)) as u32;
-        let j = (v_clamped * (self.image.height as f64)) as u32;
+        let i =
+            ((self.scale_factor * u_clamped * (self.image.width as f64)) as u32) % self.image.width;
+        let j = ((self.scale_factor * v_clamped * (self.image.height as f64)) as u32)
+            % self.image.height;
 
         self.image.pixel_data(i, j)
     }

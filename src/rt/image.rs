@@ -1,4 +1,4 @@
-use image::ImageReader;
+use image::{ImageReader, metadata::CicpColorPrimaries as ColorSpace};
 use std::path::Path;
 
 use crate::rt::color::Color;
@@ -15,6 +15,7 @@ impl Image {
         let reader = ImageReader::open(path).expect("Could not load image"); // Note: this is not safe - ignoring errors for now
         let decoded = reader.decode().expect("Could not decode image"); // Note: this is not safe - ignoring errors for now
         let img = decoded.to_rgb32f();
+        let primary_color_space = img.color_space().primaries;
         let width = img.width();
         let height = img.height();
 
@@ -24,7 +25,10 @@ impl Image {
             for i in 0..width {
                 let pixel = img.get_pixel(i, j); // Note: this is not safe - ignoring errors for now
                 let color = Color::new(pixel[0] as f64, pixel[1] as f64, pixel[2] as f64);
-                pixels[j as usize][i as usize] = color;
+                pixels[j as usize][i as usize] = match primary_color_space {
+                    ColorSpace::SRgb => color.to_linear(), // Only converting srgb currently
+                    _ => color,
+                };
             }
         }
 
