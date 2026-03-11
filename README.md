@@ -35,13 +35,15 @@ the CPU, which is slowwwwwwwww.
 - Importance sampling
 - HDR support
 
-## Example render
+## Examples
 
-This is the final image generated after the completion of the first book. It took about seven and a half hours to render at 100 samples per pixel and a max bounce depth of 4 to limit rendering time:
+This is the final image generated after the completion of the first book. It took about 7.5hours to render at 100 samples per pixel and a max bounce depth of 4 to limit rendering time. Note that you can see the limitations of the low bounce depth by looking at the reflection of the small glass spheres in the large metallic sphere. I've since added multi-threading and bounded volume hierarchy (BVH) support and it renders much faster.
 
 ![test_b_100_4_large](https://github.com/user-attachments/assets/0c24c2fe-cdcc-4580-8046-43e016096eca)
 
-Note that you can see the limitations of the low bounce depth by looking at the reflection of the small glass spheres in the large metallic sphere.
+This is the final image from the second book, which took about 7 hours to render at 5000 samples per pixel and a max bounce depth of 50. It features emissive materials (i.e. lights), volumetrics (fog, smoke, and haze), and texture mapping (color only).
+
+![final_book2_5000_50](https://github.com/user-attachments/assets/3942223d-7f79-406f-8003-4b14143d8f95)
 
 ## BVH Implementation results
 
