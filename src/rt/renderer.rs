@@ -1,21 +1,16 @@
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-use nalgebra::{Point3, Vector3};
-
 use crate::rt::camera::Camera;
 use crate::rt::color::Color;
 use crate::rt::frame_buffer::FrameBuffer;
 use crate::rt::interval::Interval;
 use crate::rt::objects::hittable::Hittable;
-use crate::rt::random::{rand, rand_in_unit_disk};
 use crate::rt::ray::Ray;
-use crate::rt::viewport::Viewport;
 
 pub struct Renderer {
     options: Arc<RenderOptions>,
     camera: Arc<Camera>,
-    viewport: Arc<Viewport>,
     pub frame_buffer: Arc<FrameBuffer>,
     line_server: Arc<LineServer>,
 }
@@ -24,14 +19,12 @@ impl Renderer {
     pub fn new(
         options: Arc<RenderOptions>,
         camera: Arc<Camera>,
-        viewport: Arc<Viewport>,
         frame_buffer: Arc<FrameBuffer>,
         line_server: Arc<LineServer>,
     ) -> Self {
         Self {
             options,
             camera,
-            viewport,
             frame_buffer,
             line_server,
         }
@@ -49,7 +42,6 @@ impl Renderer {
                 let worker = RenderWorker::new(
                     Arc::clone(&self.options),
                     Arc::clone(&self.camera),
-                    Arc::clone(&self.viewport),
                     Arc::clone(&self.frame_buffer),
                     Arc::clone(&self.line_server),
                     Arc::clone(&scene),
@@ -65,7 +57,6 @@ impl Renderer {
 pub struct RenderWorker {
     options: Arc<RenderOptions>,
     camera: Arc<Camera>,
-    viewport: Arc<Viewport>,
     frame_buffer: Arc<FrameBuffer>,
     line_server: Arc<LineServer>,
     scene: Arc<dyn Hittable>,
@@ -75,7 +66,6 @@ impl RenderWorker {
     pub fn new(
         options: Arc<RenderOptions>,
         camera: Arc<Camera>,
-        viewport: Arc<Viewport>,
         frame_buffer: Arc<FrameBuffer>,
         line_server: Arc<LineServer>,
         scene: Arc<dyn Hittable>,
@@ -83,7 +73,6 @@ impl RenderWorker {
         Self {
             options,
             camera,
-            viewport,
             frame_buffer,
             line_server,
             scene,
@@ -119,40 +108,10 @@ impl RenderWorker {
     fn sample_pixel(&self, scene: &Arc<dyn Hittable>, i: u32, j: u32) -> Color {
         let mut pixel_color = Color::black();
         for _ in 0..self.options.samples_per_pixel {
-            let r = self.get_ray(i, j);
+            let r = self.camera.get_ray(i, j);
             pixel_color = pixel_color + self.ray_color(&r, self.options.max_depth, scene);
         }
         return pixel_color / (self.options.samples_per_pixel as f64);
-    }
-
-    fn sample_square(&self) -> Vector3<f64> {
-        return Vector3::new(rand() - 0.5, rand() - 0.5, 0.0);
-    }
-
-    fn defocus_disk_sample(&self) -> Point3<f64> {
-        let p = rand_in_unit_disk();
-        return Point3::from(
-            self.camera.position.coords
-                + (self.viewport.defocus_disk.u * p.x)
-                + (self.viewport.defocus_disk.v * p.y),
-        );
-    }
-
-    fn get_ray(&self, i: u32, j: u32) -> Ray {
-        let offset = self.sample_square();
-        let pixel_sample = self
-            .viewport
-            .pixel_loc(i as f64 + offset.x, j as f64 + offset.y);
-
-        let ray_origin = if self.camera.defocus_angle <= 0.0 {
-            self.camera.position
-        } else {
-            self.defocus_disk_sample()
-        };
-        let ray_dir = pixel_sample - ray_origin;
-        let ray_time = rand();
-
-        Ray::new(ray_origin, ray_dir, ray_time)
     }
 
     fn ray_color(&self, ray: &Ray, depth: u32, scene: &Arc<dyn Hittable>) -> Color {

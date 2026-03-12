@@ -1,47 +1,39 @@
 use nalgebra::{Point3, Vector3};
 
-use crate::rt::camera::Camera;
+use crate::rt::camera::CameraOptions;
 use crate::rt::util::degrees_to_radians;
-
-pub struct Disk {
-    pub u: Vector3<f64>,
-    pub v: Vector3<f64>,
-}
 
 pub struct Viewport {
     pub delta_u: Vector3<f64>,
     pub delta_v: Vector3<f64>,
     upper_left: Point3<f64>,
-    pub defocus_disk: Disk,
+    pub u: Vector3<f64>,
+    pub v: Vector3<f64>,
 }
 
 impl Viewport {
-    pub fn new(img_width: u32, img_height: u32, camera: &Camera) -> Viewport {
-        let theta = degrees_to_radians(camera.vfov);
+    pub fn new(img_width: u32, img_height: u32, camera_options: &CameraOptions) -> Viewport {
+        let theta = degrees_to_radians(camera_options.vfov);
         let h = (theta / 2.0).tan();
-        let viewport_height = 2.0 * h * camera.focus_dist;
+        let viewport_height = 2.0 * h * camera_options.focus_dist;
         let viewport_width = viewport_height * (img_width as f64) / (img_height as f64);
 
-        let w = (camera.position - camera.target).normalize();
-        let u = camera.vup.cross(&w).normalize();
+        let w = (camera_options.position - camera_options.target).normalize();
+        let u = camera_options.vup.cross(&w).normalize();
         let v = w.cross(&u);
-        let defocus_radius =
-            camera.focus_dist * degrees_to_radians(camera.defocus_angle / 2.0).tan();
 
         let viewport_u = u * (viewport_width as f64);
         let viewport_v = -v * (viewport_height as f64);
         let upper_left = Point3::from(
-            camera.position.coords - viewport_u / 2.0 - viewport_v / 2.0 - w * camera.focus_dist,
+            camera_options.position.coords - viewport_u / 2.0 - viewport_v / 2.0 - w * camera_options.focus_dist,
         );
 
         Viewport {
             delta_u: viewport_u / (img_width as f64),
             delta_v: viewport_v / (img_height as f64),
             upper_left,
-            defocus_disk: Disk {
-                u: u * defocus_radius,
-                v: v * defocus_radius,
-            },
+            u,
+            v,
         }
     }
 

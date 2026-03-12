@@ -11,6 +11,8 @@ pub struct Image {
 
 impl Image {
     pub fn load(filename: &str) -> Self {
+        eprintln!("Loading image: {}", filename);
+        
         let path = Path::new(filename);
         let reader = ImageReader::open(path).expect("Could not load image"); // Note: this is not safe - ignoring errors for now
         let decoded = reader.decode().expect("Could not decode image"); // Note: this is not safe - ignoring errors for now

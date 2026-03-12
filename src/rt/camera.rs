@@ -2,8 +2,68 @@ use core::f64;
 
 use nalgebra::{Point3, Vector3};
 
-#[derive(Clone, Copy)]
+use crate::rt::{
+    random::{rand, rand_in_unit_disk},
+    ray::Ray,
+    util::degrees_to_radians,
+    viewport::Viewport,
+};
+
+struct Disk {
+    pub u: Vector3<f64>,
+    pub v: Vector3<f64>,
+}
+
 pub struct Camera {
+    options: CameraOptions,
+    viewport: Viewport,
+    defocus_disk: Disk,
+}
+
+impl Camera {
+    pub fn new(options: CameraOptions, viewport: Viewport) -> Self {
+        let defocus_radius =
+            options.focus_dist * degrees_to_radians(options.defocus_angle / 2.0).tan();
+        let defocus_disk = Disk {
+            u: viewport.u * defocus_radius,
+            v: viewport.v * defocus_radius,
+        };
+        Self { options, viewport, defocus_disk }
+    }
+
+    fn sample_square(&self) -> Vector3<f64> {
+        return Vector3::new(rand() - 0.5, rand() - 0.5, 0.0);
+    }
+
+    fn defocus_disk_sample(&self) -> Point3<f64> {
+        let p = rand_in_unit_disk();
+        return Point3::from(
+            self.options.position.coords
+                + (self.defocus_disk.u * p.x)
+                + (self.defocus_disk.v * p.y),
+        );
+    }
+
+    pub fn get_ray(&self, i: u32, j: u32) -> Ray {
+        let offset = self.sample_square();
+        let pixel_sample = self
+            .viewport
+            .pixel_loc(i as f64 + offset.x, j as f64 + offset.y);
+
+        let ray_origin = if self.options.defocus_angle <= 0.0 {
+            self.options.position
+        } else {
+            self.defocus_disk_sample()
+        };
+        let ray_dir = pixel_sample - ray_origin;
+        let ray_time = rand();
+
+        Ray::new(ray_origin, ray_dir, ray_time)
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct CameraOptions {
     pub position: Point3<f64>,
     pub target: Point3<f64>,
     pub vup: Vector3<f64>,
@@ -12,9 +72,9 @@ pub struct Camera {
     pub defocus_angle: f64,
 }
 
-impl Camera {
-    pub fn new() -> Camera {
-        Camera {
+impl CameraOptions {
+    pub fn new() -> CameraOptions {
+        CameraOptions {
             position: Point3::new(0.0, 1.0, 0.0),
             target: Point3::new(0.0, 0.0, 0.0),
             vup: Vector3::new(0.0, 1.0, 0.0),

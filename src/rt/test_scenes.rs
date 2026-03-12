@@ -3,7 +3,7 @@ use std::sync::Arc;
 use nalgebra::{Point3, Vector3};
 
 use crate::rt::{
-    camera::Camera,
+    camera::CameraOptions,
     color::Color,
     file::load_model_with_mat,
     materials::{
@@ -23,7 +23,7 @@ use crate::rt::{
     textures::{checkered::Checkered, image_map::ImageMap, noise::Noise, texture::Texture},
 };
 
-pub fn get_camera_and_scene(scene_idx: u32) -> (Camera, Scene) {
+pub fn get_camera_and_scene(scene_idx: u32) -> (CameraOptions, Scene) {
     let (camera_options, raw_scene) = match scene_idx {
         1 => (camera_a(), scene_a()),
         2 => (camera_b(), scene_b()),
@@ -32,11 +32,12 @@ pub fn get_camera_and_scene(scene_idx: u32) -> (Camera, Scene) {
         5 => (camera_e(), scene_e()),
         6 => (camera_f(), scene_f()),
         7 => (camera_g(), scene_g()),
-        8 => (camera_cornell(), scene_cornell()),
-        9 => (camera_cornell(), scene_cornell_smoke()),
+        8 => (camera_cornell(555.0), scene_cornell()),
+        9 => (camera_cornell(555.0), scene_cornell_smoke()),
         10 => (camera_book2_final(), scene_book2_final(true)),
         11 => (camera_triangle(), scene_triangle()),
-        12 => (camera_teapot(), scene_teapot()),
+        12 => (camera_cornell(10.0), scene_obj(10.0)),
+        13 => (camera_cornell(550.0), scene_pbr(550.0)),
         _ => panic!(),
     };
     (camera_options, raw_scene)
@@ -72,6 +73,7 @@ struct Materials {
     air: Arc<dyn Material>,
     gold: Arc<dyn Material>,
     stone: Arc<dyn Material>,
+    rusty_metal: Arc<dyn Material>,
     marble: Arc<dyn Material>,
     earth: Arc<dyn Material>,
 }
@@ -91,7 +93,8 @@ impl Materials {
             glass: Self::dielectric(1.5),
             air: Self::dielectric(1.0 / 1.5),
             gold: Self::metal([0.8, 0.6, 0.2], 0.2),
-            stone: Self::image_map("assets/cube-diffuse.jpg", 4.0),
+            stone: Self::image_map("assets/cube-diffuse.jpg", 1.0),
+            rusty_metal: Self::image_map("assets/rusty-metal.jpg", 1.0),
             marble: Self::from_texture(Arc::new(Noise::new(8.0))),
             earth: Self::image_map("assets/earthmap.jpg", 1.0),
         }
@@ -111,6 +114,7 @@ impl Materials {
             "air" => Arc::clone(&self.air),
             "gold" => Arc::clone(&self.gold),
             "stone" => Arc::clone(&self.stone),
+            "rusty_metal" => Arc::clone(&self.rusty_metal),
             "marble" => Arc::clone(&self.marble),
             "earth" => Arc::clone(&self.earth),
             _ => Arc::clone(&self.default),
@@ -197,44 +201,48 @@ impl Shapes {
             Color::from_arr(color),
         ))
     }
+
+    fn checkered_ground(materials: &Materials) -> Arc<dyn Hittable> {
+        Shapes::sphere([1.0, -100.0, -1.0], 100.0, materials.get("checkered"))
+    }
 }
 
 impl Scene {
-    fn add_cornell_room(scene: &mut Scene, materials: &Materials) {
+    fn add_cornell_room(scene: &mut Scene, materials: &Materials, width: f64) {
         let light = Shapes::quad(
-            [343.0, 554.0, 332.0],
-            [-130.0, 0.0, 0.0],
-            [0.0, 0.0, -105.0],
+            [0.6 * width, width - 0.1, 0.6 * width],
+            [-0.2 * width, 0.0, 0.0],
+            [0.0, 0.0, -0.2 * width],
             materials.get("diffuse_light"),
         );
         let left = Shapes::quad(
-            [555.0, 0.0, 0.0],
-            [0.0, 555.0, 0.0],
-            [0.0, 0.0, 555.0],
+            [width, 0.0, 0.0],
+            [0.0, width, 0.0],
+            [0.0, 0.0, width],
             materials.get("green"),
         );
         let right = Shapes::quad(
             [0.0, 0.0, 0.0],
-            [0.0, 555.0, 0.0],
-            [0.0, 0.0, 555.0],
+            [0.0, width, 0.0],
+            [0.0, 0.0, width],
             materials.get("red"),
         );
         let floor = Shapes::quad(
             [0.0, 0.0, 0.0],
-            [555.0, 0.0, 0.0],
-            [0.0, 0.0, 555.0],
+            [width, 0.0, 0.0],
+            [0.0, 0.0, width],
             materials.get("white"),
         );
         let ceiling = Shapes::quad(
-            [555.0, 555.0, 555.0],
-            [-555.0, 0.0, 0.0],
-            [0.0, 0.0, -555.0],
+            [width, width, width],
+            [-width, 0.0, 0.0],
+            [0.0, 0.0, -width],
             materials.get("white"),
         );
         let back = Shapes::quad(
-            [0.0, 0.0, 555.0],
-            [555.0, 0.0, 0.0],
-            [0.0, 555.0, 0.0],
+            [0.0, 0.0, width],
+            [width, 0.0, 0.0],
+            [0.0, width, 0.0],
             materials.get("white"),
         );
 
@@ -247,8 +255,8 @@ impl Scene {
     }
 }
 
-fn camera_a() -> Camera {
-    Camera::new()
+fn camera_a() -> CameraOptions {
+    CameraOptions::new()
         .vfov(50.0)
         .position([-1.0, 1.0, 1.0])
         .target([0.0, 0.0, -1.0])
@@ -260,13 +268,13 @@ fn scene_a() -> Scene {
     let mut scene = Scene::new();
     let materials = Materials::new();
 
-    let sphere1 = Shapes::sphere([1.0, -100.5, -1.0], 100.0, materials.get("checkered"));
+    let ground = Shapes::checkered_ground(&materials);
     let sphere2 = Shapes::sphere([0.0, 0.0, -1.2], 0.5, materials.get("blue"));
     let sphere3 = Shapes::sphere([-1.0, 0.0, -1.0], 0.5, materials.get("glass"));
     let sphere4 = Shapes::sphere([-1.0, 0.0, -1.0], 0.4, materials.get("air"));
     let sphere5 = Shapes::sphere([1.0, 0.0, -1.0], 0.5, materials.get("gold"));
 
-    scene.add(sphere1);
+    scene.add(ground);
     scene.add(sphere2);
     scene.add(sphere3);
     scene.add(sphere4);
@@ -274,8 +282,8 @@ fn scene_a() -> Scene {
     scene
 }
 
-fn camera_triangle() -> Camera {
-    Camera::new()
+fn camera_triangle() -> CameraOptions {
+    CameraOptions::new()
         .vfov(50.0)
         .position([0.0, 1.0, 2.0])
         .target([0.0, 0.5, 0.0])
@@ -287,7 +295,7 @@ fn scene_triangle() -> Scene {
     let mut scene = Scene::new();
     let materials = Materials::new();
 
-    let sphere1 = Shapes::sphere([1.0, -100.5, -1.0], 100.0, materials.get("checkered"));
+    let ground = Shapes::checkered_ground(&materials);
     let tri1 = Shapes::triangle(
         [0.0, 1.0, -1.0],
         [-1.0, 0.0, -1.0],
@@ -295,58 +303,61 @@ fn scene_triangle() -> Scene {
         materials.get("blue"),
     );
 
-    scene.add(sphere1);
+    scene.add(ground);
     scene.add(tri1);
     scene
 }
 
-fn camera_teapot() -> Camera {
-    Camera::new()
-        .vfov(50.0)
-        .position([0.0, 3.0, 4.0])
-        .target([0.0, 1.0, 0.0])
-        .defocus_angle(0.5)
-        .focus_dist(3.4)
-}
-
-fn scene_teapot() -> Scene {
+fn scene_obj(scale: f64) -> Scene {
     let mut scene = Scene::new();
     let materials = Materials::new();
 
-    let sphere1 = Shapes::sphere([1.0, -100.5, -1.0], 100.0, materials.get("checkered"));
+    Scene::add_cornell_room(&mut scene, &materials, scale);
 
-    let objs = match load_model_with_mat("cube.obj", materials.get("stone")) {
+    let objs = match load_model_with_mat("cube.obj", materials.get("rusty_metal")) {
         Ok(os) => os,
         _ => panic!(),
     };
     for obj in objs {
-        let arc = translate(rotate_y(Arc::new(obj), 25.0), [0.0, 1.0, 0.0]);
-        scene.add(Arc::clone(&arc));
+        let moved = translate(rotate_y(Arc::new(obj), 205.0), [10.0, 1.0, 5.0]);
+        scene.add(moved);
     }
 
-    let quad_light = Shapes::quad(
-        [8.0, 1.0, 3.0],
-        [0.0, 0.0, -4.0],
-        [0.0, 2.0, 0.0],
-        materials.get("diffuse_light"),
-    );
-    let quad_light2 = Shapes::quad(
-        [-3.0, 8.0, 0.0],
-        [0.0, 0.0, -4.0],
-        [-5.0, 0.0, 0.0],
-        materials.get("diffuse_light"),
-    );
-    let sphere_light = Shapes::sphere([0.0, 6.5, -2.0], 0.5, materials.get("diffuse_light"));
-
-    scene.add(sphere1);
-    scene.add(quad_light);
-    scene.add(quad_light2);
-    scene.add(sphere_light);
     scene
 }
 
-fn camera_b() -> Camera {
-    Camera::new()
+fn scene_pbr(scale: f64) -> Scene {
+    let mut scene = Scene::new();
+    let materials = Materials::new();
+
+    Scene::add_cornell_room(&mut scene, &materials, scale);
+
+    let mut box_right = Shapes::box3d(
+        [0.0, 0.0, 0.0],
+        [165.0, 165.0, 165.0],
+        materials.get("white"),
+    );
+    box_right = rotate_y(box_right, -18.0);
+    box_right = translate(box_right, [130.0, 0.0, 65.0]);
+    scene.add(box_right);
+
+    let mut box_left = Shapes::box3d(
+        [0.0, 0.0, 0.0],
+        [165.0, 330.0, 165.0],
+        materials.get("white"),
+    );
+    box_left = rotate_y(box_left, 15.0);
+    box_left = translate(box_left, [265.0, 0.0, 295.0]);
+    scene.add(box_left);
+
+    let sphere = Shapes::sphere([350.0, 100.0, 150.0], 100.0, materials.get("glass"));
+    scene.add(sphere);
+
+    scene
+}
+
+fn camera_b() -> CameraOptions {
+    CameraOptions::new()
         .position([13.0, 2.0, 3.0])
         .target([0.0, 0.0, 0.0])
         .defocus_angle(0.6)
@@ -358,12 +369,12 @@ fn scene_b() -> Scene {
     let materials = Materials::new();
 
     // Objects
-    let sphere_ground = Shapes::sphere([0.0, -1000.0, 0.0], 1000.0, materials.get("ground"));
+    let ground = Shapes::checkered_ground(&materials);
     let sphere1 = Shapes::sphere([0.0, 1.0, 0.0], 1.0, materials.get("glass"));
     let sphere2 = Shapes::sphere([-4.0, 1.0, 0.0], 1.0, materials.get("red"));
     let sphere3 = Shapes::sphere([4.0, 1.0, 0.0], 1.0, materials.get("gold"));
 
-    scene.add(sphere_ground);
+    scene.add(ground);
     scene.add(sphere1);
     scene.add(sphere2);
     scene.add(sphere3);
@@ -405,8 +416,8 @@ fn scene_b() -> Scene {
     scene
 }
 
-fn camera_c() -> Camera {
-    Camera::new()
+fn camera_c() -> CameraOptions {
+    CameraOptions::new()
         .position([13.0, 2.0, 3.0])
         .target([0.0, 0.0, 0.0])
 }
@@ -423,8 +434,8 @@ fn scene_c() -> Scene {
     scene
 }
 
-fn camera_d() -> Camera {
-    Camera::new()
+fn camera_d() -> CameraOptions {
+    CameraOptions::new()
         .position([0.0, 4.0, 16.0])
         .target([0.0, 1.5, 0.0])
 }
@@ -433,16 +444,16 @@ fn scene_d() -> Scene {
     let mut scene = Scene::new();
     let materials = Materials::new();
 
+    let ground = Shapes::checkered_ground(&materials);
     let globe = Shapes::sphere([0.0, 2.0, 0.0], 2.0, materials.get("earth"));
-    let sphere_ground = Shapes::sphere([0.0, -1000.0, 0.0], 1000.0, materials.get("checkered"));
 
     scene.add(globe);
-    scene.add(sphere_ground);
+    scene.add(ground);
     scene
 }
 
-fn camera_e() -> Camera {
-    Camera::new()
+fn camera_e() -> CameraOptions {
+    CameraOptions::new()
         .position([13.0, 2.0, 3.0])
         .target([0.0, 0.0, 0.0])
 }
@@ -451,16 +462,16 @@ fn scene_e() -> Scene {
     let mut scene = Scene::new();
     let materials = Materials::new();
 
-    let sphere1 = Shapes::sphere([0.0, -1000.0, 0.0], 1000.0, materials.get("marble"));
+    let ground = Shapes::checkered_ground(&materials);
     let sphere2 = Shapes::sphere([0.0, 2.0, 0.0], 2.0, materials.get("marble"));
 
-    scene.add(sphere1);
+    scene.add(ground);
     scene.add(sphere2);
     scene
 }
 
-fn camera_f() -> Camera {
-    Camera::new()
+fn camera_f() -> CameraOptions {
+    CameraOptions::new()
         .vfov(80.0)
         .position([0.0, 0.0, 9.0])
         .target([0.0, 0.0, 0.0])
@@ -509,8 +520,8 @@ fn scene_f() -> Scene {
     scene
 }
 
-fn camera_g() -> Camera {
-    Camera::new()
+fn camera_g() -> CameraOptions {
+    CameraOptions::new()
         .position([26.0, 3.0, 6.0])
         .target([0.0, 2.0, 0.0])
 }
@@ -519,7 +530,7 @@ fn scene_g() -> Scene {
     let mut scene = Scene::new();
     let materials = Materials::new();
 
-    let ground = Shapes::sphere([0.0, -1000.0, 0.0], 1000.0, materials.get("marble"));
+    let ground = Shapes::checkered_ground(&materials);
     let sphere = Shapes::sphere([0.0, 2.0, 0.0], 2.0, materials.get("marble"));
 
     let quad_light = Shapes::quad(
@@ -537,11 +548,11 @@ fn scene_g() -> Scene {
     scene
 }
 
-fn camera_cornell() -> Camera {
-    Camera::new()
+fn camera_cornell(room_width: f64) -> CameraOptions {
+    CameraOptions::new()
         .vfov(40.0)
-        .position([278.0, 278.0, -800.0])
-        .target([278.0, 278.0, 0.0])
+        .position([room_width / 2.0, room_width / 2.0, -1.44 * room_width])
+        .target([room_width / 2.0, room_width / 2.0, 0.0])
 }
 
 fn scene_cornell() -> Scene {
@@ -564,7 +575,7 @@ fn scene_cornell() -> Scene {
     box_left = rotate_y(box_left, 15.0);
     box_left = translate(box_left, [265.0, 0.0, 295.0]);
 
-    Scene::add_cornell_room(&mut scene, &materials);
+    Scene::add_cornell_room(&mut scene, &materials, 555.0);
     scene.add(Arc::clone(&box_right));
     scene.add(Arc::clone(&box_left));
     scene
@@ -592,14 +603,14 @@ fn scene_cornell_smoke() -> Scene {
     box_left_boundary = translate(box_left_boundary, [265.0, 0.0, 295.0]);
     let box_left = Shapes::constant_medium(box_left_boundary, [0.0, 0.0, 0.0], 0.01);
 
-    Scene::add_cornell_room(&mut scene, &materials);
+    Scene::add_cornell_room(&mut scene, &materials, 555.0);
     scene.add(box_right);
     scene.add(box_left);
     scene
 }
 
-fn camera_book2_final() -> Camera {
-    Camera::new()
+fn camera_book2_final() -> CameraOptions {
+    CameraOptions::new()
         .vfov(40.0)
         .position([478.0, 278.0, -600.0])
         .target([278.0, 278.0, 0.0])

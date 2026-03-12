@@ -6,6 +6,7 @@ use clap::Parser;
 use winit::event_loop::EventLoop;
 
 use crate::rt::app::app::App;
+use crate::rt::camera::Camera;
 use crate::rt::color::Color;
 use crate::rt::frame_buffer::FrameBuffer;
 use crate::rt::objects::{bvh_node::BvhNode, hittable::Hittable, scene::Scene};
@@ -39,27 +40,12 @@ struct Args {
     multithreading: bool,
 }
 
-fn run_windowed(
-    width: u32,
-    height: u32,
-    renderer: Arc<Renderer>,
-    scene: Arc<dyn Hittable>,
-) -> anyhow::Result<()> {
-    let event_loop = EventLoop::with_user_event().build()?;
-    let mut app = App::new(width, height, Arc::clone(&renderer), scene);
-    event_loop.run_app(&mut app)?;
-
-    Ok(())
-}
-
 fn main() {
     env_logger::init();
 
     let args = Args::parse();
 
-    let (raw_camera, raw_scene) = get_camera_and_scene(args.scene);
-    let camera = Arc::new(raw_camera);
-    let scene = wrap_scene(raw_scene);
+    let (camera_options, raw_scene) = get_camera_and_scene(args.scene);
 
     let render_options = Arc::new(
         RenderOptionsBuilder::new()
@@ -71,11 +57,13 @@ fn main() {
             .build(args.aspect as f64),
     );
 
-    let viewport = Arc::new(Viewport::new(
+    let viewport = Viewport::new(
         render_options.img_width,
         render_options.img_height,
-        &camera,
-    ));
+        &camera_options,
+    );
+    let camera = Arc::new(Camera::new(camera_options, viewport));
+    let scene = wrap_scene(raw_scene);
 
     let frame_buffer = Arc::new(FrameBuffer::new(
         render_options.img_width as usize,
@@ -87,7 +75,6 @@ fn main() {
     let renderer = Arc::new(Renderer::new(
         Arc::clone(&render_options),
         Arc::clone(&camera),
-        Arc::clone(&viewport),
         Arc::clone(&frame_buffer),
         Arc::clone(&line_server),
     ));
@@ -107,6 +94,19 @@ fn main() {
 
         writer.write();
     }
+}
+
+fn run_windowed(
+    width: u32,
+    height: u32,
+    renderer: Arc<Renderer>,
+    scene: Arc<dyn Hittable>,
+) -> anyhow::Result<()> {
+    let event_loop = EventLoop::with_user_event().build()?;
+    let mut app = App::new(width, height, Arc::clone(&renderer), scene);
+    event_loop.run_app(&mut app)?;
+
+    Ok(())
 }
 
 fn wrap_scene(scene: Scene) -> Arc<dyn Hittable> {
