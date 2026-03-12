@@ -12,6 +12,7 @@ use crate::rt::frame_buffer::FrameBuffer;
 use crate::rt::objects::{bvh_node::BvhNode, hittable::Hittable, scene::Scene};
 use crate::rt::ppm_writer::PpmWriter;
 use crate::rt::renderer::{LineServer, RenderOptionsBuilder, Renderer};
+use crate::rt::sampler::Sampler;
 use crate::rt::test_scenes::get_camera_and_scene;
 use crate::rt::viewport::Viewport;
 
@@ -62,7 +63,14 @@ fn main() {
         render_options.img_height,
         &camera_options,
     );
-    let camera = Arc::new(Camera::new(camera_options, viewport, render_options.samples_per_pixel));
+
+    let sampler_type = 2;
+    let sampler = match sampler_type {
+        2 => Sampler::stratified(render_options.samples_per_pixel),
+        _ => Sampler::random(render_options.samples_per_pixel),
+    };
+
+    let camera = Arc::new(Camera::new(camera_options, viewport, sampler));
     let scene = wrap_scene(raw_scene);
 
     let frame_buffer = Arc::new(FrameBuffer::new(

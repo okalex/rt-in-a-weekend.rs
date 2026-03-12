@@ -9,10 +9,8 @@ use crate::rt::objects::hittable::Hittable;
 use crate::rt::ray::Ray;
 
 pub struct Renderer {
-    options: Arc<RenderOptions>,
-    camera: Arc<Camera>,
     pub frame_buffer: Arc<FrameBuffer>,
-    line_server: Arc<LineServer>,
+    workers: Vec<Arc<RenderWorker>>,
 }
 
 impl Renderer {
@@ -22,35 +20,42 @@ impl Renderer {
         frame_buffer: Arc<FrameBuffer>,
         line_server: Arc<LineServer>,
     ) -> Self {
-        Self {
-            options,
-            camera,
-            frame_buffer,
-            line_server,
-        }
-    }
-
-    pub fn render(&self, scene: Arc<dyn Hittable>) -> Vec<JoinHandle<()>> {
-        let num_threads = if self.options.use_multithreading {
+        let num_threads = if options.use_multithreading {
             std::thread::available_parallelism().unwrap().get()
         } else {
             1
         };
 
-        (0..num_threads)
+        let workers = (0..num_threads)
             .map(|_| {
-                let worker = RenderWorker::new(
-                    Arc::clone(&self.options),
-                    Arc::clone(&self.camera),
-                    Arc::clone(&self.frame_buffer),
-                    Arc::clone(&self.line_server),
-                    Arc::clone(&scene),
-                );
-                std::thread::spawn(move || {
-                    worker.render();
-                })
+                Arc::new(RenderWorker::new(
+                    Arc::clone(&options),
+                    Arc::clone(&camera),
+                    Arc::clone(&frame_buffer),
+                    Arc::clone(&line_server),
+                ))
             })
-            .collect()
+            .collect();
+        
+        Self {
+            frame_buffer,
+            workers,
+        }
+    }
+
+    pub fn render(&self, scene: Arc<dyn Hittable>) -> Vec<JoinHandle<()>> {
+        let mut thread_handles: Vec<JoinHandle<()>> = vec![];
+        for worker in &self.workers {
+            let worker_clone = Arc::clone(worker);
+            let scene_clone = Arc::clone(&scene);
+
+            let thread_handle = std::thread::spawn(move || {
+                worker_clone.render(scene_clone);
+            });
+
+            thread_handles.push(thread_handle);
+        }
+        thread_handles
     }
 }
 
@@ -59,7 +64,6 @@ pub struct RenderWorker {
     camera: Arc<Camera>,
     frame_buffer: Arc<FrameBuffer>,
     line_server: Arc<LineServer>,
-    scene: Arc<dyn Hittable>,
 }
 
 impl RenderWorker {
@@ -68,18 +72,16 @@ impl RenderWorker {
         camera: Arc<Camera>,
         frame_buffer: Arc<FrameBuffer>,
         line_server: Arc<LineServer>,
-        scene: Arc<dyn Hittable>,
     ) -> Self {
         Self {
             options,
             camera,
             frame_buffer,
             line_server,
-            scene,
         }
     }
 
-    pub fn render(&self) {
+    pub fn render(&self, scene: Arc<dyn Hittable>) {
         loop {
             let remaining_lines = self.line_server.len();
             eprint!("\rLines remaining: {}       ", remaining_lines);
@@ -88,7 +90,7 @@ impl RenderWorker {
             match maybe_line {
                 None => break,
                 Some(line_idx) => {
-                    self.render_line(&self.scene, line_idx);
+                    self.render_line(&scene, line_idx);
                 }
             }
         }

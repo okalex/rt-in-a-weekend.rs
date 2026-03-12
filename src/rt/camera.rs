@@ -5,6 +5,7 @@ use nalgebra::{Point3, Vector3};
 use crate::rt::{
     random::{rand, rand_in_unit_disk},
     ray::Ray,
+    sampler::Sampler,
     util::degrees_to_radians,
     viewport::Viewport,
 };
@@ -18,11 +19,11 @@ pub struct Camera {
     options: CameraOptions,
     viewport: Viewport,
     defocus_disk: Disk,
-    samples_per_pixel: u32,
+    sampler: Sampler,
 }
 
 impl Camera {
-    pub fn new(options: CameraOptions, viewport: Viewport, samples_per_pixel: u32) -> Self {
+    pub fn new(options: CameraOptions, viewport: Viewport, sampler: Sampler) -> Self {
         let defocus_radius =
             options.focus_dist * degrees_to_radians(options.defocus_angle / 2.0).tan();
         let defocus_disk = Disk {
@@ -33,7 +34,7 @@ impl Camera {
             options,
             viewport,
             defocus_disk,
-            samples_per_pixel,
+            sampler,
         }
     }
 
@@ -41,10 +42,10 @@ impl Camera {
     where
         F: FnMut(Ray) -> (),
     {
-        self.foreach_sample_stratified(|offset| {
+        self.sampler.foreach_sample(|offset| {
             let ray = self.get_ray(i, j, offset);
             f(ray);
-        })
+        });
     }
 
     fn get_ray(&self, i: u32, j: u32, offset: Vector3<f64>) -> Ray {
@@ -70,45 +71,6 @@ impl Camera {
                 + (self.defocus_disk.u * p.x)
                 + (self.defocus_disk.v * p.y),
         );
-    }
-
-    #[allow(unused)]
-    fn foreach_sample<F>(&self, mut f: F)
-    where
-        F: FnMut(Vector3<f64>) -> (),
-    {
-        for _ in 0..self.samples_per_pixel {
-            let offset = self.sample_square();
-            f(offset)
-        }
-    }
-
-    #[allow(unused)]
-    fn sample_square(&self) -> Vector3<f64> {
-        Vector3::new(rand() - 0.5, rand() - 0.5, 0.0)
-    }
-
-    #[allow(unused)]
-    fn foreach_sample_stratified<F>(&self, mut f: F)
-    where
-        F: FnMut(Vector3<f64>) -> (),
-    {
-        let sqrt_spp = (self.samples_per_pixel as f64).sqrt();
-        let recip_sqrt_spp = 1.0 / sqrt_spp;
-
-        for s_j in 0..sqrt_spp as u32 {
-            for s_i in 0..sqrt_spp as u32 {
-                let offset = self.sample_square_stratified(s_i, s_j, recip_sqrt_spp);
-                f(offset)
-            }
-        }
-    }
-
-    #[allow(unused)]
-    fn sample_square_stratified(&self, s_i: u32, s_j: u32, recip_sqrt_spp: f64) -> Vector3<f64> {
-        let px = ((s_i as f64 + rand()) * recip_sqrt_spp) - 0.5;
-        let py = ((s_j as f64 + rand()) * recip_sqrt_spp) - 0.5;
-        Vector3::new(px, py, 0.0)
     }
 }
 

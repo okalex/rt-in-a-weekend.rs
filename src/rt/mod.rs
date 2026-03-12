@@ -13,6 +13,7 @@ pub mod ppm_writer;
 pub mod random;
 pub mod ray;
 pub mod renderer;
+pub mod sampler;
 pub mod test_scenes;
 pub mod textures;
 pub mod util;
