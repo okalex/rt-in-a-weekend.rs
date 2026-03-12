@@ -36,7 +36,7 @@ impl Renderer {
                 ))
             })
             .collect();
-        
+
         Self {
             frame_buffer,
             workers,
@@ -112,7 +112,7 @@ impl RenderWorker {
         self.camera.foreach_ray(i, j, |ray| {
             pixel_color = pixel_color + self.ray_color(&ray, 0, scene);
         });
-        return pixel_color / (self.options.samples_per_pixel as f64);
+        return self.camera.sampler.integrate_samples(pixel_color);
     }
 
     fn ray_color(&self, ray: &Ray, depth: u32, scene: &Arc<dyn Hittable>) -> Color {

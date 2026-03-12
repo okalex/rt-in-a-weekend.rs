@@ -19,7 +19,7 @@ pub struct Camera {
     options: CameraOptions,
     viewport: Viewport,
     defocus_disk: Disk,
-    sampler: Sampler,
+    pub sampler: Sampler,
 }
 
 impl Camera {

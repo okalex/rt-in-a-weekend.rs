@@ -39,6 +39,9 @@ struct Args {
 
     #[arg(short, long, default_value_t = true)]
     multithreading: bool,
+
+    #[arg(long, default_value_t = 1)]
+    sampler: u32,
 }
 
 fn main() {
@@ -64,8 +67,7 @@ fn main() {
         &camera_options,
     );
 
-    let sampler_type = 2;
-    let sampler = match sampler_type {
+    let sampler = match args.sampler {
         2 => Sampler::stratified(render_options.samples_per_pixel),
         _ => Sampler::random(render_options.samples_per_pixel),
     };
