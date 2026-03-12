@@ -33,7 +33,7 @@ pub fn load_model_with_mat(file_name: &str, mat: Arc<dyn Material>) -> anyhow::R
     let (models, obj_materials) = tobj::load_obj_buf(
         &mut obj_reader,
         &tobj::LoadOptions {
-            single_index: true,
+            single_index: false,
             triangulate: true,
             ..Default::default()
         },
