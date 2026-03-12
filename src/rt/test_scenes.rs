@@ -8,7 +8,7 @@ use crate::rt::{
     file::load_model_with_mat,
     materials::{
         dielectric::Dielectric, diffuse_light::DiffuseLight, lambertian::Lambertian,
-        material::Material, metal::Metal,
+        material::Material, metal::Metal, pbr_material::PbrMaterial,
     },
     objects::{
         bvh_node::BvhNode,
@@ -76,6 +76,7 @@ struct Materials {
     rusty_metal: Arc<dyn Material>,
     marble: Arc<dyn Material>,
     earth: Arc<dyn Material>,
+    pbr: Arc<dyn Material>,
 }
 
 impl Materials {
@@ -97,6 +98,7 @@ impl Materials {
             rusty_metal: Self::image_map("assets/rusty-metal.jpg", 1.0),
             marble: Self::from_texture(Arc::new(Noise::new(8.0))),
             earth: Self::image_map("assets/earthmap.jpg", 1.0),
+            pbr: Self::pbr([0.8, 0.6, 0.2], 0.7),
         }
     }
 
@@ -117,6 +119,7 @@ impl Materials {
             "rusty_metal" => Arc::clone(&self.rusty_metal),
             "marble" => Arc::clone(&self.marble),
             "earth" => Arc::clone(&self.earth),
+            "pbr" => Arc::clone(&self.pbr),
             _ => Arc::clone(&self.default),
         }
     }
@@ -155,6 +158,11 @@ impl Materials {
     fn image_map(file_name: &str, scale_factor: f64) -> Arc<dyn Material> {
         let tex = Arc::new(ImageMap::new(file_name, scale_factor));
         Self::from_texture(tex)
+    }
+
+    fn pbr(albedo: [f64; 3], metallicity: f64) -> Arc<dyn Material> {
+        let color = Color::from_arr(albedo);
+        Arc::new(PbrMaterial::new(color, metallicity))
     }
 }
 
@@ -332,6 +340,12 @@ fn scene_pbr(scale: f64) -> Scene {
 
     Scene::add_cornell_room(&mut scene, &materials, scale);
 
+    let purple_light = Materials::diffuse_light([8.0, 0.0, 10.0]);
+    scene.add(Shapes::sphere([530.0, 530.0, 20.0], 10.0, purple_light));
+
+    let teal_light = Materials::diffuse_light([0.0, 8.0, 10.0]);
+    scene.add(Shapes::sphere([20.0, 530.0, 20.0], 10.0, teal_light));
+
     let mut box_right = Shapes::box3d(
         [0.0, 0.0, 0.0],
         [165.0, 165.0, 165.0],
@@ -350,7 +364,8 @@ fn scene_pbr(scale: f64) -> Scene {
     box_left = translate(box_left, [265.0, 0.0, 295.0]);
     scene.add(box_left);
 
-    let sphere = Shapes::sphere([350.0, 100.0, 150.0], 100.0, materials.get("glass"));
+    let mat = Materials::pbr([0.8, 0.6, 0.2], 0.9);
+    let sphere = Shapes::sphere([420.0, 100.0, 180.0], 100.0, mat);
     scene.add(sphere);
 
     scene
