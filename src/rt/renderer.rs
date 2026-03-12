@@ -107,15 +107,14 @@ impl RenderWorker {
 
     fn sample_pixel(&self, scene: &Arc<dyn Hittable>, i: u32, j: u32) -> Color {
         let mut pixel_color = Color::black();
-        for _ in 0..self.options.samples_per_pixel {
-            let r = self.camera.get_ray(i, j);
-            pixel_color = pixel_color + self.ray_color(&r, self.options.max_depth, scene);
-        }
+        self.camera.foreach_ray(i, j, |ray| {
+            pixel_color = pixel_color + self.ray_color(&ray, 0, scene);
+        });
         return pixel_color / (self.options.samples_per_pixel as f64);
     }
 
     fn ray_color(&self, ray: &Ray, depth: u32, scene: &Arc<dyn Hittable>) -> Color {
-        if depth <= 0 {
+        if depth >= self.options.max_depth {
             return Color::black();
         }
 
@@ -127,7 +126,7 @@ impl RenderWorker {
 
                 let scattered_color = match hit_record.mat.scatter(ray, &hit_record) {
                     Some(scattered) => {
-                        scattered.attenuation * self.ray_color(&scattered.ray, depth - 1, scene)
+                        scattered.attenuation * self.ray_color(&scattered.ray, depth + 1, scene)
                     }
                     None => Color::black(),
                 };

@@ -62,7 +62,7 @@ fn main() {
         render_options.img_height,
         &camera_options,
     );
-    let camera = Arc::new(Camera::new(camera_options, viewport));
+    let camera = Arc::new(Camera::new(camera_options, viewport, render_options.samples_per_pixel));
     let scene = wrap_scene(raw_scene);
 
     let frame_buffer = Arc::new(FrameBuffer::new(

@@ -18,34 +18,36 @@ pub struct Camera {
     options: CameraOptions,
     viewport: Viewport,
     defocus_disk: Disk,
+    samples_per_pixel: u32,
 }
 
 impl Camera {
-    pub fn new(options: CameraOptions, viewport: Viewport) -> Self {
+    pub fn new(options: CameraOptions, viewport: Viewport, samples_per_pixel: u32) -> Self {
         let defocus_radius =
             options.focus_dist * degrees_to_radians(options.defocus_angle / 2.0).tan();
         let defocus_disk = Disk {
             u: viewport.u * defocus_radius,
             v: viewport.v * defocus_radius,
         };
-        Self { options, viewport, defocus_disk }
+        Self {
+            options,
+            viewport,
+            defocus_disk,
+            samples_per_pixel,
+        }
     }
 
-    fn sample_square(&self) -> Vector3<f64> {
-        return Vector3::new(rand() - 0.5, rand() - 0.5, 0.0);
+    pub fn foreach_ray<F>(&self, i: u32, j: u32, mut f: F)
+    where
+        F: FnMut(Ray) -> (),
+    {
+        self.foreach_sample_stratified(|offset| {
+            let ray = self.get_ray(i, j, offset);
+            f(ray);
+        })
     }
 
-    fn defocus_disk_sample(&self) -> Point3<f64> {
-        let p = rand_in_unit_disk();
-        return Point3::from(
-            self.options.position.coords
-                + (self.defocus_disk.u * p.x)
-                + (self.defocus_disk.v * p.y),
-        );
-    }
-
-    pub fn get_ray(&self, i: u32, j: u32) -> Ray {
-        let offset = self.sample_square();
+    fn get_ray(&self, i: u32, j: u32, offset: Vector3<f64>) -> Ray {
         let pixel_sample = self
             .viewport
             .pixel_loc(i as f64 + offset.x, j as f64 + offset.y);
@@ -59,6 +61,54 @@ impl Camera {
         let ray_time = rand();
 
         Ray::new(ray_origin, ray_dir, ray_time)
+    }
+
+    fn defocus_disk_sample(&self) -> Point3<f64> {
+        let p = rand_in_unit_disk();
+        return Point3::from(
+            self.options.position.coords
+                + (self.defocus_disk.u * p.x)
+                + (self.defocus_disk.v * p.y),
+        );
+    }
+
+    #[allow(unused)]
+    fn foreach_sample<F>(&self, mut f: F)
+    where
+        F: FnMut(Vector3<f64>) -> (),
+    {
+        for _ in 0..self.samples_per_pixel {
+            let offset = self.sample_square();
+            f(offset)
+        }
+    }
+
+    #[allow(unused)]
+    fn sample_square(&self) -> Vector3<f64> {
+        Vector3::new(rand() - 0.5, rand() - 0.5, 0.0)
+    }
+
+    #[allow(unused)]
+    fn foreach_sample_stratified<F>(&self, mut f: F)
+    where
+        F: FnMut(Vector3<f64>) -> (),
+    {
+        let sqrt_spp = (self.samples_per_pixel as f64).sqrt();
+        let recip_sqrt_spp = 1.0 / sqrt_spp;
+
+        for s_j in 0..sqrt_spp as u32 {
+            for s_i in 0..sqrt_spp as u32 {
+                let offset = self.sample_square_stratified(s_i, s_j, recip_sqrt_spp);
+                f(offset)
+            }
+        }
+    }
+
+    #[allow(unused)]
+    fn sample_square_stratified(&self, s_i: u32, s_j: u32, recip_sqrt_spp: f64) -> Vector3<f64> {
+        let px = ((s_i as f64 + rand()) * recip_sqrt_spp) - 0.5;
+        let py = ((s_j as f64 + rand()) * recip_sqrt_spp) - 0.5;
+        Vector3::new(px, py, 0.0)
     }
 }
 

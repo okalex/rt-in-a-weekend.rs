@@ -12,7 +12,7 @@ use crate::rt::{
 
 pub fn load_string_path(path: &Path) -> anyhow::Result<String> {
     let path = Path::new(env!("OUT_DIR")).join("assets").join(path);
-    println!("Loading text from {}", path.file_name().unwrap().display());
+    eprintln!("Loading text from {}", path.file_name().unwrap().display());
     let txt = fs::read_to_string(path)?;
     Ok(txt)
 }
@@ -23,7 +23,7 @@ pub fn load_string(file_name: &str) -> anyhow::Result<String> {
 }
 
 pub fn load_model_with_mat(file_name: &str, mat: Arc<dyn Material>) -> anyhow::Result<Vec<Mesh>> {
-    println!("Loading model from {}", file_name);
+    eprintln!("Loading model from {}", file_name);
 
     let obj_text = load_string(file_name)?;
     let obj_cursor = Cursor::new(obj_text);
@@ -38,7 +38,7 @@ pub fn load_model_with_mat(file_name: &str, mat: Arc<dyn Material>) -> anyhow::R
             ..Default::default()
         },
         |p| {
-            println!("Loading material from {}", p.file_name().unwrap().display());
+            eprintln!("Loading material from {}", p.file_name().unwrap().display());
             let mat_text = load_string_path(p).unwrap();
             tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mat_text)))
         },
