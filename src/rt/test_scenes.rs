@@ -71,6 +71,7 @@ struct Materials {
     checkered: Arc<dyn Material>,
     glass: Arc<dyn Material>,
     air: Arc<dyn Material>,
+    mirror: Arc<dyn Material>,
     gold: Arc<dyn Material>,
     stone: Arc<dyn Material>,
     rusty_metal: Arc<dyn Material>,
@@ -93,6 +94,7 @@ impl Materials {
             checkered: Self::from_texture(Textures::checkers()),
             glass: Self::dielectric(1.5),
             air: Self::dielectric(1.0 / 1.5),
+            mirror: Self::metal([0.8, 0.85, 0.88], 0.0),
             gold: Self::metal([0.8, 0.6, 0.2], 0.2),
             stone: Self::image_map("assets/cube-diffuse.jpg", 1.0),
             rusty_metal: Self::image_map("assets/rusty-metal.jpg", 1.0),
@@ -114,6 +116,7 @@ impl Materials {
             "checkered" => Arc::clone(&self.checkered),
             "glass" => Arc::clone(&self.glass),
             "air" => Arc::clone(&self.air),
+            "mirror" => Arc::clone(&self.mirror),
             "gold" => Arc::clone(&self.gold),
             "stone" => Arc::clone(&self.stone),
             "rusty_metal" => Arc::clone(&self.rusty_metal),
@@ -166,10 +169,10 @@ impl Materials {
     }
 }
 
-struct Shapes {}
+pub struct Shapes {}
 
 impl Shapes {
-    fn sphere(center: [f64; 3], radius: f64, mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
+    pub fn sphere(center: [f64; 3], radius: f64, mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
         Arc::new(Sphere::stationary(
             Point3::from(center),
             radius,
@@ -177,11 +180,16 @@ impl Shapes {
         ))
     }
 
-    fn quad(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
+    pub fn quad(
+        q: [f64; 3],
+        u: [f64; 3],
+        v: [f64; 3],
+        mat: Arc<dyn Material>,
+    ) -> Arc<dyn Hittable> {
         Arc::new(Quad::from_arr(q, u, v, mat))
     }
 
-    fn triangle(
+    pub fn triangle(
         a: [f64; 3],
         b: [f64; 3],
         c: [f64; 3],
@@ -190,7 +198,7 @@ impl Shapes {
         Arc::new(Triangle::new(a, b, c, mat))
     }
 
-    fn box3d(a: [f64; 3], b: [f64; 3], mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
+    pub fn box3d(a: [f64; 3], b: [f64; 3], mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
         Arc::new(Box3d::new(
             Vector3::from(a),
             Vector3::from(b),
@@ -198,7 +206,7 @@ impl Shapes {
         ))
     }
 
-    fn constant_medium(
+    pub fn constant_medium(
         boundary: Arc<dyn Hittable>,
         color: [f64; 3],
         density: f64,
@@ -210,7 +218,7 @@ impl Shapes {
         ))
     }
 
-    fn checkered_ground(materials: &Materials) -> Arc<dyn Hittable> {
+    pub fn checkered_ground(materials: &Materials) -> Arc<dyn Hittable> {
         Shapes::sphere([1.0, -100.0, -1.0], 100.0, materials.get("checkered"))
     }
 }
@@ -574,13 +582,14 @@ fn scene_cornell() -> Scene {
     let mut scene = Scene::new();
     let materials = Materials::new();
 
-    let mut box_right = Shapes::box3d(
-        [0.0, 0.0, 0.0],
-        [165.0, 165.0, 165.0],
-        materials.get("white"),
-    );
-    box_right = rotate_y(box_right, -18.0);
-    box_right = translate(box_right, [130.0, 0.0, 65.0]);
+    // let mut box_right = Shapes::box3d(
+    //     [0.0, 0.0, 0.0],
+    //     [165.0, 165.0, 165.0],
+    //     materials.get("white"),
+    // );
+    // box_right = rotate_y(box_right, -18.0);
+    // box_right = translate(box_right, [130.0, 0.0, 65.0]);
+    let sphere_right = Shapes::sphere([190.0, 90.0, 190.0], 90.0, materials.get("glass"));
 
     let mut box_left = Shapes::box3d(
         [0.0, 0.0, 0.0],
@@ -591,7 +600,7 @@ fn scene_cornell() -> Scene {
     box_left = translate(box_left, [265.0, 0.0, 295.0]);
 
     Scene::add_cornell_room(&mut scene, &materials, 555.0);
-    scene.add(Arc::clone(&box_right));
+    scene.add(Arc::clone(&sphere_right));
     scene.add(Arc::clone(&box_left));
     scene
 }

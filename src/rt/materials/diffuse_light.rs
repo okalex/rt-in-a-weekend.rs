@@ -3,6 +3,8 @@ use std::sync::Arc;
 use nalgebra::Point3;
 
 use crate::rt::color::Color;
+use crate::rt::objects::hittable::HitRecord;
+use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;
 use crate::rt::textures::texture::Texture;
 
@@ -24,8 +26,14 @@ impl DiffuseLight {
 }
 
 impl Material for DiffuseLight {
-    fn emitted(&self, u: f64, v: f64, point: &Point3<f64>) -> Color {
-        self.texture.value(u, v, point)
+    #[allow(unused)]
+    fn emitted(&self, r_in: &Ray, hit_record: &HitRecord) -> Color {
+        if hit_record.front_face {
+            self.texture
+                .value(hit_record.u, hit_record.v, &hit_record.point)
+        } else {
+            Color::black()
+        }
     }
 }
 

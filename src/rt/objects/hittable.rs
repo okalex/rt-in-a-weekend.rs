@@ -78,6 +78,16 @@ impl HitRecord {
 pub trait Hittable: Send + Sync {
     fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord>;
     fn bounding_box(&self) -> &Aabb;
+
+    #[allow(unused)]
+    fn pdf_value(&self, origin: &Point3<f64>, direction: &Vector3<f64>) -> f64 {
+        0.0
+    }
+
+    #[allow(unused)]
+    fn random(&self, origin: &Point3<f64>) -> Vector3<f64> {
+        Vector3::new(1.0, 0.0, 0.0)
+    }
 }
 
 pub struct Translate {

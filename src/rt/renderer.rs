@@ -5,7 +5,9 @@ use crate::rt::camera::Camera;
 use crate::rt::color::Color;
 use crate::rt::frame_buffer::FrameBuffer;
 use crate::rt::interval::Interval;
-use crate::rt::objects::hittable::Hittable;
+use crate::rt::materials::material::ScatterRecord;
+use crate::rt::objects::hittable::{HitRecord, Hittable};
+use crate::rt::pdf::{HittablePdf, MixturePdf, Pdf};
 use crate::rt::ray::Ray;
 
 pub struct Renderer {
@@ -43,14 +45,19 @@ impl Renderer {
         }
     }
 
-    pub fn render(&self, scene: Arc<dyn Hittable>) -> Vec<JoinHandle<()>> {
+    pub fn render(
+        &self,
+        scene: Arc<dyn Hittable>,
+        lights: Arc<dyn Hittable>,
+    ) -> Vec<JoinHandle<()>> {
         let mut thread_handles: Vec<JoinHandle<()>> = vec![];
         for worker in &self.workers {
             let worker_clone = Arc::clone(worker);
             let scene_clone = Arc::clone(&scene);
+            let lights_clone = Arc::clone(&lights);
 
             let thread_handle = std::thread::spawn(move || {
-                worker_clone.render(scene_clone);
+                worker_clone.render(scene_clone, lights_clone);
             });
 
             thread_handles.push(thread_handle);
@@ -81,7 +88,7 @@ impl RenderWorker {
         }
     }
 
-    pub fn render(&self, scene: Arc<dyn Hittable>) {
+    pub fn render(&self, scene: Arc<dyn Hittable>, lights: Arc<dyn Hittable>) {
         loop {
             let remaining_lines = self.line_server.len();
             eprint!("\rLines remaining: {}       ", remaining_lines);
@@ -90,7 +97,7 @@ impl RenderWorker {
             match maybe_line {
                 None => break,
                 Some(line_idx) => {
-                    self.render_line(&scene, line_idx);
+                    self.render_line(&scene, &lights, line_idx);
                 }
             }
         }
@@ -99,36 +106,50 @@ impl RenderWorker {
         eprint!("\rLines remaining: {}       ", remaining_lines);
     }
 
-    fn render_line(&self, scene: &Arc<dyn Hittable>, line_idx: u32) {
+    fn render_line(&self, scene: &Arc<dyn Hittable>, lights: &Arc<dyn Hittable>, line_idx: u32) {
         let data: Vec<[u8; 3]> = (0..self.options.img_width)
-            .map(|i| self.sample_pixel(&scene, i, line_idx).to_gamma().to_u8())
+            .map(|i| {
+                self.sample_pixel(scene, lights, i, line_idx)
+                    .to_gamma()
+                    .to_u8()
+            })
             .collect();
 
         self.frame_buffer.set_line(line_idx as usize, &data);
     }
 
-    fn sample_pixel(&self, scene: &Arc<dyn Hittable>, i: u32, j: u32) -> Color {
+    fn sample_pixel(
+        &self,
+        scene: &Arc<dyn Hittable>,
+        lights: &Arc<dyn Hittable>,
+        i: u32,
+        j: u32,
+    ) -> Color {
         let mut pixel_color = Color::black();
         self.camera.foreach_ray(i, j, |ray| {
-            pixel_color = pixel_color + self.ray_color(&ray, 0, scene);
+            pixel_color = pixel_color + self.ray_color(&ray, 0, scene, lights);
         });
         return self.camera.sampler.integrate_samples(pixel_color);
     }
 
-    fn ray_color(&self, ray: &Ray, depth: u32, scene: &Arc<dyn Hittable>) -> Color {
+    fn ray_color(
+        &self,
+        ray: &Ray,
+        depth: u32,
+        scene: &Arc<dyn Hittable>,
+        lights: &Arc<dyn Hittable>,
+    ) -> Color {
         if depth >= self.options.max_depth {
             return Color::black();
         }
 
         match scene.hit(ray, Interval::new(0.001, f64::INFINITY)) {
             Some(hit_record) => {
-                let emitted = hit_record
-                    .mat
-                    .emitted(hit_record.u, hit_record.v, &hit_record.point);
+                let emitted = hit_record.mat.emitted(ray, &hit_record);
 
                 let scattered_color = match hit_record.mat.scatter(ray, &hit_record) {
-                    Some(scattered) => {
-                        scattered.attenuation * self.ray_color(&scattered.ray, depth + 1, scene)
+                    Some(scatter_record) => {
+                        self.scatter_color(scene, lights, ray, depth, &hit_record, &scatter_record)
                     }
                     None => Color::black(),
                 };
@@ -137,6 +158,38 @@ impl RenderWorker {
             }
 
             None => self.options.background,
+        }
+    }
+
+    fn scatter_color(
+        &self,
+        scene: &Arc<dyn Hittable>,
+        lights: &Arc<dyn Hittable>,
+        ray: &Ray,
+        depth: u32,
+        hit_record: &HitRecord,
+        scatter_record: &ScatterRecord,
+    ) -> Color {
+        match &scatter_record.skip_pdf_ray {
+            Some(skip_pdf_ray) => {
+                scatter_record.attenuation * self.ray_color(&skip_pdf_ray, depth + 1, scene, lights)
+            }
+
+            None => {
+                let light_pdf: Arc<dyn Pdf> =
+                    Arc::new(HittablePdf::new(Arc::clone(lights), hit_record.point));
+                let p = MixturePdf::new(light_pdf, Arc::clone(&scatter_record.pdf));
+
+                let scattered_ray = Ray::new(hit_record.point, p.generate(), ray.time);
+                let pdf_value = p.value(&scattered_ray.dir);
+
+                let scattering_pdf = hit_record
+                    .mat
+                    .scattering_pdf(ray, hit_record, &scattered_ray);
+
+                let sample_color = self.ray_color(&scattered_ray, depth + 1, scene, lights);
+                scatter_record.attenuation * scattering_pdf * sample_color / pdf_value
+            }
         }
     }
 }

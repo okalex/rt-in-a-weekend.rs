@@ -8,6 +8,7 @@ use super::hittable::{HitRecord, Hittable};
 use super::quad::Quad;
 use crate::rt::interval::Interval;
 use crate::rt::materials::material::Material;
+use crate::rt::random::rand_int;
 use crate::rt::ray::Ray;
 
 pub struct Scene {
@@ -57,6 +58,23 @@ impl Hittable for Scene {
 
     fn bounding_box(&self) -> &Aabb {
         &self.bbox
+    }
+
+    #[allow(unused)]
+    fn pdf_value(&self, origin: &Point3<f64>, direction: &Vector3<f64>) -> f64 {
+        let weight = 1.0 / self.objects.len() as f64;
+        let mut sum = 0.0;
+        for object in &self.objects {
+            sum += weight * object.pdf_value(origin, direction);
+        }
+
+        sum
+    }
+
+    #[allow(unused)]
+    fn random(&self, origin: &Point3<f64>) -> Vector3<f64> {
+        let int_size = self.objects.len() as i32;
+        self.objects[rand_int(0, int_size - 1) as usize].random(origin)
     }
 }
 

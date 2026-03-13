@@ -1,25 +1,44 @@
-use nalgebra::{Point3, Vector3};
+use std::sync::Arc;
+
+use nalgebra::Vector3;
 
 use crate::rt::color::Color;
 use crate::rt::objects::hittable::HitRecord;
+use crate::rt::pdf::Pdf;
 use crate::rt::ray::Ray;
 
-pub struct Scattered {
-    pub ray: Ray,
+pub struct ScatterRecord {
     pub attenuation: Color,
+    pub pdf: Arc<dyn Pdf>,
+    pub skip_pdf_ray: Option<Ray>,
 }
 
 pub trait Material: Send + Sync {
     #[allow(unused)]
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         None
     }
 
     #[allow(unused)]
-    fn emitted(&self, u: f64, v: f64, point: &Point3<f64>) -> Color {
+    fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+        0.0
+    }
+
+    #[allow(unused)]
+    fn emitted(&self, r_in: &Ray, hit_record: &HitRecord) -> Color {
         Color::black()
     }
 }
+
+pub struct EmptyMaterial {}
+
+impl EmptyMaterial {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Material for EmptyMaterial {}
 
 pub fn reflectance(cosine: f64, refraction_idx: f64) -> f64 {
     let r0_tmp = (1.0 - refraction_idx) / (1.0 + refraction_idx);

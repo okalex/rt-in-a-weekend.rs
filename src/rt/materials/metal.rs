@@ -1,8 +1,11 @@
+use std::sync::Arc;
+
 use crate::rt::objects::hittable::HitRecord;
+use crate::rt::pdf::SpherePdf;
 use crate::rt::ray::Ray;
 use crate::rt::{color::Color, random::rand_unit_vector};
 
-use super::material::{Material, Scattered, reflect};
+use super::material::{Material, ScatterRecord, reflect};
 
 pub struct Metal {
     albedo: Color,
@@ -19,13 +22,14 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         let reflected =
             reflect(&r_in.dir, &rec.normal).normalize() + rand_unit_vector() * self.fuzz;
 
-        Some(Scattered {
-            ray: Ray::new(rec.point, reflected, r_in.time),
+        Some(ScatterRecord {
             attenuation: self.albedo,
+            pdf: Arc::new(SpherePdf::new()), // This isn't actually used - this field should probably be an option
+            skip_pdf_ray: Some(Ray::new(rec.point, reflected, r_in.time)),
         })
     }
 }

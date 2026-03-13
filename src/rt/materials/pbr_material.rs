@@ -1,10 +1,13 @@
+use std::sync::Arc;
+
 use nalgebra::{Point3, Vector3};
 
 use crate::rt::{
     color::Color,
-    materials::material::{Material, Scattered, reflect},
+    materials::material::{Material, ScatterRecord, reflect},
     objects::hittable::HitRecord,
-    random::rand_unit_vector,
+    pdf::SpherePdf,
+    random::{rand_on_hemisphere, rand_unit_vector},
     ray::Ray,
     textures::image_map::ImageMap,
 };
@@ -32,7 +35,7 @@ impl PbrMaterial {
     fn diffuse_scatter(&self, in_dir: &Vector3<f64>, normal: &Vector3<f64>) -> Vector3<f64> {
         let diffuse_scale = 1.0 - self.metallicity;
         if diffuse_scale > 0.0 {
-            normal + rand_unit_vector()
+            normal + rand_on_hemisphere(normal)
         } else {
             Vector3::zeros()
         }
@@ -49,7 +52,7 @@ impl PbrMaterial {
 
 impl Material for PbrMaterial {
     #[allow(unused)]
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<Scattered> {
+    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         // Diffuse scatter
         let mut scatter_dir = self.diffuse_scatter(&r_in.dir, &rec.normal)
             + self.metallic_scatter(&r_in.dir, &rec.normal);
@@ -58,15 +61,11 @@ impl Material for PbrMaterial {
             scatter_dir = rec.normal;
         }
 
-        Some(Scattered {
-            ray: Ray::new(rec.point, scatter_dir, r_in.time),
+        Some(ScatterRecord {
             attenuation: self.albedo,
+            pdf: Arc::new(SpherePdf::new()), // TODO
+            skip_pdf_ray: Some(Ray::new(rec.point, scatter_dir, r_in.time)),
         })
-    }
-
-    #[allow(unused)]
-    fn emitted(&self, u: f64, v: f64, point: &Point3<f64>) -> Color {
-        Color::black()
     }
 }
 

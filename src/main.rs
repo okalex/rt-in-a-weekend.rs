@@ -9,11 +9,12 @@ use crate::rt::app::app::App;
 use crate::rt::camera::Camera;
 use crate::rt::color::Color;
 use crate::rt::frame_buffer::FrameBuffer;
+use crate::rt::materials::material::{EmptyMaterial, Material};
 use crate::rt::objects::{bvh_node::BvhNode, hittable::Hittable, scene::Scene};
 use crate::rt::ppm_writer::PpmWriter;
 use crate::rt::renderer::{LineServer, RenderOptionsBuilder, Renderer};
 use crate::rt::sampler::Sampler;
-use crate::rt::test_scenes::get_camera_and_scene;
+use crate::rt::test_scenes::{Shapes, get_camera_and_scene};
 use crate::rt::viewport::Viewport;
 
 #[derive(Parser, Debug)]
@@ -89,17 +90,29 @@ fn main() {
         Arc::clone(&line_server),
     ));
 
+    // Set up lights - TODO: this is only temporary for testing purposes
+    let empty_material: Arc<dyn Material> = Arc::new(EmptyMaterial::new());
+    let mut lights = Scene::new();
+    lights.add(Shapes::quad(
+        [343.0, 554.0, 332.0],
+        [-130.0, 0.0, 0.0],
+        [0.0, 0.0, -105.0],
+        Arc::clone(&empty_material),
+    ));
+    lights.add(Shapes::sphere([190.0, 90.0, 190.0], 90.0, Arc::clone(&empty_material)));
+
     if args.interactive {
         let _ = run_windowed(
             render_options.img_width,
             render_options.img_height,
             Arc::clone(&renderer),
             scene,
+            Arc::new(lights),
         );
     } else {
         let writer = PpmWriter::new(Arc::clone(&frame_buffer), 255);
 
-        let thread_handles = renderer.render(Arc::clone(&scene));
+        let thread_handles = renderer.render(Arc::clone(&scene), Arc::new(lights));
         thread_handles.into_iter().for_each(|h| h.join().unwrap());
 
         writer.write();
@@ -111,9 +124,10 @@ fn run_windowed(
     height: u32,
     renderer: Arc<Renderer>,
     scene: Arc<dyn Hittable>,
+    lights: Arc<dyn Hittable>,
 ) -> anyhow::Result<()> {
     let event_loop = EventLoop::with_user_event().build()?;
-    let mut app = App::new(width, height, Arc::clone(&renderer), scene);
+    let mut app = App::new(width, height, Arc::clone(&renderer), scene, lights);
     event_loop.run_app(&mut app)?;
 
     Ok(())
