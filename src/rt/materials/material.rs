@@ -3,7 +3,13 @@ use std::sync::Arc;
 use nalgebra::Vector3;
 
 use crate::rt::color::Color;
-use crate::rt::objects::hittable::HitRecord;
+use crate::rt::materials::dielectric::Dielectric;
+use crate::rt::materials::diffuse_light::DiffuseLight;
+use crate::rt::materials::isotropic::Isotropic;
+use crate::rt::materials::lambertian::Lambertian;
+use crate::rt::materials::metal::Metal;
+use crate::rt::materials::pbr_material::PbrMaterial;
+use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::pdf::Pdf;
 use crate::rt::ray::Ray;
 
@@ -13,34 +19,52 @@ pub struct ScatterRecord {
     pub skip_pdf_ray: Option<Ray>,
 }
 
-pub trait Material: Send + Sync {
-    #[allow(unused)]
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
-        None
-    }
-
-    #[allow(unused)]
-    fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
-        0.0
-    }
-
-    #[allow(unused)]
-    fn emitted(&self, r_in: &Ray, hit_record: &HitRecord) -> Color {
-        Color::black()
-    }
+pub enum Material {
+    Dielectric(Dielectric),
+    DiffuseLight(DiffuseLight),
+    Isotropic(Isotropic),
+    Lambertian(Lambertian),
+    Metal(Metal),
+    PbrMaterial(PbrMaterial),
 }
 
-#[allow(dead_code)]
-pub struct EmptyMaterial {}
+impl Material {
+    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+        let default = None;
+        match self {
+            Self::Dielectric(mat) => mat.scatter(r_in, rec),
+            Self::DiffuseLight(_) => default,
+            Self::Isotropic(mat) => mat.scatter(r_in, rec),
+            Self::Lambertian(mat) => mat.scatter(r_in, rec),
+            Self::Metal(mat) => mat.scatter(r_in, rec),
+            Self::PbrMaterial(mat) => mat.scatter(r_in, rec),
+        }
+    }
 
-impl EmptyMaterial {
-    #[allow(dead_code)]
-    pub fn new() -> Self {
-        Self {}
+    pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+        let default = 0.0;
+        match self {
+            Self::Dielectric(_) => default,
+            Self::DiffuseLight(_) => default,
+            Self::Isotropic(mat) => mat.scattering_pdf(r_in, rec, scattered),
+            Self::Lambertian(mat) => mat.scattering_pdf(r_in, rec, scattered),
+            Self::Metal(_) => default,
+            Self::PbrMaterial(_) => default,
+        }
+    }
+
+    pub fn emitted(&self, r_in: &Ray, hit_record: &HitRecord) -> Color {
+        let default = Color::black();
+        match self {
+            Self::Dielectric(_) => default,
+            Self::DiffuseLight(mat) => mat.emitted(r_in, hit_record),
+            Self::Isotropic(_) => default,
+            Self::Lambertian(_) => default,
+            Self::Metal(_) => default,
+            Self::PbrMaterial(_) => default,
+        }
     }
 }
-
-impl Material for EmptyMaterial {}
 
 pub fn reflectance(cosine: f64, refraction_idx: f64) -> f64 {
     let r0_tmp = (1.0 - refraction_idx) / (1.0 + refraction_idx);

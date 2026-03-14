@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use crate::rt::{color::Color, pdf::SpherePdf};
-use crate::rt::objects::hittable::HitRecord;
+use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;
+use crate::rt::{color::Color, pdf::SpherePdf};
 
-use super::material::{Material, ScatterRecord, reflect, reflectance, refract};
+use super::material::{ScatterRecord, reflect, reflectance, refract};
 
 pub struct Dielectric {
     refraction_idx: f64,
@@ -17,10 +17,8 @@ impl Dielectric {
             refraction_idx: refraction_idx,
         }
     }
-}
 
-impl Material for Dielectric {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         let ri = if rec.front_face {
             1.0 / self.refraction_idx
         } else {

@@ -5,8 +5,8 @@ use crate::rt::camera::Camera;
 use crate::rt::color::Color;
 use crate::rt::frame_buffer::FrameBuffer;
 use crate::rt::interval::Interval;
-use crate::rt::materials::material::ScatterRecord;
-use crate::rt::objects::hittable::{HitRecord, Hittable};
+use crate::rt::materials::material::{Material, ScatterRecord};
+use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::objects::scene::Scene;
 #[allow(unused_imports)]
 use crate::rt::pdf::{CosinePdf, HemispherePdf, HittablePdf, MixturePdf, Pdf, SpherePdf};
@@ -50,11 +50,11 @@ impl Renderer {
     pub fn render(&self, scene: Arc<Scene>) -> Vec<JoinHandle<()>> {
         let mut thread_handles: Vec<JoinHandle<()>> = vec![];
         for worker in &self.workers {
-            let worker_clone = Arc::clone(worker);
             let scene_clone = Arc::clone(&scene);
+            let worker_clone = Arc::clone(worker);
 
             let thread_handle = std::thread::spawn(move || {
-                worker_clone.render(scene_clone);
+                worker_clone.render(&scene_clone);
             });
 
             thread_handles.push(thread_handle);
@@ -85,7 +85,7 @@ impl RenderWorker {
         }
     }
 
-    pub fn render(&self, scene: Arc<Scene>) {
+    pub fn render(&self, scene: &Arc<Scene>) {
         loop {
             let remaining_lines = self.line_server.len();
             eprint!("\rLines remaining: {}       ", remaining_lines);
@@ -94,7 +94,7 @@ impl RenderWorker {
             match maybe_line {
                 None => break,
                 Some(line_idx) => {
-                    self.render_line(&scene, line_idx);
+                    self.render_line(scene, line_idx);
                 }
             }
         }
@@ -126,11 +126,12 @@ impl RenderWorker {
 
         match scene.hit(ray, Interval::new(0.001, f64::INFINITY)) {
             Some(hit_record) => {
-                let emitted = hit_record.mat.emitted(ray, &hit_record);
+                let mat = scene.get_material(hit_record.mat_idx);
+                let emitted = mat.emitted(ray, &hit_record);
 
-                let scattered_color = match hit_record.mat.scatter(ray, &hit_record) {
+                let scattered_color = match mat.scatter(ray, &hit_record) {
                     Some(scatter_record) => {
-                        self.scatter_color(scene, ray, depth, &hit_record, &scatter_record)
+                        self.scatter_color(scene, ray, depth, &hit_record, &scatter_record, mat)
                     }
                     None => Color::black(),
                 };
@@ -149,6 +150,7 @@ impl RenderWorker {
         depth: u32,
         hit_record: &HitRecord,
         scatter_record: &ScatterRecord,
+        mat: &Material,
     ) -> Color {
         match &scatter_record.skip_pdf_ray {
             Some(skip_pdf_ray) => {
@@ -158,17 +160,10 @@ impl RenderWorker {
             None => {
                 let pdf = self.get_pdf(scene, hit_record, scatter_record);
                 let scattered_ray = Ray::new(hit_record.point, pdf.generate(), ray.time);
-
-                let scattering_pdf = hit_record
-                    .mat
-                    .scattering_pdf(ray, hit_record, &scattered_ray);
-
-                let mut pdf_value = pdf.value(&scattered_ray.dir);
-                if pdf_value <= 0.0 {
-                    pdf_value = scattering_pdf;
-                }
-
+                let scattering_pdf = mat.scattering_pdf(ray, hit_record, &scattered_ray);
+                let pdf_value = pdf.value(&scattered_ray.dir);
                 let sample_color = self.ray_color(scene, &scattered_ray, depth + 1);
+
                 scatter_record.attenuation * scattering_pdf * sample_color / pdf_value
             }
         }
@@ -183,7 +178,7 @@ impl RenderWorker {
         if self.options.use_importance_sampling {
             if scene.lights.len() > 0 {
                 let light_pdf: Arc<dyn Pdf> = Arc::new(HittablePdf::new(
-                    Arc::clone(&scene.lights) as Arc<dyn Hittable>,
+                    Arc::clone(&scene.lights),
                     hit_record.point,
                 ));
                 Arc::new(MixturePdf::new(light_pdf, Arc::clone(&scatter_record.pdf)))

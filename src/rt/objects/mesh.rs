@@ -10,8 +10,7 @@ use parry3d_f64::{
 
 use crate::rt::{
     interval::Interval,
-    materials::material::Material,
-    objects::{hittable::{HitRecord, Hittable}, triangle::Triangle},
+    objects::{hit_record::HitRecord, triangle::Triangle},
     ray::Ray,
     util::from_parry_vec,
 };
@@ -21,11 +20,11 @@ pub struct Mesh {
     tex_coords: Arc<Vec<[f64; 2]>>,
     tex_coord_indices: Arc<Vec<u32>>,
     bbox: Aabb,
-    mat: Arc<dyn Material>,
+    mat_idx: usize,
 }
 
 impl Mesh {
-    pub fn from_tobj(obj: &tobj::Mesh, mat: Arc<dyn Material>) -> Self {
+    pub fn from_tobj(obj: &tobj::Mesh, mat_idx: usize) -> Self {
         let vertices = obj
             .positions
             .chunks_exact(3)
@@ -54,7 +53,7 @@ impl Mesh {
             tex_coords,
             tex_coord_indices,
             bbox,
-            mat,
+            mat_idx,
         }
     }
 
@@ -87,11 +86,7 @@ impl Mesh {
         [u, v]
     }
 
-    
-}
-
-impl Hittable for Mesh {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         let r = ray.to_parry3d();
         match self
             .underlying
@@ -119,7 +114,7 @@ impl Hittable for Mesh {
                     intersection.time_of_impact,
                     u, // TODO
                     v, // TODO
-                    Arc::clone(&self.mat),
+                    self.mat_idx,
                 ))
             }
 
@@ -127,7 +122,7 @@ impl Hittable for Mesh {
         }
     }
 
-    fn bounding_box(&self) -> &Aabb {
+    pub fn bounding_box(&self) -> &Aabb {
         &self.bbox
     }
 }

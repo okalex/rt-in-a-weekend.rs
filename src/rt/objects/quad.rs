@@ -1,11 +1,8 @@
-use std::sync::Arc;
-
 use nalgebra::{Point3, Vector3};
 use parry3d_f64::bounding_volume::Aabb;
 
-use super::hittable::{HitRecord, Hittable};
 use crate::rt::interval::Interval;
-use crate::rt::materials::material::Material;
+use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;
 use crate::rt::util::to_parry_vec;
@@ -15,7 +12,7 @@ pub struct Quad {
     u: Vector3<f64>,
     v: Vector3<f64>,
     w: Vector3<f64>,
-    pub mat: Arc<dyn Material>,
+    pub mat_idx: usize,
     bbox: Aabb,
     normal: Vector3<f64>,
     d: f64,
@@ -23,7 +20,7 @@ pub struct Quad {
 }
 
 impl Quad {
-    pub fn new(q: Point3<f64>, u: Vector3<f64>, v: Vector3<f64>, mat: Arc<dyn Material>) -> Self {
+    pub fn new(q: Point3<f64>, u: Vector3<f64>, v: Vector3<f64>, mat_idx: usize) -> Self {
         let points = vec![
             to_parry_vec(q.coords),
             to_parry_vec((q + u).coords),
@@ -43,7 +40,7 @@ impl Quad {
             u,
             v,
             w,
-            mat,
+            mat_idx,
             bbox,
             normal,
             d,
@@ -51,13 +48,11 @@ impl Quad {
         }
     }
 
-    pub fn from_arr(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat: Arc<dyn Material>) -> Self {
-        Self::new(Point3::from(q), Vector3::from(u), Vector3::from(v), mat)
+    pub fn from_arr(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat_idx: usize) -> Self {
+        Self::new(Point3::from(q), Vector3::from(u), Vector3::from(v), mat_idx)
     }
-}
 
-impl Hittable for Quad {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         let denom = self.normal.dot(&ray.dir);
 
         // Ray is parallel to plane, no hit
@@ -92,15 +87,15 @@ impl Hittable for Quad {
             t,
             alpha,
             beta,
-            Arc::clone(&self.mat),
+            self.mat_idx,
         ))
     }
 
-    fn bounding_box(&self) -> &Aabb {
+    pub fn bounding_box(&self) -> &Aabb {
         &self.bbox
     }
 
-    fn pdf_value(&self, origin: &Point3<f64>, direction: &Vector3<f64>) -> f64 {
+    pub fn pdf_value(&self, origin: &Point3<f64>, direction: &Vector3<f64>) -> f64 {
         let ray = Ray::new(*origin, *direction, 0.0);
         let interval = Interval::new(0.001, f64::INFINITY);
         match self.hit(&ray, interval) {
@@ -113,7 +108,7 @@ impl Hittable for Quad {
         }
     }
 
-    fn random(&self, origin: &Point3<f64>) -> Vector3<f64> {
+    pub fn random(&self, origin: &Point3<f64>) -> Vector3<f64> {
         let p = self.q + (rand() * self.u) + (rand() * self.v);
         p - origin
     }

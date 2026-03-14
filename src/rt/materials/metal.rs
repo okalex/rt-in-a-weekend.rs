@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use crate::rt::objects::hittable::HitRecord;
+use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::pdf::SpherePdf;
 use crate::rt::ray::Ray;
 use crate::rt::{color::Color, random::rand_unit_vector};
 
-use super::material::{Material, ScatterRecord, reflect};
+use super::material::{ScatterRecord, reflect};
 
 pub struct Metal {
     albedo: Color,
@@ -19,10 +19,8 @@ impl Metal {
             fuzz: if fuzz < 1.0 { fuzz } else { 1.0 },
         };
     }
-}
 
-impl Material for Metal {
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         let reflected =
             reflect(&r_in.dir, &rec.normal).normalize() + rand_unit_vector() * self.fuzz;
 

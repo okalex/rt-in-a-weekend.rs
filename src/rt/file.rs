@@ -2,13 +2,9 @@ use std::{
     fs,
     io::{BufReader, Cursor},
     path::Path,
-    sync::Arc,
 };
 
-use crate::rt::{
-    materials::{lambertian::Lambertian, material::Material},
-    objects::mesh::Mesh,
-};
+use crate::rt::objects::{hittable::Hittable, mesh::Mesh};
 
 pub fn load_string_path(path: &Path) -> anyhow::Result<String> {
     let path = Path::new(env!("OUT_DIR")).join("assets").join(path);
@@ -22,7 +18,7 @@ pub fn load_string(file_name: &str) -> anyhow::Result<String> {
     load_string_path(path.as_path())
 }
 
-pub fn load_model_with_mat(file_name: &str, mat: Arc<dyn Material>) -> anyhow::Result<Vec<Mesh>> {
+pub fn load_model_with_mat(file_name: &str, mat_idx: usize) -> anyhow::Result<Vec<Hittable>> {
     eprintln!("Loading model from {}", file_name);
 
     let obj_text = load_string(file_name)?;
@@ -46,14 +42,8 @@ pub fn load_model_with_mat(file_name: &str, mat: Arc<dyn Material>) -> anyhow::R
 
     let meshes = models
         .into_iter()
-        .map(|m| Mesh::from_tobj(&m.mesh, Arc::clone(&mat)))
+        .map(|m| Hittable::Mesh(Mesh::from_tobj(&m.mesh, mat_idx)))
         .collect::<Vec<_>>();
 
     Ok(meshes)
-}
-
-#[allow(unused)]
-pub fn load_model(file_name: &str) -> anyhow::Result<Vec<Mesh>> {
-    let mat: Arc<dyn Material> = Arc::new(Lambertian::from_color_values([0.4, 0.4, 0.6]));
-    load_model_with_mat(file_name, mat)
 }

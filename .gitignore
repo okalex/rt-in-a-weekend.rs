@@ -1,7 +1,7 @@
 /target
 /renders
 .DS_Store
-test.ppm
+*.ppm
 img/textures
 assets/texture
 assets/lada*

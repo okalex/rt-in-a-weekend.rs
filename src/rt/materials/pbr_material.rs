@@ -4,8 +4,8 @@ use nalgebra::Vector3;
 
 use crate::rt::{
     color::Color,
-    materials::material::{Material, ScatterRecord, reflect},
-    objects::hittable::HitRecord,
+    materials::material::{ScatterRecord, reflect},
+    objects::hit_record::HitRecord,
     pdf::SpherePdf,
     random::rand_on_hemisphere,
     ray::Ray,
@@ -47,11 +47,9 @@ impl PbrMaterial {
             Vector3::zeros()
         }
     }
-}
 
-impl Material for PbrMaterial {
     #[allow(unused)]
-    fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         // Diffuse scatter
         let mut scatter_dir = self.diffuse_scatter(&r_in.dir, &rec.normal)
             + self.metallic_scatter(&r_in.dir, &rec.normal);

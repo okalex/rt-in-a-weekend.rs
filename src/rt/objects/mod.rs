@@ -1,9 +1,12 @@
+pub mod box3d;
 pub mod bvh_node;
 pub mod constant_medium;
+pub mod hit_record;
 pub mod hittable;
 pub mod hittable_list;
 pub mod mesh;
 pub mod quad;
 pub mod scene;
 pub mod sphere;
+pub mod transformations;
 pub mod triangle;

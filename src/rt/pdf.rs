@@ -3,7 +3,7 @@ use std::{f64::consts::PI, sync::Arc};
 use nalgebra::{Point3, Vector3};
 
 use crate::rt::{
-    objects::hittable::Hittable,
+    objects::hittable_list::HittableList,
     onb::Onb,
     random::{rand, rand_cos_dir, rand_on_hemisphere, rand_unit_vector},
 };
@@ -76,23 +76,23 @@ impl Pdf for CosinePdf {
 }
 
 pub struct HittablePdf {
-    scene: Arc<dyn Hittable>,
+    object: Arc<HittableList>,
     orig: Point3<f64>,
 }
 
 impl HittablePdf {
-    pub fn new(scene: Arc<dyn Hittable>, orig: Point3<f64>) -> Self {
-        Self { scene, orig }
+    pub fn new(object: Arc<HittableList>, orig: Point3<f64>) -> Self {
+        Self { object, orig }
     }
 }
 
 impl Pdf for HittablePdf {
     fn value(&self, direction: &Vector3<f64>) -> f64 {
-        self.scene.pdf_value(&self.orig, direction)
+        self.object.pdf_value(&self.orig, direction)
     }
 
     fn generate(&self) -> Vector3<f64> {
-        self.scene.random(&self.orig)
+        self.object.random(&self.orig)
     }
 }
 

@@ -7,18 +7,11 @@ use crate::rt::{
     color::Color,
     file::load_model_with_mat,
     materials::{
-        dielectric::Dielectric, diffuse_light::DiffuseLight, lambertian::Lambertian,
-        material::Material, metal::Metal, pbr_material::PbrMaterial,
+        dielectric::Dielectric, diffuse_light::DiffuseLight, isotropic::Isotropic,
+        lambertian::Lambertian, material::Material, metal::Metal, pbr_material::PbrMaterial,
     },
     objects::{
-        bvh_node::BvhNode,
-        constant_medium::ConstantMedium,
-        hittable::{Hittable, rotate_y, translate},
-        hittable_list::{Box3d, HittableList},
-        quad::Quad,
-        scene::Scene,
-        sphere::Sphere,
-        triangle::Triangle,
+        box3d::Box3d, bvh_node::BvhNode, constant_medium::ConstantMedium, hittable::Hittable, hittable_list::HittableList, quad::Quad, scene::Scene, sphere::Sphere, transformations::{rotate_y, translate}, triangle::Triangle
     },
     random::{rand, rand_range, rand_range_vector},
     textures::{checkered::Checkered, image_map::ImageMap, noise::Noise, texture::Texture},
@@ -61,180 +54,156 @@ impl Textures {
 }
 
 pub struct Materials {
-    default: Arc<dyn Material>,
-    red: Arc<dyn Material>,
-    white: Arc<dyn Material>,
-    green: Arc<dyn Material>,
-    blue: Arc<dyn Material>,
-    orange: Arc<dyn Material>,
-    teal: Arc<dyn Material>,
-    diffuse_light: Arc<dyn Material>,
-    checkered: Arc<dyn Material>,
-    glass: Arc<dyn Material>,
-    air: Arc<dyn Material>,
-    mirror: Arc<dyn Material>,
-    gold: Arc<dyn Material>,
-    stone: Arc<dyn Material>,
-    rusty_metal: Arc<dyn Material>,
-    marble: Arc<dyn Material>,
-    earth: Arc<dyn Material>,
-    pbr: Arc<dyn Material>,
+    pub materials: Vec<Material>,
 }
 
 impl Materials {
     fn new() -> Self {
         Self {
-            default: Self::lambertian([0.5, 0.5, 0.5]),
-            red: Self::lambertian([0.65, 0.05, 0.05]),
-            white: Self::lambertian([0.73, 0.73, 0.73]),
-            green: Self::lambertian([0.12, 0.45, 0.15]),
-            blue: Self::lambertian([0.1, 0.2, 0.5]),
-            orange: Self::lambertian([1.0, 0.5, 0.0]),
-            teal: Self::lambertian([0.2, 0.8, 0.8]),
-            diffuse_light: Self::diffuse_light([15.0, 15.0, 15.0]),
-            checkered: Self::from_texture(Textures::checkers()),
-            glass: Self::dielectric(1.5),
-            air: Self::dielectric(1.0 / 1.5),
-            mirror: Self::metal([0.8, 0.85, 0.88], 0.0),
-            gold: Self::metal([0.8, 0.6, 0.2], 0.2),
-            stone: Self::image_map("assets/cube-diffuse.jpg", 1.0),
-            rusty_metal: Self::image_map("assets/rusty-metal.jpg", 1.0),
-            marble: Self::from_texture(Arc::new(Noise::new(8.0))),
-            earth: Self::image_map("assets/earthmap.jpg", 1.0),
-            pbr: Self::pbr([0.8, 0.6, 0.2], 0.7),
+            materials: vec![
+                Self::lambertian([0.65, 0.05, 0.05]),
+                Self::lambertian([0.73, 0.73, 0.73]),
+                Self::lambertian([0.12, 0.45, 0.15]),
+                Self::lambertian([0.1, 0.2, 0.5]),
+                Self::lambertian([1.0, 0.5, 0.0]),
+                Self::lambertian([0.2, 0.8, 0.8]),
+                Self::diffuse_light([15.0, 15.0, 15.0]),
+                Self::from_texture(Textures::checkers()),
+                Self::dielectric(1.5),
+                Self::dielectric(1.0 / 1.5),
+                Self::metal([0.8, 0.85, 0.88], 0.0),
+                Self::metal([0.8, 0.6, 0.2], 0.2),
+                Self::image_map("assets/cube-diffuse.jpg", 1.0),
+                Self::image_map("assets/rusty-metal.jpg", 1.0),
+                Self::from_texture(Arc::new(Noise::new(8.0))),
+                Self::image_map("assets/earthmap.jpg", 1.0),
+                Self::pbr([0.8, 0.6, 0.2], 0.7),
+                Self::lambertian([0.5, 0.5, 0.5]),
+            ],
         }
     }
 
-    fn get(&self, name: &str) -> Arc<dyn Material> {
+    fn add(&mut self, mat: Material) -> usize {
+        let new_idx = self.materials.len();
+        self.materials.push(mat);
+        new_idx
+    }
+
+    fn get(&self, name: &str) -> usize {
         match name {
-            "red" => Arc::clone(&self.red),
-            "white" => Arc::clone(&self.white),
-            "green" => Arc::clone(&self.green),
-            "blue" => Arc::clone(&self.blue),
-            "orange" => Arc::clone(&self.orange),
-            "teal" => Arc::clone(&self.teal),
-            "diffuse_light" => Arc::clone(&self.diffuse_light),
-            "checkered" => Arc::clone(&self.checkered),
-            "glass" => Arc::clone(&self.glass),
-            "air" => Arc::clone(&self.air),
-            "mirror" => Arc::clone(&self.mirror),
-            "gold" => Arc::clone(&self.gold),
-            "stone" => Arc::clone(&self.stone),
-            "rusty_metal" => Arc::clone(&self.rusty_metal),
-            "marble" => Arc::clone(&self.marble),
-            "earth" => Arc::clone(&self.earth),
-            "pbr" => Arc::clone(&self.pbr),
-            _ => Arc::clone(&self.default),
+            "red" => 0,
+            "white" => 1,
+            "green" => 2,
+            "blue" => 3,
+            "orange" => 4,
+            "teal" => 5,
+            "diffuse_light" => 6,
+            "checkered" => 7,
+            "glass" => 8,
+            "air" => 9,
+            "mirror" => 10,
+            "gold" => 11,
+            "stone" => 12,
+            "rusty_metal" => 13,
+            "marble" => 14,
+            "earth" => 15,
+            "pbr" => 16,
+            _ => 17,
         }
     }
 
-    fn lambertian(color: [f64; 3]) -> Arc<dyn Material> {
-        Arc::new(Lambertian::from_color_values(color))
+    fn lambertian(color: [f64; 3]) -> Material {
+        Material::Lambertian(Lambertian::from_color_values(color))
     }
 
-    fn from_texture(texture: Arc<dyn Texture>) -> Arc<dyn Material> {
-        Arc::new(Lambertian::new(texture))
+    fn from_texture(texture: Arc<dyn Texture>) -> Material {
+        Material::Lambertian(Lambertian::new(texture))
     }
 
-    fn rand_lambertian() -> Arc<dyn Material> {
+    fn rand_lambertian() -> Material {
         let albedo = rand_arr3();
         Self::lambertian(albedo)
     }
 
-    fn dielectric(refraction_idx: f64) -> Arc<dyn Material> {
-        Arc::new(Dielectric::new(refraction_idx))
+    fn dielectric(refraction_idx: f64) -> Material {
+        Material::Dielectric(Dielectric::new(refraction_idx))
     }
 
-    fn metal(color: [f64; 3], fuzz: f64) -> Arc<dyn Material> {
-        Arc::new(Metal::new(color, fuzz))
+    fn metal(color: [f64; 3], fuzz: f64) -> Material {
+        Material::Metal(Metal::new(color, fuzz))
     }
 
-    fn rand_metal() -> Arc<dyn Material> {
+    fn rand_metal() -> Material {
         let albedo = rand_arr3();
         let fuzz = rand_range(0.0, 0.5);
         Self::metal(albedo, fuzz)
     }
 
-    fn diffuse_light(color: [f64; 3]) -> Arc<dyn Material> {
-        Arc::new(DiffuseLight::from_color(Color::from_arr(color)))
+    fn diffuse_light(color: [f64; 3]) -> Material {
+        Material::DiffuseLight(DiffuseLight::from_color(Color::from_arr(color)))
     }
 
-    fn image_map(file_name: &str, scale_factor: f64) -> Arc<dyn Material> {
+    fn image_map(file_name: &str, scale_factor: f64) -> Material {
         let tex = Arc::new(ImageMap::new(file_name, scale_factor));
         Self::from_texture(tex)
     }
 
-    fn pbr(albedo: [f64; 3], metallicity: f64) -> Arc<dyn Material> {
+    fn pbr(albedo: [f64; 3], metallicity: f64) -> Material {
         let color = Color::from_arr(albedo);
-        Arc::new(PbrMaterial::new(color, metallicity))
+        Material::PbrMaterial(PbrMaterial::new(color, metallicity))
+    }
+
+    fn isotropic(albedo: [f64; 3]) -> Material {
+        Material::Isotropic(Isotropic::from_color(Color::from_arr(albedo)))
     }
 }
 
 pub struct Shapes {}
 
 impl Shapes {
-    pub fn sphere(center: [f64; 3], radius: f64, mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
-        Arc::new(Sphere::stationary(
-            Point3::from(center),
-            radius,
-            Arc::clone(&mat),
-        ))
+    pub fn sphere(center: [f64; 3], radius: f64, mat_idx: usize) -> Hittable {
+        Hittable::Sphere(Sphere::stationary(Point3::from(center), radius, mat_idx))
     }
 
-    pub fn quad(
-        q: [f64; 3],
-        u: [f64; 3],
-        v: [f64; 3],
-        mat: Arc<dyn Material>,
-    ) -> Arc<dyn Hittable> {
-        Arc::new(Quad::from_arr(q, u, v, mat))
+    pub fn quad(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat_idx: usize) -> Hittable {
+        Hittable::Quad(Quad::from_arr(q, u, v, mat_idx))
     }
 
-    pub fn triangle(
-        a: [f64; 3],
-        b: [f64; 3],
-        c: [f64; 3],
-        mat: Arc<dyn Material>,
-    ) -> Arc<dyn Hittable> {
-        Arc::new(Triangle::new(a, b, c, mat))
+    pub fn triangle(a: [f64; 3], b: [f64; 3], c: [f64; 3], mat_idx: usize) -> Hittable {
+        Hittable::Triangle(Triangle::new(a, b, c, mat_idx))
     }
 
-    pub fn box3d(a: [f64; 3], b: [f64; 3], mat: Arc<dyn Material>) -> Arc<dyn Hittable> {
-        Arc::new(Box3d::new(
-            Vector3::from(a),
-            Vector3::from(b),
-            Arc::clone(&mat),
-        ))
+    pub fn box3d(a: [f64; 3], b: [f64; 3], mat_idx: usize) -> Hittable {
+        Hittable::HittableList(Box3d::new(Vector3::from(a), Vector3::from(b), mat_idx))
     }
 
     pub fn constant_medium(
-        boundary: Arc<dyn Hittable>,
+        materials: &mut Materials,
+        boundary: Arc<Hittable>,
         color: [f64; 3],
         density: f64,
-    ) -> Arc<dyn Hittable> {
-        Arc::new(ConstantMedium::from_color(
-            boundary,
-            density,
-            Color::from_arr(color),
-        ))
+    ) -> Hittable {
+        let mat = Materials::isotropic(color);
+        let mat_idx = materials.add(mat);
+        Hittable::ConstantMedium(ConstantMedium::new(boundary, density, mat_idx))
     }
 
-    pub fn checkered_ground(materials: &Materials) -> Arc<dyn Hittable> {
+    pub fn checkered_ground(materials: &Materials) -> Hittable {
         Shapes::sphere([1.0, -100.0, -1.0], 100.0, materials.get("checkered"))
     }
 }
 
 impl HittableList {
-    fn cornell_room(materials: &Materials, width: f64) -> (Arc<HittableList>, Arc<HittableList>) {
+    fn cornell_room(materials: &Materials, width: f64) -> (Hittable, Hittable) {
         let mut objects = HittableList::new();
         let mut lights = HittableList::new();
 
-        let light = Shapes::quad(
+        let light = Arc::new(Shapes::quad(
             [0.6 * width, width - 0.1, 0.6 * width],
             [-0.2 * width, 0.0, 0.0],
             [0.0, 0.0, -0.2 * width],
             materials.get("diffuse_light"),
-        );
+        ));
         let left = Shapes::quad(
             [width, 0.0, 0.0],
             [0.0, width, 0.0],
@@ -271,10 +240,13 @@ impl HittableList {
         objects.add(floor);
         objects.add(ceiling);
         objects.add(back);
-        objects.add(Arc::clone(&light));
-        lights.add(Arc::clone(&light));
+        objects.add_arc(light.clone());
+        lights.add_arc(light.clone());
 
-        (Arc::new(objects), Arc::new(lights))
+        (
+            Hittable::HittableList(objects),
+            Hittable::HittableList(lights),
+        )
     }
 }
 
@@ -303,7 +275,7 @@ fn scene_a() -> Scene {
     scene.add(sphere4);
     scene.add(sphere5);
 
-    Scene::no_lights(scene)
+    Scene::no_lights(scene, materials.materials)
 }
 
 fn camera_triangle() -> CameraOptions {
@@ -330,7 +302,7 @@ fn scene_triangle() -> Scene {
     scene.add(ground);
     scene.add(tri1);
 
-    Scene::no_lights(scene)
+    Scene::no_lights(scene, materials.materials)
 }
 
 fn scene_obj(scale: f64) -> Scene {
@@ -347,11 +319,11 @@ fn scene_obj(scale: f64) -> Scene {
         _ => panic!(),
     };
     for obj in objs {
-        let moved = translate(rotate_y(Arc::new(obj), 205.0), [10.0, 1.0, 5.0]);
+        let moved = translate(rotate_y(obj, 205.0), [10.0, 1.0, 5.0]);
         scene.add(moved);
     }
 
-    Scene::new(scene, lights)
+    Scene::new(scene, materials.materials, lights)
 }
 
 fn scene_pbr(scale: f64) -> Scene {
@@ -363,11 +335,15 @@ fn scene_pbr(scale: f64) -> Scene {
     scene.add(room);
     lights.add(room_lights);
 
-    let purple_light = Materials::diffuse_light([8.0, 0.0, 10.0]);
-    scene.add(Shapes::sphere([530.0, 530.0, 20.0], 10.0, purple_light));
+    // let purple = Materials::diffuse_light([8.0, 0.0, 10.0]);
+    // let purple_light = Shapes::sphere([530.0, 530.0, 20.0], 10.0, purple);
+    // scene.add(Arc::clone(&purple_light));
+    // lights.add(Arc::clone(&purple_light));
 
-    let teal_light = Materials::diffuse_light([0.0, 8.0, 10.0]);
-    scene.add(Shapes::sphere([20.0, 530.0, 20.0], 10.0, teal_light));
+    // let teal = Materials::diffuse_light([0.0, 8.0, 10.0]);
+    // let teal_light = Shapes::sphere([20.0, 530.0, 20.0], 10.0, teal);
+    // scene.add(Arc::clone(&teal_light));
+    // lights.add(Arc::clone(&teal_light));
 
     let mut box_right = Shapes::box3d(
         [0.0, 0.0, 0.0],
@@ -387,11 +363,10 @@ fn scene_pbr(scale: f64) -> Scene {
     box_left = translate(box_left, [265.0, 0.0, 295.0]);
     scene.add(box_left);
 
-    let mat = Materials::pbr([0.8, 0.6, 0.2], 0.9);
-    let sphere = Shapes::sphere([420.0, 100.0, 180.0], 100.0, mat);
+    let sphere = Shapes::sphere([420.0, 100.0, 180.0], 100.0, materials.get("pbr"));
     scene.add(sphere);
 
-    Scene::new(scene, lights)
+    Scene::new(scene, materials.materials, lights)
 }
 
 fn camera_b() -> CameraOptions {
@@ -404,7 +379,7 @@ fn camera_b() -> CameraOptions {
 
 fn scene_b() -> Scene {
     let mut scene = HittableList::new();
-    let materials = Materials::new();
+    let mut materials = Materials::new();
 
     // Objects
     let ground = Shapes::checkered_ground(&materials);
@@ -427,16 +402,15 @@ fn scene_b() -> Scene {
                 if choose_mat < 0.4 {
                     // Diffuse
                     let center2 = center1 + Vector3::new(0.0, rand_range(0.0, 0.5), 0.0);
-                    let sphere: Arc<dyn Hittable> = Arc::new(Sphere::moving(
-                        center1,
-                        center2,
-                        0.2,
-                        Materials::rand_lambertian(),
-                    ));
+                    let mat = Materials::rand_lambertian();
+                    let mat_idx = materials.add(mat);
+                    let sphere = Hittable::Sphere(Sphere::moving(center1, center2, 0.2, mat_idx));
                     scene.add(sphere);
                 } else if choose_mat < 0.6 {
                     // Metal
-                    let sphere = Shapes::sphere(center, 0.2, Materials::rand_metal());
+                    let mat = Materials::rand_metal();
+                    let mat_idx = materials.add(mat);
+                    let sphere = Shapes::sphere(center, 0.2, mat_idx);
                     scene.add(sphere);
                 } else if choose_mat < 0.8 {
                     // Glass
@@ -451,7 +425,7 @@ fn scene_b() -> Scene {
         }
     }
 
-    Scene::no_lights(scene)
+    Scene::no_lights(scene, materials.materials)
 }
 
 fn camera_c() -> CameraOptions {
@@ -470,7 +444,7 @@ fn scene_c() -> Scene {
     scene.add(sphere1);
     scene.add(sphere2);
 
-    Scene::no_lights(scene)
+    Scene::no_lights(scene, materials.materials)
 }
 
 fn camera_d() -> CameraOptions {
@@ -489,7 +463,7 @@ fn scene_d() -> Scene {
     scene.add(globe);
     scene.add(ground);
 
-    Scene::no_lights(scene)
+    Scene::no_lights(scene, materials.materials)
 }
 
 fn camera_e() -> CameraOptions {
@@ -508,7 +482,7 @@ fn scene_e() -> Scene {
     scene.add(ground);
     scene.add(sphere2);
 
-    Scene::no_lights(scene)
+    Scene::no_lights(scene, materials.materials)
 }
 
 fn camera_f() -> CameraOptions {
@@ -559,7 +533,7 @@ fn scene_f() -> Scene {
     scene.add(upper);
     scene.add(lower);
 
-    Scene::no_lights(scene)
+    Scene::no_lights(scene, materials.materials)
 }
 
 fn camera_g() -> CameraOptions {
@@ -588,7 +562,7 @@ fn scene_g() -> Scene {
     scene.add(quad_light);
     scene.add(sphere_light);
 
-    Scene::no_lights(scene)
+    Scene::no_lights(scene, materials.materials)
 }
 
 fn camera_cornell(room_width: f64) -> CameraOptions {
@@ -624,16 +598,16 @@ fn scene_cornell() -> Scene {
     scene.add(room);
     lights.add(room_lights);
 
-    scene.add(Arc::clone(&sphere_right));
-    scene.add(Arc::clone(&box_left));
+    scene.add(sphere_right);
+    scene.add(box_left);
 
-    Scene::new(scene, lights)
+    Scene::new(scene, materials.materials, lights)
 }
 
 fn scene_cornell_smoke() -> Scene {
     let mut scene = HittableList::new();
     let mut lights = HittableList::new();
-    let materials = Materials::new();
+    let mut materials = Materials::new();
 
     let mut box_right_boundary = Shapes::box3d(
         [0.0, 0.0, 0.0],
@@ -642,7 +616,12 @@ fn scene_cornell_smoke() -> Scene {
     );
     box_right_boundary = rotate_y(box_right_boundary, -18.0);
     box_right_boundary = translate(box_right_boundary, [130.0, 0.0, 65.0]);
-    let box_right = Shapes::constant_medium(box_right_boundary, [1.0, 1.0, 1.0], 0.01);
+    let box_right = Shapes::constant_medium(
+        &mut materials,
+        Arc::new(box_right_boundary),
+        [1.0, 1.0, 1.0],
+        0.01,
+    );
 
     let mut box_left_boundary = Shapes::box3d(
         [0.0, 0.0, 0.0],
@@ -651,7 +630,12 @@ fn scene_cornell_smoke() -> Scene {
     );
     box_left_boundary = rotate_y(box_left_boundary, 15.0);
     box_left_boundary = translate(box_left_boundary, [265.0, 0.0, 295.0]);
-    let box_left = Shapes::constant_medium(box_left_boundary, [0.0, 0.0, 0.0], 0.01);
+    let box_left = Shapes::constant_medium(
+        &mut materials,
+        Arc::new(box_left_boundary),
+        [0.0, 0.0, 0.0],
+        0.01,
+    );
 
     let (room, room_lights) = HittableList::cornell_room(&materials, 555.0);
     scene.add(room);
@@ -660,7 +644,7 @@ fn scene_cornell_smoke() -> Scene {
     scene.add(box_right);
     scene.add(box_left);
 
-    Scene::new(scene, lights)
+    Scene::new(scene, materials.materials, lights)
 }
 
 fn camera_book2_final() -> CameraOptions {
@@ -672,10 +656,10 @@ fn camera_book2_final() -> CameraOptions {
 
 fn scene_book2_final(with_haze: bool) -> Scene {
     let mut scene = HittableList::new();
-    let materials = Materials::new();
+    let mut materials = Materials::new();
 
     // Floor boxes
-    let ground = Materials::lambertian([0.48, 0.83, 0.53]);
+    let ground_idx = materials.add(Materials::lambertian([0.48, 0.83, 0.53]));
     let mut boxes = HittableList::new();
     let boxes_per_side = 20;
     for i in 0..boxes_per_side {
@@ -693,89 +677,80 @@ fn scene_book2_final(with_haze: bool) -> Scene {
             let y1 = rand_range(1.0, 101.0);
             let z1 = z0 + w;
 
-            boxes.add(Shapes::box3d(
-                [x0, y0, z0],
-                [x1, y1, z1],
-                Arc::clone(&ground),
-            ));
+            boxes.add(Shapes::box3d([x0, y0, z0], [x1, y1, z1], ground_idx));
         }
     }
-    let boxes_bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_list(boxes));
-    scene.add(Arc::clone(&boxes_bvh));
+    let boxes_bvh = Hittable::BvhNode(BvhNode::from_list(boxes));
+    scene.add(boxes_bvh);
 
     // Light
-    let diffuse = Materials::diffuse_light([7.0, 7.0, 7.0]);
+    let diffuse_idx = materials.add(Materials::diffuse_light([7.0, 7.0, 7.0]));
     let light = Shapes::quad(
         [123.0, 554.0, 147.0],
         [300.0, 0.0, 0.0],
         [0.0, 0.0, 265.0],
-        Arc::clone(&diffuse),
+        diffuse_idx,
     );
-    scene.add(Arc::clone(&light));
+    scene.add(light);
 
     // Moving sphere
     let center1 = Point3::new(400.0, 400.0, 200.0);
     let center2 = center1 + Vector3::new(30.0, 0.0, 0.0);
-    let sphere_mat = Materials::lambertian([0.7, 0.3, 0.1]);
-    let sphere: Arc<dyn Hittable> = Arc::new(Sphere::moving(
-        center1,
-        center2,
-        50.0,
-        Arc::clone(&sphere_mat),
-    ));
-    scene.add(Arc::clone(&sphere));
+    let sphere_mat_idx = materials.add(Materials::lambertian([0.7, 0.3, 0.1]));
+    let sphere = Hittable::Sphere(Sphere::moving(center1, center2, 50.0, sphere_mat_idx));
+    scene.add(sphere);
 
     // Glass sphere
     let sphere = Shapes::sphere([260.0, 150.0, 45.0], 50.0, materials.get("glass"));
-    scene.add(Arc::clone(&sphere));
+    scene.add(sphere);
 
     // Metal sphere
-    let metal = Materials::metal([0.8, 0.8, 0.9], 1.0);
-    let sphere = Shapes::sphere([0.0, 150.0, 145.0], 50.0, Arc::clone(&metal));
-    scene.add(Arc::clone(&sphere));
+    let metal_idx = materials.add(Materials::metal([0.8, 0.8, 0.9], 1.0));
+    let sphere = Shapes::sphere([0.0, 150.0, 145.0], 50.0, metal_idx);
+    scene.add(sphere);
 
     // Blue glass
     let boundary = Shapes::sphere([360.0, 150.0, 145.0], 70.0, materials.get("glass"));
-    scene.add(Arc::clone(&boundary));
-    let medium: Arc<dyn Hittable> = Arc::new(ConstantMedium::from_color(
-        boundary,
+    let boundary_arc = Arc::new(boundary);
+    scene.add_arc(Arc::clone(&boundary_arc));
+    let medium = Shapes::constant_medium(
+        &mut materials,
+        Arc::clone(&boundary_arc),
+        [0.2, 0.4, 0.9],
         0.2,
-        Color::new(0.2, 0.4, 0.9),
-    ));
-    scene.add(Arc::clone(&medium));
+    );
+    scene.add(medium);
 
     // Haze
     if with_haze {
         let boundary = Shapes::sphere([0.0, 0.0, 0.0], 5000.0, materials.get("glass"));
-        let medium: Arc<dyn Hittable> =
-            Arc::new(ConstantMedium::from_color(boundary, 0.0001, Color::white()));
-        scene.add(Arc::clone(&medium));
+        let medium =
+            Shapes::constant_medium(&mut materials, Arc::new(boundary), [1.0, 1.0, 1.0], 0.0001);
+        scene.add(medium);
     }
 
     // Globe
-    let globe: Arc<dyn Hittable> =
-        Shapes::sphere([400.0, 200.0, 400.0], 100.0, materials.get("earth"));
-    scene.add(Arc::clone(&globe));
+    let globe = Shapes::sphere([400.0, 200.0, 400.0], 100.0, materials.get("earth"));
+    scene.add(globe);
 
     // Noisy ball
     let sphere = Shapes::sphere([220.0, 280.0, 300.0], 80.0, materials.get("marble"));
-    scene.add(Arc::clone(&sphere));
+    scene.add(sphere);
 
     // Bubbly box
-    let white = Materials::lambertian([0.73, 0.73, 0.73]);
     let mut boxes2 = HittableList::new();
     for _ in 0..1000 {
-        let sphere: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
+        let sphere = Hittable::Sphere(Sphere::stationary(
             Point3::from(rand_range_vector(0.0, 165.0)),
             10.0,
-            Arc::clone(&white),
+            materials.get("white"),
         ));
-        boxes2.add(Arc::clone(&sphere));
+        boxes2.add(sphere);
     }
-    let mut boxes2_hittable: Arc<dyn Hittable> = Arc::new(BvhNode::from_list(boxes2));
+    let mut boxes2_hittable = Hittable::BvhNode(BvhNode::from_list(boxes2));
     boxes2_hittable = rotate_y(boxes2_hittable, 15.0);
     boxes2_hittable = translate(boxes2_hittable, [-100.0, 270.0, 395.0]);
-    scene.add(Arc::clone(&boxes2_hittable));
+    scene.add(boxes2_hittable);
 
-    Scene::no_lights(scene)
+    Scene::no_lights(scene, materials.materials)
 }

@@ -1,13 +1,11 @@
 use core::f64;
 use std::f64::consts::PI;
-use std::sync::Arc;
 
 use nalgebra::{Point3, Vector3};
 use parry3d_f64::bounding_volume::{Aabb, BoundingVolume};
 
-use super::hittable::{HitRecord, Hittable};
 use crate::rt::interval::Interval;
-use crate::rt::materials::material::Material;
+use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::onb::Onb;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;
@@ -16,21 +14,21 @@ use crate::rt::util::to_parry_vec;
 pub struct Sphere {
     pub center: Ray,
     pub radius: f64,
-    pub mat: Arc<dyn Material>,
+    pub mat_idx: usize,
     bbox: Aabb,
 }
 
 impl Sphere {
-    pub fn new(center: Ray, radius: f64, mat: Arc<dyn Material>, bbox: Aabb) -> Sphere {
+    pub fn new(center: Ray, radius: f64, mat_idx: usize, bbox: Aabb) -> Sphere {
         Sphere {
             center,
             radius,
-            mat,
+            mat_idx,
             bbox,
         }
     }
 
-    pub fn stationary(center: Point3<f64>, radius: f64, mat: Arc<dyn Material>) -> Sphere {
+    pub fn stationary(center: Point3<f64>, radius: f64, mat_idx: usize) -> Sphere {
         let ray = Ray::new(center, Vector3::zeros(), 0.0);
         let rvec = Vector3::from_element(radius);
         let points = vec![
@@ -38,14 +36,14 @@ impl Sphere {
             to_parry_vec((center + rvec).coords),
         ];
         let bbox = Aabb::from_points(points);
-        Self::new(ray, radius, mat, bbox)
+        Self::new(ray, radius, mat_idx, bbox)
     }
 
     pub fn moving(
         center1: Point3<f64>,
         center2: Point3<f64>,
         radius: f64,
-        mat: Arc<dyn Material>,
+        mat_idx: usize,
     ) -> Sphere {
         let ray = Ray::new(center1, center2 - center1, 0.0);
         let rvec = Vector3::from_element(radius);
@@ -64,7 +62,7 @@ impl Sphere {
             Aabb::from_points(points)
         };
         let bbox = box1.merged(&box2);
-        Self::new(ray, radius, mat, bbox)
+        Self::new(ray, radius, mat_idx, bbox)
     }
 
     pub fn get_uv(normal: &Vector3<f64>) -> (f64, f64) {
@@ -85,10 +83,8 @@ impl Sphere {
 
         Vector3::new(x, y, z)
     }
-}
 
-impl Hittable for Sphere {
-    fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         let curr_center = self.center.at(ray.time);
         let oc = curr_center - ray.orig;
         let a = ray.dir.magnitude_squared();
@@ -122,15 +118,15 @@ impl Hittable for Sphere {
             root,
             u,
             v,
-            Arc::clone(&self.mat),
+            self.mat_idx,
         ))
     }
 
-    fn bounding_box(&self) -> &Aabb {
+    pub fn bounding_box(&self) -> &Aabb {
         &self.bbox
     }
 
-    fn pdf_value(&self, origin: &Point3<f64>, direction: &Vector3<f64>) -> f64 {
+    pub fn pdf_value(&self, origin: &Point3<f64>, direction: &Vector3<f64>) -> f64 {
         // This method only works for stationary spheres.
 
         let ray = Ray::new(*origin, *direction, 0.0);
@@ -146,7 +142,7 @@ impl Hittable for Sphere {
         }
     }
 
-    fn random(&self, origin: &Point3<f64>) -> Vector3<f64> {
+    pub fn random(&self, origin: &Point3<f64>) -> Vector3<f64> {
         let direction = self.center.at(0.0) - origin;
         let dist_sqrd = direction.magnitude_squared();
         let uvw = Onb::new(&direction);

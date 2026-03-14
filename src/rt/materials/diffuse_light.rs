@@ -1,12 +1,10 @@
 use std::sync::Arc;
 
 use crate::rt::color::Color;
-use crate::rt::objects::hittable::HitRecord;
+use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;
 use crate::rt::textures::texture::Texture;
-
-use super::material::Material;
 
 pub struct DiffuseLight {
     texture: Arc<dyn Texture>,
@@ -21,11 +19,9 @@ impl DiffuseLight {
         let arc: Arc<dyn Texture> = Arc::new(SolidColor::new(color));
         Self::new(Arc::clone(&arc))
     }
-}
 
-impl Material for DiffuseLight {
     #[allow(unused)]
-    fn emitted(&self, r_in: &Ray, hit_record: &HitRecord) -> Color {
+    pub fn emitted(&self, r_in: &Ray, hit_record: &HitRecord) -> Color {
         if hit_record.front_face {
             self.texture
                 .value(hit_record.u, hit_record.v, &hit_record.point)
