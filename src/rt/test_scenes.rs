@@ -14,8 +14,9 @@ use crate::rt::{
         bvh_node::BvhNode,
         constant_medium::ConstantMedium,
         hittable::{Hittable, rotate_y, translate},
+        hittable_list::{Box3d, HittableList},
         quad::Quad,
-        scene::{Box3d, Scene},
+        scene::Scene,
         sphere::Sphere,
         triangle::Triangle,
     },
@@ -24,7 +25,7 @@ use crate::rt::{
 };
 
 pub fn get_camera_and_scene(scene_idx: u32) -> (CameraOptions, Scene) {
-    let (camera_options, raw_scene) = match scene_idx {
+    let (camera_options, scene) = match scene_idx {
         1 => (camera_a(), scene_a()),
         2 => (camera_b(), scene_b()),
         3 => (camera_c(), scene_c()),
@@ -40,7 +41,7 @@ pub fn get_camera_and_scene(scene_idx: u32) -> (CameraOptions, Scene) {
         13 => (camera_cornell(550.0), scene_pbr(550.0)),
         _ => panic!(),
     };
-    (camera_options, raw_scene)
+    (camera_options, scene)
 }
 
 fn rand_arr3() -> [f64; 3] {
@@ -59,7 +60,7 @@ impl Textures {
     }
 }
 
-struct Materials {
+pub struct Materials {
     default: Arc<dyn Material>,
     red: Arc<dyn Material>,
     white: Arc<dyn Material>,
@@ -90,7 +91,7 @@ impl Materials {
             blue: Self::lambertian([0.1, 0.2, 0.5]),
             orange: Self::lambertian([1.0, 0.5, 0.0]),
             teal: Self::lambertian([0.2, 0.8, 0.8]),
-            diffuse_light: Self::diffuse_light([7.0, 7.0, 7.0]),
+            diffuse_light: Self::diffuse_light([15.0, 15.0, 15.0]),
             checkered: Self::from_texture(Textures::checkers()),
             glass: Self::dielectric(1.5),
             air: Self::dielectric(1.0 / 1.5),
@@ -223,8 +224,11 @@ impl Shapes {
     }
 }
 
-impl Scene {
-    fn add_cornell_room(scene: &mut Scene, materials: &Materials, width: f64) {
+impl HittableList {
+    fn cornell_room(materials: &Materials, width: f64) -> (Arc<HittableList>, Arc<HittableList>) {
+        let mut objects = HittableList::new();
+        let mut lights = HittableList::new();
+
         let light = Shapes::quad(
             [0.6 * width, width - 0.1, 0.6 * width],
             [-0.2 * width, 0.0, 0.0],
@@ -262,12 +266,15 @@ impl Scene {
             materials.get("white"),
         );
 
-        scene.add(left);
-        scene.add(right);
-        scene.add(floor);
-        scene.add(ceiling);
-        scene.add(back);
-        scene.add(light);
+        objects.add(left);
+        objects.add(right);
+        objects.add(floor);
+        objects.add(ceiling);
+        objects.add(back);
+        objects.add(Arc::clone(&light));
+        lights.add(Arc::clone(&light));
+
+        (Arc::new(objects), Arc::new(lights))
     }
 }
 
@@ -281,7 +288,7 @@ fn camera_a() -> CameraOptions {
 }
 
 fn scene_a() -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
     let materials = Materials::new();
 
     let ground = Shapes::checkered_ground(&materials);
@@ -295,7 +302,8 @@ fn scene_a() -> Scene {
     scene.add(sphere3);
     scene.add(sphere4);
     scene.add(sphere5);
-    scene
+
+    Scene::no_lights(scene)
 }
 
 fn camera_triangle() -> CameraOptions {
@@ -308,7 +316,7 @@ fn camera_triangle() -> CameraOptions {
 }
 
 fn scene_triangle() -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
     let materials = Materials::new();
 
     let ground = Shapes::checkered_ground(&materials);
@@ -321,14 +329,18 @@ fn scene_triangle() -> Scene {
 
     scene.add(ground);
     scene.add(tri1);
-    scene
+
+    Scene::no_lights(scene)
 }
 
 fn scene_obj(scale: f64) -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
+    let mut lights = HittableList::new();
     let materials = Materials::new();
 
-    Scene::add_cornell_room(&mut scene, &materials, scale);
+    let (room, room_lights) = HittableList::cornell_room(&materials, scale);
+    scene.add(room);
+    lights.add(room_lights);
 
     let objs = match load_model_with_mat("cube.obj", materials.get("rusty_metal")) {
         Ok(os) => os,
@@ -339,14 +351,17 @@ fn scene_obj(scale: f64) -> Scene {
         scene.add(moved);
     }
 
-    scene
+    Scene::new(scene, lights)
 }
 
 fn scene_pbr(scale: f64) -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
+    let mut lights = HittableList::new();
     let materials = Materials::new();
 
-    Scene::add_cornell_room(&mut scene, &materials, scale);
+    let (room, room_lights) = HittableList::cornell_room(&materials, scale);
+    scene.add(room);
+    lights.add(room_lights);
 
     let purple_light = Materials::diffuse_light([8.0, 0.0, 10.0]);
     scene.add(Shapes::sphere([530.0, 530.0, 20.0], 10.0, purple_light));
@@ -376,7 +391,7 @@ fn scene_pbr(scale: f64) -> Scene {
     let sphere = Shapes::sphere([420.0, 100.0, 180.0], 100.0, mat);
     scene.add(sphere);
 
-    scene
+    Scene::new(scene, lights)
 }
 
 fn camera_b() -> CameraOptions {
@@ -388,7 +403,7 @@ fn camera_b() -> CameraOptions {
 }
 
 fn scene_b() -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
     let materials = Materials::new();
 
     // Objects
@@ -436,7 +451,7 @@ fn scene_b() -> Scene {
         }
     }
 
-    scene
+    Scene::no_lights(scene)
 }
 
 fn camera_c() -> CameraOptions {
@@ -446,7 +461,7 @@ fn camera_c() -> CameraOptions {
 }
 
 fn scene_c() -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
     let materials = Materials::new();
 
     let sphere1 = Shapes::sphere([0.0, -10.0, 0.0], 10.0, materials.get("checkered"));
@@ -454,7 +469,8 @@ fn scene_c() -> Scene {
 
     scene.add(sphere1);
     scene.add(sphere2);
-    scene
+
+    Scene::no_lights(scene)
 }
 
 fn camera_d() -> CameraOptions {
@@ -464,7 +480,7 @@ fn camera_d() -> CameraOptions {
 }
 
 fn scene_d() -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
     let materials = Materials::new();
 
     let ground = Shapes::checkered_ground(&materials);
@@ -472,7 +488,8 @@ fn scene_d() -> Scene {
 
     scene.add(globe);
     scene.add(ground);
-    scene
+
+    Scene::no_lights(scene)
 }
 
 fn camera_e() -> CameraOptions {
@@ -482,7 +499,7 @@ fn camera_e() -> CameraOptions {
 }
 
 fn scene_e() -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
     let materials = Materials::new();
 
     let ground = Shapes::checkered_ground(&materials);
@@ -490,7 +507,8 @@ fn scene_e() -> Scene {
 
     scene.add(ground);
     scene.add(sphere2);
-    scene
+
+    Scene::no_lights(scene)
 }
 
 fn camera_f() -> CameraOptions {
@@ -501,7 +519,7 @@ fn camera_f() -> CameraOptions {
 }
 
 fn scene_f() -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
     let materials = Materials::new();
 
     let left = Shapes::quad(
@@ -540,7 +558,8 @@ fn scene_f() -> Scene {
     scene.add(right);
     scene.add(upper);
     scene.add(lower);
-    scene
+
+    Scene::no_lights(scene)
 }
 
 fn camera_g() -> CameraOptions {
@@ -550,7 +569,7 @@ fn camera_g() -> CameraOptions {
 }
 
 fn scene_g() -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
     let materials = Materials::new();
 
     let ground = Shapes::checkered_ground(&materials);
@@ -568,7 +587,8 @@ fn scene_g() -> Scene {
     scene.add(sphere);
     scene.add(quad_light);
     scene.add(sphere_light);
-    scene
+
+    Scene::no_lights(scene)
 }
 
 fn camera_cornell(room_width: f64) -> CameraOptions {
@@ -579,7 +599,8 @@ fn camera_cornell(room_width: f64) -> CameraOptions {
 }
 
 fn scene_cornell() -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
+    let mut lights = HittableList::new();
     let materials = Materials::new();
 
     // let mut box_right = Shapes::box3d(
@@ -599,14 +620,19 @@ fn scene_cornell() -> Scene {
     box_left = rotate_y(box_left, 15.0);
     box_left = translate(box_left, [265.0, 0.0, 295.0]);
 
-    Scene::add_cornell_room(&mut scene, &materials, 555.0);
+    let (room, room_lights) = HittableList::cornell_room(&materials, 555.0);
+    scene.add(room);
+    lights.add(room_lights);
+
     scene.add(Arc::clone(&sphere_right));
     scene.add(Arc::clone(&box_left));
-    scene
+
+    Scene::new(scene, lights)
 }
 
 fn scene_cornell_smoke() -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
+    let mut lights = HittableList::new();
     let materials = Materials::new();
 
     let mut box_right_boundary = Shapes::box3d(
@@ -627,10 +653,14 @@ fn scene_cornell_smoke() -> Scene {
     box_left_boundary = translate(box_left_boundary, [265.0, 0.0, 295.0]);
     let box_left = Shapes::constant_medium(box_left_boundary, [0.0, 0.0, 0.0], 0.01);
 
-    Scene::add_cornell_room(&mut scene, &materials, 555.0);
+    let (room, room_lights) = HittableList::cornell_room(&materials, 555.0);
+    scene.add(room);
+    lights.add(room_lights);
+
     scene.add(box_right);
     scene.add(box_left);
-    scene
+
+    Scene::new(scene, lights)
 }
 
 fn camera_book2_final() -> CameraOptions {
@@ -641,12 +671,12 @@ fn camera_book2_final() -> CameraOptions {
 }
 
 fn scene_book2_final(with_haze: bool) -> Scene {
-    let mut scene = Scene::new();
+    let mut scene = HittableList::new();
     let materials = Materials::new();
 
     // Floor boxes
     let ground = Materials::lambertian([0.48, 0.83, 0.53]);
-    let mut boxes = Scene::new();
+    let mut boxes = HittableList::new();
     let boxes_per_side = 20;
     for i in 0..boxes_per_side {
         for j in 0..boxes_per_side {
@@ -670,7 +700,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
             ));
         }
     }
-    let boxes_bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_scene(boxes));
+    let boxes_bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_list(boxes));
     scene.add(Arc::clone(&boxes_bvh));
 
     // Light
@@ -733,7 +763,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
 
     // Bubbly box
     let white = Materials::lambertian([0.73, 0.73, 0.73]);
-    let mut boxes2 = Scene::new();
+    let mut boxes2 = HittableList::new();
     for _ in 0..1000 {
         let sphere: Arc<dyn Hittable> = Arc::new(Sphere::stationary(
             Point3::from(rand_range_vector(0.0, 165.0)),
@@ -742,10 +772,10 @@ fn scene_book2_final(with_haze: bool) -> Scene {
         ));
         boxes2.add(Arc::clone(&sphere));
     }
-    let mut boxes2_hittable: Arc<dyn Hittable> = Arc::new(BvhNode::from_scene(boxes2));
+    let mut boxes2_hittable: Arc<dyn Hittable> = Arc::new(BvhNode::from_list(boxes2));
     boxes2_hittable = rotate_y(boxes2_hittable, 15.0);
     boxes2_hittable = translate(boxes2_hittable, [-100.0, 270.0, 395.0]);
     scene.add(Arc::clone(&boxes2_hittable));
 
-    scene
+    Scene::no_lights(scene)
 }

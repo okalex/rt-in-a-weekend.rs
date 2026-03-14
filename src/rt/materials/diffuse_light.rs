@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use nalgebra::Point3;
-
 use crate::rt::color::Color;
 use crate::rt::objects::hittable::HitRecord;
 use crate::rt::ray::Ray;

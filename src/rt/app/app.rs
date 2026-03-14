@@ -9,7 +9,7 @@ use winit::{
     window::{Window, WindowId},
 };
 
-use crate::rt::{app::state::State, objects::hittable::Hittable, renderer::Renderer};
+use crate::rt::{app::state::State, objects::scene::Scene, renderer::Renderer};
 
 #[allow(unused)]
 pub struct App {
@@ -21,14 +21,8 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(
-        width: u32,
-        height: u32,
-        renderer: Arc<Renderer>,
-        scene: Arc<dyn Hittable>,
-        lights: Arc<dyn Hittable>,
-    ) -> Self {
-        let thread_handles = renderer.render(scene, lights);
+    pub fn new(width: u32, height: u32, renderer: Arc<Renderer>, scene: Arc<Scene>) -> Self {
+        let thread_handles = renderer.render(scene);
         Self {
             width,
             height,

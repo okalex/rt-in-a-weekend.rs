@@ -5,7 +5,7 @@ use nalgebra::{Point3, Vector3};
 use crate::rt::{
     objects::hittable::Hittable,
     onb::Onb,
-    random::{rand, rand_cos_dir, rand_unit_vector},
+    random::{rand, rand_cos_dir, rand_on_hemisphere, rand_unit_vector},
 };
 
 pub trait Pdf {
@@ -29,6 +29,28 @@ impl Pdf for SpherePdf {
 
     fn generate(&self) -> Vector3<f64> {
         rand_unit_vector()
+    }
+}
+
+pub struct HemispherePdf {
+    normal: Vector3<f64>,
+}
+
+impl HemispherePdf {
+    #[allow(dead_code)]
+    pub fn new(normal: Vector3<f64>) -> Self {
+        Self { normal }
+    }
+}
+
+impl Pdf for HemispherePdf {
+    #[allow(unused)]
+    fn value(&self, direction: &Vector3<f64>) -> f64 {
+        1.0 / (2.0 * PI)
+    }
+
+    fn generate(&self) -> Vector3<f64> {
+        rand_on_hemisphere(&self.normal)
     }
 }
 

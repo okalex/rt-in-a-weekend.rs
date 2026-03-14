@@ -5,7 +5,7 @@ use parry3d_f64::bounding_volume::{Aabb, BoundingVolume};
 use parry3d_f64::query::RayCast;
 
 use super::hittable::{HitRecord, Hittable};
-use super::scene::Scene;
+use super::hittable_list::HittableList;
 use crate::rt::interval::Interval;
 use crate::rt::ray::Ray;
 
@@ -42,8 +42,8 @@ impl BvhNode {
         }
     }
 
-    pub fn from_scene(scene: Scene) -> BvhNode {
-        let mut objects = scene.objects;
+    pub fn from_list(list: HittableList) -> BvhNode {
+        let mut objects = list.objects;
         let len = objects.len();
         Self::construct(&mut objects, 0, len)
     }
@@ -63,7 +63,7 @@ impl Hittable for BvhNode {
     fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         let r = ray.to_parry3d();
         match self.bbox.cast_local_ray(&r, ray_t.max, false) {
-            Some(toi) if toi >= ray_t.min => {},
+            Some(toi) if toi >= ray_t.min => {}
             _ => return None,
         }
 
@@ -74,7 +74,12 @@ impl Hittable for BvhNode {
         };
         let rec_right = self.right.hit(ray, Interval::new(ray_t.min, int_max));
 
-        rec_right.or(rec_left)
+        match (rec_left, rec_right) {
+            (None, None) => None,
+            (Some(l), None) => Some(l),
+            (None, Some(r)) => Some(r),
+            (Some(_), Some(r)) => Some(r), // Favor the right since it's closer
+        }
     }
 
     fn bounding_box(&self) -> &Aabb {

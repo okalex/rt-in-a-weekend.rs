@@ -30,9 +30,11 @@ pub trait Material: Send + Sync {
     }
 }
 
+#[allow(dead_code)]
 pub struct EmptyMaterial {}
 
 impl EmptyMaterial {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {}
     }

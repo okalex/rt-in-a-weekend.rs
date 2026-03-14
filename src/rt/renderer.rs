@@ -7,7 +7,9 @@ use crate::rt::frame_buffer::FrameBuffer;
 use crate::rt::interval::Interval;
 use crate::rt::materials::material::ScatterRecord;
 use crate::rt::objects::hittable::{HitRecord, Hittable};
-use crate::rt::pdf::{HittablePdf, MixturePdf, Pdf};
+use crate::rt::objects::scene::Scene;
+#[allow(unused_imports)]
+use crate::rt::pdf::{CosinePdf, HemispherePdf, HittablePdf, MixturePdf, Pdf, SpherePdf};
 use crate::rt::ray::Ray;
 
 pub struct Renderer {
@@ -45,19 +47,14 @@ impl Renderer {
         }
     }
 
-    pub fn render(
-        &self,
-        scene: Arc<dyn Hittable>,
-        lights: Arc<dyn Hittable>,
-    ) -> Vec<JoinHandle<()>> {
+    pub fn render(&self, scene: Arc<Scene>) -> Vec<JoinHandle<()>> {
         let mut thread_handles: Vec<JoinHandle<()>> = vec![];
         for worker in &self.workers {
             let worker_clone = Arc::clone(worker);
             let scene_clone = Arc::clone(&scene);
-            let lights_clone = Arc::clone(&lights);
 
             let thread_handle = std::thread::spawn(move || {
-                worker_clone.render(scene_clone, lights_clone);
+                worker_clone.render(scene_clone);
             });
 
             thread_handles.push(thread_handle);
@@ -88,7 +85,7 @@ impl RenderWorker {
         }
     }
 
-    pub fn render(&self, scene: Arc<dyn Hittable>, lights: Arc<dyn Hittable>) {
+    pub fn render(&self, scene: Arc<Scene>) {
         loop {
             let remaining_lines = self.line_server.len();
             eprint!("\rLines remaining: {}       ", remaining_lines);
@@ -97,7 +94,7 @@ impl RenderWorker {
             match maybe_line {
                 None => break,
                 Some(line_idx) => {
-                    self.render_line(&scene, &lights, line_idx);
+                    self.render_line(&scene, line_idx);
                 }
             }
         }
@@ -106,39 +103,23 @@ impl RenderWorker {
         eprint!("\rLines remaining: {}       ", remaining_lines);
     }
 
-    fn render_line(&self, scene: &Arc<dyn Hittable>, lights: &Arc<dyn Hittable>, line_idx: u32) {
+    fn render_line(&self, scene: &Arc<Scene>, line_idx: u32) {
         let data: Vec<[u8; 3]> = (0..self.options.img_width)
-            .map(|i| {
-                self.sample_pixel(scene, lights, i, line_idx)
-                    .to_gamma()
-                    .to_u8()
-            })
+            .map(|i| self.sample_pixel(scene, i, line_idx).to_gamma().to_u8())
             .collect();
 
         self.frame_buffer.set_line(line_idx as usize, &data);
     }
 
-    fn sample_pixel(
-        &self,
-        scene: &Arc<dyn Hittable>,
-        lights: &Arc<dyn Hittable>,
-        i: u32,
-        j: u32,
-    ) -> Color {
+    fn sample_pixel(&self, scene: &Arc<Scene>, i: u32, j: u32) -> Color {
         let mut pixel_color = Color::black();
         self.camera.foreach_ray(i, j, |ray| {
-            pixel_color = pixel_color + self.ray_color(&ray, 0, scene, lights);
+            pixel_color = pixel_color + self.ray_color(scene, &ray, 0);
         });
         return self.camera.sampler.integrate_samples(pixel_color);
     }
 
-    fn ray_color(
-        &self,
-        ray: &Ray,
-        depth: u32,
-        scene: &Arc<dyn Hittable>,
-        lights: &Arc<dyn Hittable>,
-    ) -> Color {
+    fn ray_color(&self, scene: &Arc<Scene>, ray: &Ray, depth: u32) -> Color {
         if depth >= self.options.max_depth {
             return Color::black();
         }
@@ -149,7 +130,7 @@ impl RenderWorker {
 
                 let scattered_color = match hit_record.mat.scatter(ray, &hit_record) {
                     Some(scatter_record) => {
-                        self.scatter_color(scene, lights, ray, depth, &hit_record, &scatter_record)
+                        self.scatter_color(scene, ray, depth, &hit_record, &scatter_record)
                     }
                     None => Color::black(),
                 };
@@ -163,8 +144,7 @@ impl RenderWorker {
 
     fn scatter_color(
         &self,
-        scene: &Arc<dyn Hittable>,
-        lights: &Arc<dyn Hittable>,
+        scene: &Arc<Scene>,
         ray: &Ray,
         depth: u32,
         hit_record: &HitRecord,
@@ -172,24 +152,48 @@ impl RenderWorker {
     ) -> Color {
         match &scatter_record.skip_pdf_ray {
             Some(skip_pdf_ray) => {
-                scatter_record.attenuation * self.ray_color(&skip_pdf_ray, depth + 1, scene, lights)
+                scatter_record.attenuation * self.ray_color(scene, &skip_pdf_ray, depth + 1)
             }
 
             None => {
-                let light_pdf: Arc<dyn Pdf> =
-                    Arc::new(HittablePdf::new(Arc::clone(lights), hit_record.point));
-                let p = MixturePdf::new(light_pdf, Arc::clone(&scatter_record.pdf));
-
-                let scattered_ray = Ray::new(hit_record.point, p.generate(), ray.time);
-                let pdf_value = p.value(&scattered_ray.dir);
+                let pdf = self.get_pdf(scene, hit_record, scatter_record);
+                let scattered_ray = Ray::new(hit_record.point, pdf.generate(), ray.time);
 
                 let scattering_pdf = hit_record
                     .mat
                     .scattering_pdf(ray, hit_record, &scattered_ray);
 
-                let sample_color = self.ray_color(&scattered_ray, depth + 1, scene, lights);
+                let mut pdf_value = pdf.value(&scattered_ray.dir);
+                if pdf_value <= 0.0 {
+                    pdf_value = scattering_pdf;
+                }
+
+                let sample_color = self.ray_color(scene, &scattered_ray, depth + 1);
                 scatter_record.attenuation * scattering_pdf * sample_color / pdf_value
             }
+        }
+    }
+
+    fn get_pdf(
+        &self,
+        scene: &Arc<Scene>,
+        hit_record: &HitRecord,
+        scatter_record: &ScatterRecord,
+    ) -> Arc<dyn Pdf> {
+        if self.options.use_importance_sampling {
+            if scene.lights.len() > 0 {
+                let light_pdf: Arc<dyn Pdf> = Arc::new(HittablePdf::new(
+                    Arc::clone(&scene.lights) as Arc<dyn Hittable>,
+                    hit_record.point,
+                ));
+                Arc::new(MixturePdf::new(light_pdf, Arc::clone(&scatter_record.pdf)))
+            } else {
+                Arc::clone(&scatter_record.pdf)
+            }
+        } else {
+            // Arc::new(HemispherePdf::new(hit_record.normal))
+            Arc::new(CosinePdf::new(&hit_record.normal))
+            // Arc::new(SpherePdf::new())
         }
     }
 }
@@ -200,6 +204,7 @@ pub struct RenderOptions {
     pub samples_per_pixel: u32,
     pub max_depth: u32,
     pub use_multithreading: bool,
+    pub use_importance_sampling: bool,
     pub background: Color,
 }
 
@@ -208,6 +213,7 @@ pub struct RenderOptionsBuilder {
     samples_per_pixel: u32,
     max_depth: u32,
     use_multithreading: bool,
+    use_importance_sampling: bool,
     background: Color,
 }
 
@@ -218,6 +224,7 @@ impl RenderOptionsBuilder {
             samples_per_pixel: 100,
             max_depth: 50,
             use_multithreading: true,
+            use_importance_sampling: true,
             background: Color::new(0.7, 0.8, 1.0),
         }
     }
@@ -229,6 +236,7 @@ impl RenderOptionsBuilder {
             samples_per_pixel: self.samples_per_pixel,
             max_depth: self.max_depth,
             use_multithreading: self.use_multithreading,
+            use_importance_sampling: self.use_importance_sampling,
             background: self.background,
         }
     }
@@ -250,6 +258,11 @@ impl RenderOptionsBuilder {
 
     pub fn use_multithreading(mut self, new_use_multithreading: bool) -> Self {
         self.use_multithreading = new_use_multithreading;
+        self
+    }
+
+    pub fn use_importance_sampling(mut self, new_use_importance_sampling: bool) -> Self {
+        self.use_importance_sampling = new_use_importance_sampling;
         self
     }
 

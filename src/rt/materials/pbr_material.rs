@@ -1,15 +1,14 @@
 use std::sync::Arc;
 
-use nalgebra::{Point3, Vector3};
+use nalgebra::Vector3;
 
 use crate::rt::{
     color::Color,
     materials::material::{Material, ScatterRecord, reflect},
     objects::hittable::HitRecord,
     pdf::SpherePdf,
-    random::{rand_on_hemisphere, rand_unit_vector},
+    random::rand_on_hemisphere,
     ray::Ray,
-    textures::image_map::ImageMap,
 };
 
 pub struct PbrMaterial {
