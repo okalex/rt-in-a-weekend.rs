@@ -9,7 +9,7 @@ use crate::rt::app::app::App;
 use crate::rt::camera::Camera;
 use crate::rt::color::Color;
 use crate::rt::frame_buffer::FrameBuffer;
-use crate::rt::objects::{bvh_node::BvhNode, hittable::Hittable, scene::Scene};
+use crate::rt::objects::scene::Scene;
 use crate::rt::ppm_writer::PpmWriter;
 use crate::rt::renderer::{LineServer, RenderOptionsBuilder, Renderer};
 use crate::rt::sampler::Sampler;
@@ -37,8 +37,11 @@ struct Args {
     #[arg(short, long, default_value_t = 10)]
     depth: u32,
 
-    #[arg(short, long, default_value_t = true)]
+    #[arg(short, long, default_value_t = false)]
     multithreading: bool,
+
+    #[arg(long, default_value_t = false)]
+    importance: bool,
 
     #[arg(long, default_value_t = 1)]
     sampler: u32,
@@ -49,17 +52,36 @@ fn main() {
 
     let args = Args::parse();
 
-    let (camera_options, raw_scene) = get_camera_and_scene(args.scene);
-
     let render_options = Arc::new(
         RenderOptionsBuilder::new()
             .width(args.width)
             .samples_per_pixel(args.samples)
             .max_depth(args.depth)
             .use_multithreading(args.multithreading)
+            .use_importance_sampling(args.importance)
             .background(Color::black())
             .build(args.aspect as f64),
     );
+
+    eprintln!("Render settings:");
+    eprintln!("  interactive         = {}", args.interactive);
+    eprintln!("  scene index         = {}", args.scene);
+    eprintln!("  image width         = {}", args.width);
+    eprintln!("  image height        = {}", render_options.img_height);
+    eprintln!("  aspect ratio        = {}", args.aspect);
+    eprintln!("  max depth           = {}", args.depth);
+    eprintln!("  multithreading      = {}", args.multithreading);
+    eprintln!("  importance sampling = {}", args.importance);
+    eprintln!(
+        "  sampler             = {}",
+        if args.sampler == 2 {
+            "stratified"
+        } else {
+            "random"
+        }
+    );
+
+    let (camera_options, scene) = get_camera_and_scene(args.scene);
 
     let viewport = Viewport::new(
         render_options.img_width,
@@ -73,7 +95,6 @@ fn main() {
     };
 
     let camera = Arc::new(Camera::new(camera_options, viewport, sampler));
-    let scene = wrap_scene(raw_scene);
 
     let frame_buffer = Arc::new(FrameBuffer::new(
         render_options.img_width as usize,
@@ -94,12 +115,12 @@ fn main() {
             render_options.img_width,
             render_options.img_height,
             Arc::clone(&renderer),
-            scene,
+            Arc::new(scene),
         );
     } else {
         let writer = PpmWriter::new(Arc::clone(&frame_buffer), 255);
 
-        let thread_handles = renderer.render(Arc::clone(&scene));
+        let thread_handles = renderer.render(Arc::new(scene));
         thread_handles.into_iter().for_each(|h| h.join().unwrap());
 
         writer.write();
@@ -110,16 +131,11 @@ fn run_windowed(
     width: u32,
     height: u32,
     renderer: Arc<Renderer>,
-    scene: Arc<dyn Hittable>,
+    scene: Arc<Scene>,
 ) -> anyhow::Result<()> {
     let event_loop = EventLoop::with_user_event().build()?;
     let mut app = App::new(width, height, Arc::clone(&renderer), scene);
     event_loop.run_app(&mut app)?;
 
     Ok(())
-}
-
-fn wrap_scene(scene: Scene) -> Arc<dyn Hittable> {
-    let bvh: Arc<dyn Hittable> = Arc::new(BvhNode::from_scene(scene));
-    Arc::new(Scene::new_obj(Arc::clone(&bvh)))
 }

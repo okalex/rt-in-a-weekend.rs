@@ -1,3 +1,4 @@
+use core::f64;
 use std::f64::consts::PI;
 use std::sync::Arc;
 
@@ -7,6 +8,8 @@ use parry3d_f64::bounding_volume::{Aabb, BoundingVolume};
 use super::hittable::{HitRecord, Hittable};
 use crate::rt::interval::Interval;
 use crate::rt::materials::material::Material;
+use crate::rt::onb::Onb;
+use crate::rt::random::rand;
 use crate::rt::ray::Ray;
 use crate::rt::util::to_parry_vec;
 
@@ -69,6 +72,19 @@ impl Sphere {
         let v = 0.5 + normal.y.asin() / PI;
         (u, v)
     }
+
+    fn rand_to_sphere(radius: f64, dist_sqrd: f64) -> Vector3<f64> {
+        let r1 = rand();
+        let r2 = rand();
+        let z = 1.0 + r2 * ((1.0 - radius * radius / dist_sqrd).sqrt() - 1.0);
+
+        let phi = 2.0 * PI * r1;
+        let tmp = (1.0 - z * z).sqrt();
+        let x = phi.cos() * tmp;
+        let y = phi.sin() * tmp;
+
+        Vector3::new(x, y, z)
+    }
 }
 
 impl Hittable for Sphere {
@@ -112,5 +128,28 @@ impl Hittable for Sphere {
 
     fn bounding_box(&self) -> &Aabb {
         &self.bbox
+    }
+
+    fn pdf_value(&self, origin: &Point3<f64>, direction: &Vector3<f64>) -> f64 {
+        // This method only works for stationary spheres.
+
+        let ray = Ray::new(*origin, *direction, 0.0);
+        let interval = Interval::new(0.001, f64::INFINITY);
+        match self.hit(&ray, interval) {
+            None => 0.0,
+            Some(_) => {
+                let dist_sqrd = (self.center.at(0.0) - origin).magnitude_squared();
+                let cos_theta_max = (1.0 - self.radius * self.radius / dist_sqrd).sqrt();
+                let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
+                1.0 / solid_angle
+            }
+        }
+    }
+
+    fn random(&self, origin: &Point3<f64>) -> Vector3<f64> {
+        let direction = self.center.at(0.0) - origin;
+        let dist_sqrd = direction.magnitude_squared();
+        let uvw = Onb::new(&direction);
+        uvw.transform(Self::rand_to_sphere(self.radius, dist_sqrd))
     }
 }

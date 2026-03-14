@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::f64::consts::PI;
 
 use nalgebra::Vector3;
 use rand::RngExt;
@@ -21,7 +22,7 @@ pub fn rand_range(min: f64, max: f64) -> f64 {
 }
 
 pub fn rand_int(min: i32, max: i32) -> i32 {
-    with_rng(|rng| rng.random_range(min..max))
+    with_rng(|rng| rng.random_range(min..=max))
 }
 
 #[allow(dead_code)]
@@ -55,7 +56,7 @@ pub fn rand_unit_vector() -> Vector3<f64> {
 #[allow(dead_code)]
 pub fn rand_on_hemisphere(normal: &Vector3<f64>) -> Vector3<f64> {
     let on_unit_sphere = rand_unit_vector();
-    
+
     if on_unit_sphere.dot(normal) > 0.0 {
         on_unit_sphere
     } else {
@@ -65,13 +66,22 @@ pub fn rand_on_hemisphere(normal: &Vector3<f64>) -> Vector3<f64> {
 
 pub fn rand_in_unit_disk() -> Vector3<f64> {
     loop {
-        let p = Vector3::new(
-            rand_range(-1.0, 1.0),
-            rand_range(-1.0, 1.0),
-            0.0,
-        );
+        let p = Vector3::new(rand_range(-1.0, 1.0), rand_range(-1.0, 1.0), 0.0);
         if p.magnitude_squared() < 1.0 {
             return p;
         }
     }
+}
+
+pub fn rand_cos_dir() -> Vector3<f64> {
+    let r1 = rand();
+    let r2 = rand();
+    let sqrt_r2 = r2.sqrt();
+
+    let phi = 2.0 * PI * r1;
+    let x = phi.cos() * sqrt_r2;
+    let y = phi.sin() * sqrt_r2;
+    let z = (1.0 - r2).sqrt();
+
+    Vector3::new(x, y, z)
 }

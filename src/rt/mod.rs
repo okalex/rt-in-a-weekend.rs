@@ -8,6 +8,8 @@ pub mod image;
 pub mod interval;
 pub mod materials;
 pub mod objects;
+pub mod onb;
+pub mod pdf;
 pub mod perlin;
 pub mod ppm_writer;
 pub mod random;

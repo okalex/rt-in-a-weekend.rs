@@ -6,6 +6,7 @@ use parry3d_f64::bounding_volume::Aabb;
 use super::hittable::{HitRecord, Hittable};
 use crate::rt::interval::Interval;
 use crate::rt::materials::material::Material;
+use crate::rt::random::rand;
 use crate::rt::ray::Ray;
 use crate::rt::util::to_parry_vec;
 
@@ -18,6 +19,7 @@ pub struct Quad {
     bbox: Aabb,
     normal: Vector3<f64>,
     d: f64,
+    area: f64,
 }
 
 impl Quad {
@@ -34,6 +36,8 @@ impl Quad {
         let normal = n.normalize();
         let d = normal.dot(&q.coords);
         let w = n / n.dot(&n);
+        let area = n.magnitude();
+
         Self {
             q,
             u,
@@ -43,6 +47,7 @@ impl Quad {
             bbox,
             normal,
             d,
+            area,
         }
     }
 
@@ -93,5 +98,23 @@ impl Hittable for Quad {
 
     fn bounding_box(&self) -> &Aabb {
         &self.bbox
+    }
+
+    fn pdf_value(&self, origin: &Point3<f64>, direction: &Vector3<f64>) -> f64 {
+        let ray = Ray::new(*origin, *direction, 0.0);
+        let interval = Interval::new(0.001, f64::INFINITY);
+        match self.hit(&ray, interval) {
+            None => 0.0,
+            Some(hit_record) => {
+                let dist_sqrd = hit_record.t * hit_record.t * direction.magnitude_squared();
+                let cos = (direction.dot(&hit_record.normal) / direction.magnitude()).abs();
+                dist_sqrd / (cos * self.area)
+            }
+        }
+    }
+
+    fn random(&self, origin: &Point3<f64>) -> Vector3<f64> {
+        let p = self.q + (rand() * self.u) + (rand() * self.v);
+        p - origin
     }
 }

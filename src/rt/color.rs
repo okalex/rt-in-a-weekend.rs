@@ -59,11 +59,10 @@ impl Color {
     }
 
     pub fn to_gamma(&self) -> Color {
-        Self::new(
-            linear_to_gamma(self.r()),
-            linear_to_gamma(self.g()),
-            linear_to_gamma(self.b()),
-        )
+        let r = if self.r().is_nan() { 0.0 } else { self.r() };
+        let g = if self.r().is_nan() { 0.0 } else { self.g() };
+        let b = if self.r().is_nan() { 0.0 } else { self.b() };
+        Self::new(linear_to_gamma(r), linear_to_gamma(g), linear_to_gamma(b))
     }
 
     pub fn to_linear(&self) -> Color {
