@@ -6,7 +6,7 @@ use nalgebra::Vector3;
 use crate::rt::color::Color;
 use crate::rt::materials::material::ScatterRecord;
 use crate::rt::objects::hit_record::HitRecord;
-use crate::rt::pdf::CosinePdf;
+use crate::rt::pdf::{CosinePdf, Pdf};
 use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;
 use crate::rt::textures::texture::Texture;
@@ -38,7 +38,7 @@ impl Lambertian {
     pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         Some(ScatterRecord {
             attenuation: self.texture.value(rec.u, rec.v, &rec.point),
-            pdf: Arc::new(CosinePdf::new(&rec.normal)),
+            pdf: Arc::new(Pdf::Cosine(CosinePdf::new(&rec.normal))),
             skip_pdf_ray: None,
         })
     }

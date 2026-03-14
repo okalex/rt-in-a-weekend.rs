@@ -6,7 +6,7 @@ use crate::rt::{
     color::Color,
     materials::material::{ScatterRecord, reflect},
     objects::hit_record::HitRecord,
-    pdf::SpherePdf,
+    pdf::{Pdf, SpherePdf},
     random::rand_on_hemisphere,
     ray::Ray,
 };
@@ -60,7 +60,7 @@ impl PbrMaterial {
 
         Some(ScatterRecord {
             attenuation: self.albedo,
-            pdf: Arc::new(SpherePdf::new()), // TODO
+            pdf: Arc::new(Pdf::Sphere(SpherePdf::new())), // TODO
             skip_pdf_ray: Some(Ray::new(rec.point, scatter_dir, r_in.time)),
         })
     }

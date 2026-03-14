@@ -15,7 +15,7 @@ use crate::rt::ray::Ray;
 
 pub struct ScatterRecord {
     pub attenuation: Color,
-    pub pdf: Arc<dyn Pdf>,
+    pub pdf: Arc<Pdf>,
     pub skip_pdf_ray: Option<Ray>,
 }
 

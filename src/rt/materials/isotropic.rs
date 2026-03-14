@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 use std::sync::Arc;
 
 use crate::rt::objects::hit_record::HitRecord;
-use crate::rt::pdf::SpherePdf;
+use crate::rt::pdf::{Pdf, SpherePdf};
 use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;
 use crate::rt::{color::Color, textures::texture::Texture};
@@ -30,7 +30,7 @@ impl Isotropic {
     pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         Some(ScatterRecord {
             attenuation: self.texture.value(rec.u, rec.v, &rec.point),
-            pdf: Arc::new(SpherePdf::new()),
+            pdf: Arc::new(Pdf::Sphere(SpherePdf::new())),
             skip_pdf_ray: None,
         })
     }

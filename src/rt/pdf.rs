@@ -8,9 +8,34 @@ use crate::rt::{
     random::{rand, rand_cos_dir, rand_on_hemisphere, rand_unit_vector},
 };
 
-pub trait Pdf {
-    fn value(&self, direction: &Vector3<f64>) -> f64;
-    fn generate(&self) -> Vector3<f64>;
+pub enum Pdf {
+    Sphere(SpherePdf),
+    Hemisphere(HemispherePdf),
+    Cosine(CosinePdf),
+    Hittable(HittablePdf),
+    Mixture(MixturePdf),
+}
+
+impl Pdf {
+    pub fn value(&self, direction: &Vector3<f64>) -> f64 {
+        match self {
+            Self::Sphere(pdf) => pdf.value(direction),
+            Self::Hemisphere(pdf) => pdf.value(direction),
+            Self::Cosine(pdf) => pdf.value(direction),
+            Self::Hittable(pdf) => pdf.value(direction),
+            Self::Mixture(pdf) => pdf.value(direction),
+        }
+    }
+
+    pub fn generate(&self) -> Vector3<f64> {
+        match self {
+            Self::Sphere(pdf) => pdf.generate(),
+            Self::Hemisphere(pdf) => pdf.generate(),
+            Self::Cosine(pdf) => pdf.generate(),
+            Self::Hittable(pdf) => pdf.generate(),
+            Self::Mixture(pdf) => pdf.generate(),
+        }
+    }
 }
 
 pub struct SpherePdf {}
@@ -19,9 +44,7 @@ impl SpherePdf {
     pub fn new() -> Self {
         Self {}
     }
-}
 
-impl Pdf for SpherePdf {
     #[allow(unused)]
     fn value(&self, direction: &Vector3<f64>) -> f64 {
         1.0 / (4.0 * PI)
@@ -41,9 +64,7 @@ impl HemispherePdf {
     pub fn new(normal: Vector3<f64>) -> Self {
         Self { normal }
     }
-}
 
-impl Pdf for HemispherePdf {
     #[allow(unused)]
     fn value(&self, direction: &Vector3<f64>) -> f64 {
         1.0 / (2.0 * PI)
@@ -62,9 +83,7 @@ impl CosinePdf {
     pub fn new(w: &Vector3<f64>) -> Self {
         Self { uvw: Onb::new(w) }
     }
-}
 
-impl Pdf for CosinePdf {
     fn value(&self, direction: &Vector3<f64>) -> f64 {
         let cos_theta = direction.normalize().dot(&self.uvw.w());
         f64::max(0.0, cos_theta / PI)
@@ -84,9 +103,7 @@ impl HittablePdf {
     pub fn new(object: Arc<HittableList>, orig: Point3<f64>) -> Self {
         Self { object, orig }
     }
-}
 
-impl Pdf for HittablePdf {
     fn value(&self, direction: &Vector3<f64>) -> f64 {
         self.object.pdf_value(&self.orig, direction)
     }
@@ -97,17 +114,15 @@ impl Pdf for HittablePdf {
 }
 
 pub struct MixturePdf {
-    p0: Arc<dyn Pdf>,
-    p1: Arc<dyn Pdf>,
+    p0: Arc<Pdf>,
+    p1: Arc<Pdf>,
 }
 
 impl MixturePdf {
-    pub fn new(p0: Arc<dyn Pdf>, p1: Arc<dyn Pdf>) -> Self {
+    pub fn new(p0: Arc<Pdf>, p1: Arc<Pdf>) -> Self {
         Self { p0, p1 }
     }
-}
 
-impl Pdf for MixturePdf {
     fn value(&self, direction: &Vector3<f64>) -> f64 {
         0.5 * self.p0.value(direction) + 0.5 * self.p1.value(direction)
     }

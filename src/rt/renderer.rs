@@ -174,20 +174,20 @@ impl RenderWorker {
         scene: &Arc<Scene>,
         hit_record: &HitRecord,
         scatter_record: &ScatterRecord,
-    ) -> Arc<dyn Pdf> {
+    ) -> Arc<Pdf> {
         if self.options.use_importance_sampling {
             if scene.lights.len() > 0 {
-                let light_pdf: Arc<dyn Pdf> = Arc::new(HittablePdf::new(
+                let light_pdf = Arc::new(Pdf::Hittable(HittablePdf::new(
                     Arc::clone(&scene.lights),
                     hit_record.point,
-                ));
-                Arc::new(MixturePdf::new(light_pdf, Arc::clone(&scatter_record.pdf)))
+                )));
+                Arc::new(Pdf::Mixture(MixturePdf::new(light_pdf, Arc::clone(&scatter_record.pdf))))
             } else {
                 Arc::clone(&scatter_record.pdf)
             }
         } else {
             // Arc::new(HemispherePdf::new(hit_record.normal))
-            Arc::new(CosinePdf::new(&hit_record.normal))
+            Arc::new(Pdf::Cosine(CosinePdf::new(&hit_record.normal)))
             // Arc::new(SpherePdf::new())
         }
     }

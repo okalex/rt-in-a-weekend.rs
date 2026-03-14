@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::rt::objects::hit_record::HitRecord;
+use crate::rt::pdf::Pdf;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;
 use crate::rt::{color::Color, pdf::SpherePdf};
@@ -38,7 +39,7 @@ impl Dielectric {
 
         Some(ScatterRecord {
             attenuation: Color::white(),
-            pdf: Arc::new(SpherePdf::new()), // TODO
+            pdf: Arc::new(Pdf::Sphere(SpherePdf::new())), // TODO
             skip_pdf_ray: Some(Ray::new(rec.point, direction, r_in.time)),
         })
     }

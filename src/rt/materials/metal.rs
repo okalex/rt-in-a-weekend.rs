@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::rt::objects::hit_record::HitRecord;
-use crate::rt::pdf::SpherePdf;
+use crate::rt::pdf::{Pdf, SpherePdf};
 use crate::rt::ray::Ray;
 use crate::rt::{color::Color, random::rand_unit_vector};
 
@@ -26,7 +26,7 @@ impl Metal {
 
         Some(ScatterRecord {
             attenuation: self.albedo,
-            pdf: Arc::new(SpherePdf::new()), // This isn't actually used - this field should probably be an option
+            pdf: Arc::new(Pdf::Sphere(SpherePdf::new())), // This isn't actually used - this field should probably be an option
             skip_pdf_ray: Some(Ray::new(rec.point, reflected, r_in.time)),
         })
     }
