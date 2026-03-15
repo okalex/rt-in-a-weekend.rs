@@ -74,7 +74,6 @@ impl Camera {
     }
 }
 
-#[derive(Clone, Copy)]
 pub struct CameraOptions {
     pub position: Point3<f64>,
     pub target: Point3<f64>,

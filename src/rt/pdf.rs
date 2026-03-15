@@ -8,6 +8,7 @@ use crate::rt::{
     random::{rand, rand_cos_dir, rand_on_hemisphere, rand_unit_vector},
 };
 
+#[allow(unused)]
 pub enum Pdf {
     Sphere(SpherePdf),
     Hemisphere(HemispherePdf),

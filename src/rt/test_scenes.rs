@@ -11,10 +11,21 @@ use crate::rt::{
         lambertian::Lambertian, material::Material, metal::Metal, pbr_material::PbrMaterial,
     },
     objects::{
-        box3d::Box3d, bvh_node::BvhNode, constant_medium::ConstantMedium, hittable::Hittable, hittable_list::HittableList, quad::Quad, scene::Scene, sphere::Sphere, transformations::{rotate_y, translate}, triangle::Triangle
+        box3d::Box3d,
+        bvh_node::BvhNode,
+        constant_medium::ConstantMedium,
+        hittable::Hittable,
+        hittable_list::HittableList,
+        quad::Quad,
+        scene::Scene,
+        sphere::Sphere,
+        transformations::{rotate_y, translate},
+        triangle::Triangle,
     },
     random::{rand, rand_range, rand_range_vector},
-    textures::{checkered::Checkered, image_map::ImageMap, noise::Noise, texture::Texture},
+    textures::{
+        checkered::Checkered, image_map::ImageMap, perlin_noise::PerlinNoise, texture::Texture,
+    },
 };
 
 pub fn get_camera_and_scene(scene_idx: u32) -> (CameraOptions, Scene) {
@@ -44,12 +55,12 @@ fn rand_arr3() -> [f64; 3] {
 struct Textures {}
 
 impl Textures {
-    fn checkers() -> Arc<dyn Texture> {
-        Arc::new(Checkered::from_color_values(
+    fn checkers() -> Arc<Texture> {
+        Arc::new(Texture::Checkered(Checkered::from_color_values(
             0.32,
             [0.2, 0.3, 0.1],
             [0.9, 0.9, 0.9],
-        ))
+        )))
     }
 }
 
@@ -75,7 +86,7 @@ impl Materials {
                 Self::metal([0.8, 0.6, 0.2], 0.2),
                 Self::image_map("assets/cube-diffuse.jpg", 1.0),
                 Self::image_map("assets/rusty-metal.jpg", 1.0),
-                Self::from_texture(Arc::new(Noise::new(8.0))),
+                Self::from_texture(Arc::new(Texture::Perlin(PerlinNoise::new(8.0)))),
                 Self::image_map("assets/earthmap.jpg", 1.0),
                 Self::pbr([0.8, 0.6, 0.2], 0.7),
                 Self::lambertian([0.5, 0.5, 0.5]),
@@ -116,7 +127,7 @@ impl Materials {
         Material::Lambertian(Lambertian::from_color_values(color))
     }
 
-    fn from_texture(texture: Arc<dyn Texture>) -> Material {
+    fn from_texture(texture: Arc<Texture>) -> Material {
         Material::Lambertian(Lambertian::new(texture))
     }
 
@@ -144,7 +155,7 @@ impl Materials {
     }
 
     fn image_map(file_name: &str, scale_factor: f64) -> Material {
-        let tex = Arc::new(ImageMap::new(file_name, scale_factor));
+        let tex = Arc::new(Texture::ImageMap(ImageMap::new(file_name, scale_factor)));
         Self::from_texture(tex)
     }
 

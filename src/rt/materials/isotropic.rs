@@ -10,19 +10,19 @@ use crate::rt::{color::Color, textures::texture::Texture};
 use super::material::ScatterRecord;
 
 pub struct Isotropic {
-    texture: Arc<dyn Texture>,
+    texture: Arc<Texture>,
 }
 
 impl Isotropic {
-    pub fn new(texture: Arc<dyn Texture>) -> Self {
+    pub fn new(texture: Arc<Texture>) -> Self {
         Self {
-            texture: Arc::clone(&texture),
+            texture,
         }
     }
 
     #[allow(dead_code)]
     pub fn from_color(albedo: Color) -> Self {
-        let texture: Arc<dyn Texture> = Arc::new(SolidColor::new(albedo));
+        let texture = Arc::new(Texture::Solid(SolidColor::new(albedo)));
         Self::new(texture)
     }
 

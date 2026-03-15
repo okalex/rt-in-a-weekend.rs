@@ -12,16 +12,16 @@ use crate::rt::textures::solid_color::SolidColor;
 use crate::rt::textures::texture::Texture;
 
 pub struct Lambertian {
-    texture: Arc<dyn Texture>,
+    texture: Arc<Texture>,
 }
 
 impl Lambertian {
-    pub fn new(texture: Arc<dyn Texture>) -> Self {
+    pub fn new(texture: Arc<Texture>) -> Self {
         Self { texture }
     }
 
     pub fn from_color(color: Color) -> Self {
-        let arc_color: Arc<dyn Texture> = Arc::new(SolidColor::new(color));
+        let arc_color = Arc::new(Texture::Solid(SolidColor::new(color)));
         Self::new(arc_color)
     }
 

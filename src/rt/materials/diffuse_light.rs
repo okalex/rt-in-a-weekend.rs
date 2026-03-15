@@ -7,17 +7,17 @@ use crate::rt::textures::solid_color::SolidColor;
 use crate::rt::textures::texture::Texture;
 
 pub struct DiffuseLight {
-    texture: Arc<dyn Texture>,
+    texture: Arc<Texture>,
 }
 
 impl DiffuseLight {
-    pub fn new(texture: Arc<dyn Texture>) -> Self {
+    pub fn new(texture: Arc<Texture>) -> Self {
         Self { texture }
     }
 
     pub fn from_color(color: Color) -> Self {
-        let arc: Arc<dyn Texture> = Arc::new(SolidColor::new(color));
-        Self::new(Arc::clone(&arc))
+        let arc = Arc::new(Texture::Solid(SolidColor::new(color)));
+        Self::new(arc)
     }
 
     #[allow(unused)]
