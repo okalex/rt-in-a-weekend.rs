@@ -668,6 +668,7 @@ fn camera_book2_final() -> CameraOptions {
 fn scene_book2_final(with_haze: bool) -> Scene {
     let mut scene = HittableList::new();
     let mut materials = Materials::new();
+    let mut lights = HittableList::new();
 
     // Floor boxes
     let ground_idx = materials.add(Materials::lambertian([0.48, 0.83, 0.53]));
@@ -696,13 +697,14 @@ fn scene_book2_final(with_haze: bool) -> Scene {
 
     // Light
     let diffuse_idx = materials.add(Materials::diffuse_light([7.0, 7.0, 7.0]));
-    let light = Shapes::quad(
+    let light = Arc::new(Shapes::quad(
         [123.0, 554.0, 147.0],
         [300.0, 0.0, 0.0],
         [0.0, 0.0, 265.0],
         diffuse_idx,
-    );
-    scene.add(light);
+    ));
+    scene.add_arc(Arc::clone(&light));
+    lights.add_arc(Arc::clone(&light));
 
     // Moving sphere
     let center1 = Point3::new(400.0, 400.0, 200.0);
@@ -763,5 +765,5 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     boxes2_hittable = translate(boxes2_hittable, [-100.0, 270.0, 395.0]);
     scene.add(boxes2_hittable);
 
-    Scene::no_lights(scene, materials.materials)
+    Scene::new(scene, materials.materials, lights)
 }
