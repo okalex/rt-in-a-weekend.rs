@@ -10,7 +10,7 @@ struct color {
 }
 
 @group(0) @binding(0) var<storage, read> dims: dimensions;
-@group(0) @binding(2) var<storage, read_write> output: array<color>;
+@group(0) @binding(1) var<storage, read_write> output: array<color>;
 
 @compute
 @workgroup_size(16, 16, 1)
@@ -25,6 +25,9 @@ fn main(
     }
 
     let idx = dims.width * y + x;
-    let color = color(f32(x) / f32(dims.width), f32(y) / f32(dims.height), 0.0);
-    output[idx] = color;
+    let r = f32(x) / f32(dims.width);
+    let g = f32(y) / f32(dims.height);
+    let b = sqrt(r * r + g * g);
+    
+    output[idx] = color(r, g, b);
 }
