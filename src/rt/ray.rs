@@ -1,6 +1,5 @@
 use crate::rt::types::{Float, Point, Vector, to_parry_vec};
 
-// TODO: Deprecate in favor of parry3d::query::Ray
 pub struct Ray {
     pub orig: Point,
     pub dir: Vector,

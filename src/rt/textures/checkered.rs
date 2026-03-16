@@ -23,11 +23,7 @@ impl Checkered {
     }
 
     pub fn from_color_values(scale: Float, even_color: [Float; 3], odd_color: [Float; 3]) -> Self {
-        Self::new(
-            scale,
-            Color::from_arr(even_color),
-            Color::from_arr(odd_color),
-        )
+        Self::new(scale, Color::from(even_color), Color::from(odd_color))
     }
 
     pub fn value(&self, u: Float, v: Float, point: &Point) -> Color {

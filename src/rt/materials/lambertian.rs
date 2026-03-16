@@ -18,15 +18,6 @@ impl Lambertian {
         Self { texture }
     }
 
-    pub fn from_color(color: Color) -> Self {
-        let arc_color = Arc::new(Texture::Solid(SolidColor::new(color)));
-        Self::new(arc_color)
-    }
-
-    pub fn from_color_values(color_values: [Float; 3]) -> Self {
-        Self::from_color(Color::from_arr(color_values))
-    }
-
     #[allow(dead_code)]
     fn all_are_less_than(vec: Vector, limit: Float) -> bool {
         (vec.x.abs() < limit) && (vec.y.abs() < limit) && (vec.z.abs() < limit)
@@ -49,6 +40,19 @@ impl Lambertian {
         } else {
             0.0
         }
+    }
+}
+
+impl From<Color> for Lambertian {
+    fn from(color: Color) -> Self {
+        let arc_color = Arc::new(Texture::Solid(SolidColor::new(color)));
+        Self::new(arc_color)
+    }
+}
+
+impl From<[Float; 3]> for Lambertian {
+    fn from(color_values: [Float; 3]) -> Self {
+        Self::from(Color::from(color_values))
     }
 }
 

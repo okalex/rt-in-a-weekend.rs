@@ -43,12 +43,6 @@ impl BvhNode {
         }
     }
 
-    pub fn from_list(list: HittableList) -> BvhNode {
-        let mut objects = list.objects;
-        let len = objects.len();
-        Self::construct(&mut objects, 0, len)
-    }
-
     fn box_compare(axis_idx: usize) -> impl FnMut(&Arc<Hittable>, &Arc<Hittable>) -> Ordering {
         move |a, b| {
             let a_min = a.bounding_box().mins[axis_idx];
@@ -81,6 +75,14 @@ impl BvhNode {
 
     pub fn bounding_box(&self) -> &Aabb {
         &self.bbox
+    }
+}
+
+impl From<HittableList> for BvhNode {
+    fn from(list: HittableList) -> Self {
+        let mut objects = list.objects;
+        let len = objects.len();
+        Self::construct(&mut objects, 0, len)
     }
 }
 

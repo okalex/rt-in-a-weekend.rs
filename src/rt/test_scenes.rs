@@ -123,7 +123,7 @@ impl Materials {
     }
 
     fn lambertian(color: [Float; 3]) -> Material {
-        Material::Lambertian(Lambertian::from_color_values(color))
+        Material::Lambertian(Lambertian::from(color))
     }
 
     fn from_texture(texture: Arc<Texture>) -> Material {
@@ -150,7 +150,7 @@ impl Materials {
     }
 
     fn diffuse_light(color: [Float; 3]) -> Material {
-        Material::DiffuseLight(DiffuseLight::from_color(Color::from_arr(color)))
+        Material::DiffuseLight(DiffuseLight::from(color))
     }
 
     fn image_map(file_name: &str, scale_factor: Float) -> Material {
@@ -159,12 +159,12 @@ impl Materials {
     }
 
     fn pbr(albedo: [Float; 3], metallicity: Float) -> Material {
-        let color = Color::from_arr(albedo);
+        let color = Color::from(albedo);
         Material::PbrMaterial(PbrMaterial::new(color, metallicity))
     }
 
     fn isotropic(albedo: [Float; 3]) -> Material {
-        Material::Isotropic(Isotropic::from_color(Color::from_arr(albedo)))
+        Material::Isotropic(Isotropic::from(albedo))
     }
 }
 
@@ -691,7 +691,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
             boxes.add(Shapes::box3d([x0, y0, z0], [x1, y1, z1], ground_idx));
         }
     }
-    let boxes_bvh = Hittable::BvhNode(BvhNode::from_list(boxes));
+    let boxes_bvh = Hittable::BvhNode(BvhNode::from(boxes));
     scene.add(boxes_bvh);
 
     // Light
@@ -759,7 +759,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
         ));
         boxes2.add(sphere);
     }
-    let mut boxes2_hittable = Hittable::BvhNode(BvhNode::from_list(boxes2));
+    let mut boxes2_hittable = Hittable::BvhNode(BvhNode::from(boxes2));
     boxes2_hittable = rotate_y(boxes2_hittable, 15.0);
     boxes2_hittable = translate(boxes2_hittable, [-100.0, 270.0, 395.0]);
     scene.add(boxes2_hittable);

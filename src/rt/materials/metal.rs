@@ -16,7 +16,7 @@ pub struct Metal {
 impl Metal {
     pub fn new(albedo: [Float; 3], fuzz: Float) -> Self {
         return Self {
-            albedo: Color::from_arr(albedo),
+            albedo: Color::from(albedo),
             fuzz: if fuzz < 1.0 { fuzz } else { 1.0 },
         };
     }

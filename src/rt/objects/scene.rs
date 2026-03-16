@@ -16,7 +16,7 @@ pub struct Scene {
 impl Scene {
     pub fn new(objects: HittableList, materials: Vec<Material>, lights: HittableList) -> Self {
         Self {
-            objects: Arc::new(BvhNode::from_list(objects)),
+            objects: Arc::new(BvhNode::from(objects)),
             materials,
             lights: Arc::new(lights),
         }
@@ -24,7 +24,7 @@ impl Scene {
 
     pub fn no_lights(objects: HittableList, materials: Vec<Material>) -> Self {
         Self {
-            objects: Arc::new(BvhNode::from_list(objects)),
+            objects: Arc::new(BvhNode::from(objects)),
             materials,
             lights: Arc::new(HittableList::new()),
         }

@@ -7,7 +7,6 @@ use winit::event_loop::EventLoop;
 
 use crate::rt::app::app::App;
 use crate::rt::camera::Camera;
-use crate::rt::color::Color;
 use crate::rt::frame_buffer::FrameBuffer;
 use crate::rt::ppm_writer::PpmWriter;
 use crate::rt::renderer::cpu_renderer::{LineServer, RenderOptions, RenderOptionsBuilder};
@@ -64,7 +63,7 @@ async fn main() {
             .max_depth(args.depth)
             .use_multithreading(args.multithreading)
             .use_importance_sampling(args.importance)
-            .background(Color::black())
+            // .background(Color::black())
             .build(args.aspect as Float),
     );
 

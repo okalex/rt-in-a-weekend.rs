@@ -17,10 +17,6 @@ impl Color {
         Self::wrap_vec(Vector::new(r, g, b))
     }
 
-    pub fn from_arr(values: [Float; 3]) -> Color {
-        Self::wrap_vec(Vector::from(values))
-    }
-
     #[allow(dead_code)]
     pub fn from_u8(values: [u8; 3]) -> Color {
         Self::new(from_u8(values[0]), from_u8(values[1]), from_u8(values[2]))
@@ -72,6 +68,12 @@ impl Color {
 
     pub fn to_u8(&self) -> [u8; 3] {
         return [to_u8(self.r()), to_u8(self.g()), to_u8(self.b())];
+    }
+}
+
+impl From<[Float; 3]> for Color {
+    fn from(color: [Float; 3]) -> Self {
+        Self::new(color[0], color[1], color[2])
     }
 }
 

@@ -5,6 +5,7 @@ use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;
 use crate::rt::textures::texture::Texture;
+use crate::rt::types::Float;
 
 pub struct DiffuseLight {
     texture: Arc<Texture>,
@@ -15,11 +16,6 @@ impl DiffuseLight {
         Self { texture }
     }
 
-    pub fn from_color(color: Color) -> Self {
-        let arc = Arc::new(Texture::Solid(SolidColor::new(color)));
-        Self::new(arc)
-    }
-
     #[allow(unused)]
     pub fn emitted(&self, r_in: &Ray, hit_record: &HitRecord) -> Color {
         if hit_record.front_face {
@@ -28,6 +24,20 @@ impl DiffuseLight {
         } else {
             Color::black()
         }
+    }
+}
+
+impl From<Color> for DiffuseLight {
+    fn from(color: Color) -> Self {
+        let arc = Arc::new(Texture::Solid(SolidColor::new(color)));
+        Self::new(arc)
+    }
+}
+
+impl From<[Float; 3]> for DiffuseLight {
+    fn from(color: [Float; 3]) -> Self {
+        let arc = Arc::new(Texture::Solid(SolidColor::from(color)));
+        Self::new(arc)
     }
 }
 
