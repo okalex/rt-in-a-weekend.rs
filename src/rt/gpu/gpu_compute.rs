@@ -12,7 +12,6 @@ pub struct GpuCompute<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> 
     pipeline: wgpu::ComputePipeline,
     bind_group: wgpu::BindGroup,
     dim_buf: wgpu::Buffer,
-    input_buf: wgpu::Buffer,
     output_buf: wgpu::Buffer,
     temp_buf: wgpu::Buffer,
     _i: PhantomData<I>,
@@ -20,24 +19,14 @@ pub struct GpuCompute<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> 
 }
 
 impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> {
-    pub fn new(
-        gpu: Arc<Gpu>,
-        shader: &wgpu::ShaderModule,
-        input_size: u64,
-        output_size: u64,
-    ) -> Self {
+    pub fn new(gpu: Arc<Gpu>, shader: &wgpu::ShaderModule, output_size: u64) -> Self {
         let input_usages = wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::STORAGE;
         let output_usages = wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE;
         let temp_usages = wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ;
 
-        let dim_buf = Self::create_buffer(
-            Arc::clone(&gpu),
-            2 * std::mem::size_of::<u32>() as u64,
-            input_usages,
-        );
-        let input_buf = Self::create_buffer(Arc::clone(&gpu), input_size, input_usages);
-        let output_buf = Self::create_buffer(Arc::clone(&gpu), output_size, output_usages);
-        let temp_buf = Self::create_buffer(Arc::clone(&gpu), output_size, temp_usages);
+        let dim_buf = gpu.create_buffer(2 * std::mem::size_of::<u32>() as u64, input_usages);
+        let output_buf = gpu.create_buffer(output_size, output_usages);
+        let temp_buf = gpu.create_buffer(output_size, temp_usages);
 
         let pipeline = gpu.create_compute_pipeline(shader);
         let bind_group_layout = pipeline.get_bind_group_layout(0);
@@ -48,10 +37,6 @@ impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> 
             },
             wgpu::BindGroupEntry {
                 binding: 1,
-                resource: input_buf.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
                 resource: output_buf.as_entire_binding(),
             },
         ];
@@ -62,21 +47,11 @@ impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> 
             pipeline,
             bind_group,
             dim_buf,
-            input_buf,
             output_buf,
             temp_buf,
             _i: PhantomData,
             _o: PhantomData,
         }
-    }
-
-    fn create_buffer(gpu: Arc<Gpu>, size: u64, usages: wgpu::BufferUsages) -> wgpu::Buffer {
-        gpu.device().create_buffer(&wgpu::BufferDescriptor {
-            label: None,
-            size: size,
-            usage: usages,
-            mapped_at_creation: false,
-        })
     }
 
     pub fn set_dims(&self, dims: [u32; 2]) {
@@ -85,16 +60,7 @@ impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> 
             .write_buffer(&self.dim_buf, 0, bytemuck::cast_slice(&dims));
     }
 
-    pub async fn dispatch(
-        &self,
-        input: &Vec<I>,
-        workgroup_dims: [u32; 3],
-    ) -> anyhow::Result<Vec<O>> {
-        // Copy input data to GPU
-        self.gpu
-            .queue()
-            .write_buffer(&self.input_buf, 0, bytemuck::cast_slice(&input));
-
+    pub async fn dispatch(&self, workgroup_dims: [u32; 3]) -> anyhow::Result<Vec<O>> {
         let mut encoder = self
             .gpu
             .device()

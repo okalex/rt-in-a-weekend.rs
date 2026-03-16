@@ -57,6 +57,15 @@ impl Gpu {
             })
     }
 
+    pub fn create_buffer(&self, size: u64, usages: wgpu::BufferUsages) -> wgpu::Buffer {
+        self.device().create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: size,
+            usage: usages,
+            mapped_at_creation: false,
+        })
+    }
+
     pub fn create_bind_group_layout(
         &self,
         entries: &[wgpu::BindGroupLayoutEntry],
