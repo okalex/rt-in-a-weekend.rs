@@ -1,5 +1,3 @@
-use nalgebra_glm::{max2, min2};
-
 use crate::rt::{
     objects::{hittable::Hittable, hittable_list::HittableList, quad::Quad},
     types::{Point, Vector},
@@ -9,8 +7,8 @@ pub struct Box3d {}
 
 impl Box3d {
     pub fn new(a: Vector, b: Vector, mat_idx: usize) -> HittableList {
-        let min = min2(&a, &b);
-        let max = max2(&a, &b);
+        let min = a.min(b);
+        let max = a.max(b);
 
         let dx = Vector::new(max.x - min.x, 0.0, 0.0);
         let dy = Vector::new(0.0, max.y - min.y, 0.0);

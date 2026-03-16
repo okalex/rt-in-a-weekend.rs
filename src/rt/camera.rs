@@ -64,9 +64,7 @@ impl Camera {
     fn defocus_disk_sample(&self) -> Point {
         let p = rand_in_unit_disk();
         return Point::from(
-            self.options.position.coords
-                + (self.defocus_disk.u * p.x)
-                + (self.defocus_disk.v * p.y),
+            self.options.position + (self.defocus_disk.u * p.x) + (self.defocus_disk.v * p.y),
         );
     }
 }

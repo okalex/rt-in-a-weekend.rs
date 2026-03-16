@@ -6,8 +6,7 @@ use parry3d_f64::shape::Triangle as Parry3dTriangle;
 use crate::rt::interval::Interval;
 use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::ray::Ray;
-use crate::rt::types::{Float, new_vec3};
-use crate::rt::util::from_parry_vec;
+use crate::rt::types::{Float, from_parry_vec, new_parry_vec};
 
 pub struct Triangle {
     underlying: Parry3dTriangle,
@@ -17,7 +16,7 @@ pub struct Triangle {
 
 impl Triangle {
     pub fn new(a: [Float; 3], b: [Float; 3], c: [Float; 3], mat_idx: usize) -> Self {
-        let underlying = Parry3dTriangle::new(new_vec3(a), new_vec3(b), new_vec3(c));
+        let underlying = Parry3dTriangle::new(new_parry_vec(a), new_parry_vec(b), new_parry_vec(c));
         Self {
             underlying,
             bbox: underlying.local_aabb(),

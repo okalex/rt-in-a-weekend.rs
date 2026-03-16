@@ -4,8 +4,7 @@ use crate::rt::interval::Interval;
 use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;
-use crate::rt::types::{Float, INFINITY, Point, Vector};
-use crate::rt::util::to_parry_vec;
+use crate::rt::types::{Float, INFINITY, Point, Vector, to_parry_vec};
 
 pub struct Quad {
     q: Point,
@@ -22,18 +21,18 @@ pub struct Quad {
 impl Quad {
     pub fn new(q: Point, u: Vector, v: Vector, mat_idx: usize) -> Self {
         let points = vec![
-            to_parry_vec(q.coords),
-            to_parry_vec((q + u).coords),
-            to_parry_vec((q + v).coords),
-            to_parry_vec((q + u + v).coords),
+            to_parry_vec(q),
+            to_parry_vec(q + u),
+            to_parry_vec(q + v),
+            to_parry_vec(q + u + v),
         ];
         let bbox = Aabb::from_points(points);
 
-        let n = u.cross(&v);
+        let n = u.cross(v);
         let normal = n.normalize();
-        let d = normal.dot(&q.coords);
-        let w = n / n.dot(&n);
-        let area = n.magnitude();
+        let d = normal.dot(q);
+        let w = n / n.dot(n);
+        let area = n.length();
 
         Self {
             q,
@@ -53,7 +52,7 @@ impl Quad {
     }
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        let denom = self.normal.dot(&ray.dir);
+        let denom = self.normal.dot(ray.dir);
 
         // Ray is parallel to plane, no hit
         if denom.abs() < 1e-8 {
@@ -61,7 +60,7 @@ impl Quad {
         }
 
         // t is outside ray interval, no hit
-        let t = (self.d - self.normal.dot(&ray.orig.coords)) / denom;
+        let t = (self.d - self.normal.dot(ray.orig)) / denom;
         if !ray_t.contains(t) {
             return None;
         }
@@ -69,8 +68,8 @@ impl Quad {
         let intersection = ray.at(t);
 
         let planar_hit_vec = intersection - self.q;
-        let alpha = self.w.dot(&planar_hit_vec.cross(&self.v));
-        let beta = self.w.dot(&self.u.cross(&planar_hit_vec));
+        let alpha = self.w.dot(planar_hit_vec.cross(self.v));
+        let beta = self.w.dot(self.u.cross(planar_hit_vec));
 
         // Check if is interior
         let unit_interval = Interval::new(0.0, 1.0);
@@ -101,8 +100,8 @@ impl Quad {
         match self.hit(&ray, interval) {
             None => 0.0,
             Some(hit_record) => {
-                let dist_sqrd = hit_record.t * hit_record.t * direction.magnitude_squared();
-                let cos = (direction.dot(&hit_record.normal) / direction.magnitude()).abs();
+                let dist_sqrd = hit_record.t * hit_record.t * direction.length_squared();
+                let cos = (direction.dot(hit_record.normal) / direction.length()).abs();
                 dist_sqrd / (cos * self.area)
             }
         }

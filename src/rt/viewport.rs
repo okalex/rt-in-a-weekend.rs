@@ -18,13 +18,13 @@ impl Viewport {
         let viewport_width = viewport_height * (img_width as Float) / (img_height as Float);
 
         let w = (camera_options.position - camera_options.target).normalize();
-        let u = camera_options.vup.cross(&w).normalize();
-        let v = w.cross(&u);
+        let u = camera_options.vup.cross(w).normalize();
+        let v = w.cross(u);
 
         let viewport_u = u * (viewport_width as Float);
         let viewport_v = -v * (viewport_height as Float);
         let upper_left = Point::from(
-            camera_options.position.coords
+            camera_options.position
                 - viewport_u / 2.0
                 - viewport_v / 2.0
                 - w * camera_options.focus_dist,

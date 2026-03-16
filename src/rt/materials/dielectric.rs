@@ -28,14 +28,14 @@ impl Dielectric {
         };
 
         let unit_dir = r_in.dir.normalize();
-        let cos_theta = Float::min((-unit_dir).dot(&rec.normal), 1.0);
+        let cos_theta = Float::min((-unit_dir).dot(rec.normal), 1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
         let cannot_refract = (ri * sin_theta) > 1.0;
         let direction = if cannot_refract || reflectance(cos_theta, ri) > rand() {
-            reflect(&unit_dir, &rec.normal)
+            reflect(unit_dir, rec.normal)
         } else {
-            refract(&unit_dir, &rec.normal, ri)
+            refract(unit_dir, rec.normal, ri)
         };
 
         Some(ScatterRecord {

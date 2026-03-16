@@ -33,7 +33,7 @@ impl Perlin {
         let j = point.y.floor() as Int;
         let k = point.z.floor() as Int;
 
-        let mut c = vec![vec![vec![Vector::zeros(); 2]; 2]; 2];
+        let mut c = vec![vec![vec![Vector::ZERO; 2]; 2]; 2];
         for di in 0..2 {
             for dj in 0..2 {
                 for dk in 0..2 {
@@ -98,7 +98,7 @@ impl Perlin {
                     let i_acc = (fi * uu) + (1.0 - fi) * (1.0 - uu);
                     let j_acc = (fj * vv) + (1.0 - fj) * (1.0 - vv);
                     let k_acc = (fk * ww) + (1.0 - fk) * (1.0 - ww);
-                    let c_dot = c[i as usize][j as usize][k as usize].dot(&weight_v);
+                    let c_dot = c[i as usize][j as usize][k as usize].dot(weight_v);
                     accum += i_acc * j_acc * k_acc * c_dot;
                 }
             }

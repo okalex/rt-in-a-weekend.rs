@@ -3,7 +3,8 @@ use std::sync::Arc;
 use crate::rt::{
     objects::hittable_list::HittableList,
     onb::Onb,
-    random::{rand, rand_cos_dir, rand_on_hemisphere, rand_unit_vector}, types::{Float, PI, Point, Vector},
+    random::{rand, rand_cos_dir, rand_on_hemisphere, rand_unit_vector},
+    types::{Float, PI, Point, Vector},
 };
 
 #[allow(unused)]
@@ -70,7 +71,7 @@ impl HemispherePdf {
     }
 
     fn generate(&self) -> Vector {
-        rand_on_hemisphere(&self.normal)
+        rand_on_hemisphere(self.normal)
     }
 }
 
@@ -84,7 +85,7 @@ impl CosinePdf {
     }
 
     fn value(&self, direction: &Vector) -> Float {
-        let cos_theta = direction.normalize().dot(&self.uvw.w());
+        let cos_theta = direction.normalize().dot(self.uvw.w());
         Float::max(0.0, cos_theta / PI)
     }
 

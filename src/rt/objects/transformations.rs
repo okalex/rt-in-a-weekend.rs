@@ -1,14 +1,11 @@
-use parry3d_f64::{
-    bounding_volume::Aabb,
-    math::{Pose, Vec3},
-};
+use parry3d_f64::{bounding_volume::Aabb, math::Pose};
 
 use crate::rt::{
     interval::Interval,
     objects::{hit_record::HitRecord, hittable::Hittable},
     ray::Ray,
-    types::{Float, Point, Vector, new_vec3},
-    util::{degrees_to_radians, to_parry_vec},
+    types::{Float, Point, Vector, new_parry_vec, to_parry_vec},
+    util::degrees_to_radians,
 };
 
 pub struct Translate {
@@ -55,7 +52,7 @@ impl RotateY {
         let cos_theta = radians.cos();
 
         let bbox = object.bounding_box().clone();
-        let rotation = Pose::rotation(new_vec3([0.0, degrees_to_radians(angle), 0.0]));
+        let rotation = Pose::rotation(new_parry_vec([0.0, degrees_to_radians(angle), 0.0]));
 
         Self {
             object: Box::new(object),
@@ -65,7 +62,7 @@ impl RotateY {
         }
     }
 
-    fn rotate_y(vec: &Vector, sin_theta: Float, cos_theta: Float) -> Vector {
+    fn rotate_y(vec: Vector, sin_theta: Float, cos_theta: Float) -> Vector {
         Vector::new(
             cos_theta * vec.x - sin_theta * vec.z,
             vec.y,
@@ -74,21 +71,17 @@ impl RotateY {
     }
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        let orig = Point::from(Self::rotate_y(
-            &ray.orig.coords,
-            self.sin_theta,
-            self.cos_theta,
-        ));
-        let dir = Self::rotate_y(&ray.dir, self.sin_theta, self.cos_theta);
+        let orig = Point::from(Self::rotate_y(ray.orig, self.sin_theta, self.cos_theta));
+        let dir = Self::rotate_y(ray.dir, self.sin_theta, self.cos_theta);
         let rotated_ray = Ray::new(orig, dir, ray.time);
 
         self.object.hit(&rotated_ray, ray_t).map(|hit_record| {
             let new_point = Point::from(Self::rotate_y(
-                &hit_record.point.coords,
+                hit_record.point,
                 -self.sin_theta,
                 self.cos_theta,
             ));
-            let new_normal = Self::rotate_y(&hit_record.normal, -self.sin_theta, self.cos_theta);
+            let new_normal = Self::rotate_y(hit_record.normal, -self.sin_theta, self.cos_theta);
             hit_record.set_point(new_point).set_normal(new_normal)
         })
     }

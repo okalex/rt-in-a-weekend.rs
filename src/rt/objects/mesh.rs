@@ -11,8 +11,7 @@ use crate::rt::{
     interval::Interval,
     objects::{hit_record::HitRecord, triangle::Triangle},
     ray::Ray,
-    types::{Float, Point, Uint},
-    util::{from_parry_vec, to_parry_vec},
+    types::{Float, Point, Uint, from_parry_vec, to_parry_vec},
 };
 
 pub struct Mesh {
@@ -83,7 +82,7 @@ impl Mesh {
         let tri = self.underlying.triangle(face_id as u32);
         // Compute barycentric coords of hit point on the triangle
         let verts = tri.vertices();
-        let hit = to_parry_vec(hit_point.coords);
+        let hit = to_parry_vec(hit_point);
         let (w0, w1, w2) = Triangle::barycentric_coords(&verts[0], &verts[1], &verts[2], &hit); // returns (u, v, w)
 
         // Interpolate UVs

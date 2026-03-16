@@ -43,7 +43,7 @@ impl Lambertian {
 
     #[allow(unused)]
     pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> Float {
-        let cos_theta = rec.normal.dot(&scattered.dir.normalize());
+        let cos_theta = rec.normal.dot(scattered.dir.normalize());
         if cos_theta >= 0.0 {
             cos_theta / PI
         } else {

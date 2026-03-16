@@ -1,7 +1,4 @@
-use crate::rt::{
-    types::{Float, Point, Vector},
-    util::to_parry_vec,
-};
+use crate::rt::types::{Float, Point, Vector, to_parry_vec};
 
 // TODO: Deprecate in favor of parry3d::query::Ray
 pub struct Ray {
@@ -20,6 +17,6 @@ impl Ray {
     }
 
     pub fn to_parry3d(&self) -> parry3d_f64::query::Ray {
-        parry3d_f64::query::Ray::new(to_parry_vec(self.orig.coords), to_parry_vec(self.dir))
+        parry3d_f64::query::Ray::new(to_parry_vec(self.orig), to_parry_vec(self.dir))
     }
 }

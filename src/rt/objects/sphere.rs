@@ -5,8 +5,7 @@ use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::onb::Onb;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;
-use crate::rt::types::{Float, INFINITY, PI, Point, Vector};
-use crate::rt::util::to_parry_vec;
+use crate::rt::types::{Float, INFINITY, PI, Point, Vector, to_parry_vec};
 
 pub struct Sphere {
     pub center: Ray,
@@ -26,30 +25,27 @@ impl Sphere {
     }
 
     pub fn stationary(center: Point, radius: Float, mat_idx: usize) -> Sphere {
-        let ray = Ray::new(center, Vector::zeros(), 0.0);
-        let rvec = Vector::from_element(radius);
-        let points = vec![
-            to_parry_vec((center - rvec).coords),
-            to_parry_vec((center + rvec).coords),
-        ];
+        let ray = Ray::new(center, Vector::ZERO, 0.0);
+        let rvec = Vector::splat(radius);
+        let points = vec![to_parry_vec(center - rvec), to_parry_vec(center + rvec)];
         let bbox = Aabb::from_points(points);
         Self::new(ray, radius, mat_idx, bbox)
     }
 
     pub fn moving(center1: Point, center2: Point, radius: Float, mat_idx: usize) -> Sphere {
         let ray = Ray::new(center1, center2 - center1, 0.0);
-        let rvec = Vector::from_element(radius);
+        let rvec = Vector::splat(radius);
         let box1 = {
             let points = vec![
-                to_parry_vec((ray.at(0.0) - rvec).coords),
-                to_parry_vec((ray.at(0.0) + rvec).coords),
+                to_parry_vec(ray.at(0.0) - rvec),
+                to_parry_vec(ray.at(0.0) + rvec),
             ];
             Aabb::from_points(points)
         };
         let box2 = {
             let points = vec![
-                to_parry_vec((ray.at(1.0) - rvec).coords),
-                to_parry_vec((ray.at(1.0) + rvec).coords),
+                to_parry_vec(ray.at(1.0) - rvec),
+                to_parry_vec(ray.at(1.0) + rvec),
             ];
             Aabb::from_points(points)
         };
@@ -79,9 +75,9 @@ impl Sphere {
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         let curr_center = self.center.at(ray.time);
         let oc = curr_center - ray.orig;
-        let a = ray.dir.magnitude_squared();
-        let h = ray.dir.dot(&oc);
-        let c = oc.magnitude_squared() - self.radius * self.radius;
+        let a = ray.dir.length_squared();
+        let h = ray.dir.dot(oc);
+        let c = oc.length_squared() - self.radius * self.radius;
         let discriminant = (h * h) - (a * c);
 
         if discriminant < 0.0 {
@@ -126,7 +122,7 @@ impl Sphere {
         match self.hit(&ray, interval) {
             None => 0.0,
             Some(_) => {
-                let dist_sqrd = (self.center.at(0.0) - origin).magnitude_squared();
+                let dist_sqrd = (self.center.at(0.0) - origin).length_squared();
                 let cos_theta_max = (1.0 - self.radius * self.radius / dist_sqrd).sqrt();
                 let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
                 1.0 / solid_angle
@@ -136,7 +132,7 @@ impl Sphere {
 
     pub fn random(&self, origin: &Point) -> Vector {
         let direction = self.center.at(0.0) - origin;
-        let dist_sqrd = direction.magnitude_squared();
+        let dist_sqrd = direction.length_squared();
         let uvw = Onb::new(&direction);
         uvw.transform(Self::rand_to_sphere(self.radius, dist_sqrd))
     }

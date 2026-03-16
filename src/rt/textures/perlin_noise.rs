@@ -21,6 +21,6 @@ impl PerlinNoise {
         // let noise = 0.5 * (1.0 + self.noise.noise(&point.scale(self.scale))); // Perlin noise
         let noise = self.noise.turb(&scaled, 7); // Turbulent noise
         // let noise = 0.5 * (1.0 + (self.scale * point.z() + 10.0 * self.noise.turb(point, 7)).sin());
-        Color::wrap_vec(Vector::from_element(1.0) * noise)
+        Color::wrap_vec(Vector::splat(1.0) * noise)
     }
 }

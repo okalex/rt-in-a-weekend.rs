@@ -12,8 +12,8 @@ impl Onb {
         } else {
             Vector::new(1.0, 0.0, 0.0)
         };
-        let axis1 = axis2.cross(&a).normalize();
-        let axis0 = axis2.cross(&axis1);
+        let axis1 = axis2.cross(a).normalize();
+        let axis0 = axis2.cross(axis1);
         Self {
             axis: [axis0, axis1, axis2],
         }

@@ -35,7 +35,7 @@ impl HitRecord {
     }
 
     pub fn get_front_face(ray: &Ray, outward_normal: Vector) -> (bool, Vector) {
-        let front_face = ray.dir.dot(&outward_normal) < 0.0;
+        let front_face = ray.dir.dot(outward_normal) < 0.0;
         let face_normal = if front_face {
             outward_normal
         } else {

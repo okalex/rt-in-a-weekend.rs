@@ -22,8 +22,7 @@ impl Metal {
     }
 
     pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
-        let reflected =
-            reflect(&r_in.dir, &rec.normal).normalize() + rand_unit_vector() * self.fuzz;
+        let reflected = reflect(r_in.dir, rec.normal).normalize() + rand_unit_vector() * self.fuzz;
 
         Some(ScatterRecord {
             attenuation: self.albedo,

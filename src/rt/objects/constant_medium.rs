@@ -52,7 +52,7 @@ impl ConstantMedium {
             entry = 0.0;
         }
 
-        let ray_len = ray.dir.magnitude();
+        let ray_len = ray.dir.length();
         let dist_inside = (exit - entry) * ray_len;
         let hit_dist = self.neg_inv_density * rand().ln();
 

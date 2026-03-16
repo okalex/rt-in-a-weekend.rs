@@ -17,7 +17,8 @@ use crate::rt::{
         quad::Quad,
         scene::Scene,
         sphere::Sphere,
-        transformations::{rotate_y, translate}, triangle::Triangle,
+        transformations::{rotate_y, translate},
+        triangle::Triangle,
     },
     random::{rand, rand_range, rand_range_vector},
     textures::{
@@ -407,7 +408,7 @@ fn scene_b() -> Scene {
             let center = [a as Float + 0.9 * rand(), 0.2, b as Float + 0.9 * rand()];
 
             let center1 = Point::from(center);
-            if (center1 - Point::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
+            if (center1 - Point::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.4 {
                     // Diffuse
                     let center2 = center1 + Vector::new(0.0, rand_range(0.0, 0.5), 0.0);

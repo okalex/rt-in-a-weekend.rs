@@ -111,7 +111,7 @@ impl Mul for Color {
     type Output = Self;
 
     fn mul(self, b: Self) -> Self {
-        Self::wrap_vec(self.base.component_mul(&b.base))
+        Self::wrap_vec(self.base * b.base)
     }
 }
 
@@ -127,7 +127,7 @@ impl Div for Color {
     type Output = Self;
 
     fn div(self, b: Self) -> Self {
-        Self::wrap_vec(self.base.component_div(&b.base))
+        Self::wrap_vec(self.base / b.base)
     }
 }
 

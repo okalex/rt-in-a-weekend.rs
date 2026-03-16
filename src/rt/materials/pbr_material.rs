@@ -30,28 +30,28 @@ impl PbrMaterial {
     }
 
     #[allow(unused)]
-    fn diffuse_scatter(&self, in_dir: &Vector, normal: &Vector) -> Vector {
+    fn diffuse_scatter(&self, in_dir: Vector, normal: Vector) -> Vector {
         let diffuse_scale = 1.0 - self.metallicity;
         if diffuse_scale > 0.0 {
             normal + rand_on_hemisphere(normal)
         } else {
-            Vector::zeros()
+            Vector::ZERO
         }
     }
 
-    fn metallic_scatter(&self, in_dir: &Vector, normal: &Vector) -> Vector {
+    fn metallic_scatter(&self, in_dir: Vector, normal: Vector) -> Vector {
         if self.metallicity > 0.0 {
-            reflect(&in_dir, &normal).normalize()
+            reflect(in_dir, normal).normalize()
         } else {
-            Vector::zeros()
+            Vector::ZERO
         }
     }
 
     #[allow(unused)]
     pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         // Diffuse scatter
-        let mut scatter_dir = self.diffuse_scatter(&r_in.dir, &rec.normal)
-            + self.metallic_scatter(&r_in.dir, &rec.normal);
+        let mut scatter_dir = self.diffuse_scatter(r_in.dir, rec.normal)
+            + self.metallic_scatter(r_in.dir, rec.normal);
 
         if all_are_less_than(scatter_dir, 1e-8) {
             scatter_dir = rec.normal;

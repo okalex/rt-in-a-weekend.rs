@@ -46,7 +46,7 @@ pub fn rand_range_vector(min: Float, max: Float) -> Vector {
 pub fn rand_unit_vector() -> Vector {
     loop {
         let p = rand_range_vector(-1.0, 1.0);
-        let lensq = p.magnitude_squared();
+        let lensq = p.length_squared();
         if 1e-160 < lensq && lensq <= 1.0 {
             return p / lensq.sqrt();
         }
@@ -54,7 +54,7 @@ pub fn rand_unit_vector() -> Vector {
 }
 
 #[allow(dead_code)]
-pub fn rand_on_hemisphere(normal: &Vector) -> Vector {
+pub fn rand_on_hemisphere(normal: Vector) -> Vector {
     let on_unit_sphere = rand_unit_vector();
 
     if on_unit_sphere.dot(normal) > 0.0 {
@@ -67,7 +67,7 @@ pub fn rand_on_hemisphere(normal: &Vector) -> Vector {
 pub fn rand_in_unit_disk() -> Vector {
     loop {
         let p = Vector::new(rand_range(-1.0, 1.0), rand_range(-1.0, 1.0), 0.0);
-        if p.magnitude_squared() < 1.0 {
+        if p.length_squared() < 1.0 {
             return p;
         }
     }

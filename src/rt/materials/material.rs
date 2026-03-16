@@ -71,13 +71,13 @@ pub fn reflectance(cosine: Float, refraction_idx: Float) -> Float {
     return r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0);
 }
 
-pub fn reflect(vec: &Vector, normal: &Vector) -> Vector {
-    *vec - *normal * vec.dot(normal) * 2.0
+pub fn reflect(vec: Vector, normal: Vector) -> Vector {
+    vec - normal * vec.dot(normal) * 2.0
 }
 
-pub fn refract(vec: &Vector, n: &Vector, etai_over_etat: Float) -> Vector {
+pub fn refract(vec: Vector, n: Vector, etai_over_etat: Float) -> Vector {
     let cos_theta = Float::min(-vec.dot(n), 1.0);
-    let r_out_perp = (*vec + *n * cos_theta) * etai_over_etat;
-    let r_out_parallel = *n * (-(1.0 - r_out_perp.magnitude_squared()).abs().sqrt());
+    let r_out_perp = (vec + n * cos_theta) * etai_over_etat;
+    let r_out_parallel = n * (-(1.0 - r_out_perp.length_squared()).abs().sqrt());
     return r_out_perp + r_out_parallel;
 }
