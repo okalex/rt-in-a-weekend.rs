@@ -72,7 +72,7 @@ impl ApplicationHandler<State> for App {
         };
 
         match event {
-            WindowEvent::CloseRequested => event_loop.exit(),
+            WindowEvent::CloseRequested => std::process::exit(0),
 
             WindowEvent::Resized(size) => state.resize(size.width as Uint, size.height as Uint),
 

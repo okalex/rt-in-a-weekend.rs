@@ -43,9 +43,9 @@ impl State {
         self.gpu.resize(width, height);
     }
 
-    pub fn handle_key(&mut self, event_loop: &ActiveEventLoop, code: KeyCode, is_pressed: bool) {
+    pub fn handle_key(&mut self, _event_loop: &ActiveEventLoop, code: KeyCode, is_pressed: bool) {
         if code == KeyCode::Escape && is_pressed {
-            event_loop.exit();
+            std::process::exit(0);
         } else {
             // self.camera_controller.handle_key(code, is_pressed);
         }
