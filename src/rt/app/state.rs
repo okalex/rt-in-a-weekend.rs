@@ -18,12 +18,13 @@ pub struct State {
 
 impl State {
     pub async fn new(window: Arc<Window>, frame_buffer: Arc<FrameBuffer>) -> anyhow::Result<Self> {
-        let gpu = Gpu::init(Arc::clone(&window)).await?;
+        let gpu = Gpu::new_windowed(Arc::clone(&window)).await?;
 
-        let texture = GpuTexture::new(&gpu.device, Arc::clone(&frame_buffer));
+        let texture = GpuTexture::new(&gpu.device(), Arc::clone(&frame_buffer));
         let bind_group_layout = gpu.create_bind_group_layout(&texture.bind_group_layout_entries(0));
         let bind_group = gpu.create_bind_group(&bind_group_layout, &texture.bind_group_entries(0));
-        let render_pipeline = gpu.create_render_pipeline(&[&bind_group_layout]);
+        let display_shader = gpu.create_shader(wgpu::include_wgsl!("display_shader.wgsl"));
+        let render_pipeline = gpu.create_render_pipeline(&[&bind_group_layout], &display_shader);
 
         Ok(Self {
             window,
@@ -51,12 +52,13 @@ impl State {
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         self.window.request_redraw();
-        if !self.gpu.is_surface_configured {
+        if !self.gpu.is_ready() {
             return Ok(());
         }
 
         // Copy data to GPU
-        self.gpu.write_texture(Arc::clone(&self.frame_buffer), &self.texture);
+        self.gpu
+            .write_texture(Arc::clone(&self.frame_buffer), &self.texture);
         self.gpu.render(&self.render_pipeline, &self.bind_group);
 
         Ok(())

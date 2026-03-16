@@ -5,8 +5,10 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
+bytemuck = "1.25.0"
 clap = { version = "4.5.60", features = ["derive"] }
 env_logger = "0.11.9"
+futures = "0.3.32"
 image = "0.25.9"
 log = "0.4.29"
 nalgebra = "0.34.1"
@@ -15,6 +17,7 @@ parry3d-f64 = "0.26.0"
 pollster = "0.4.0"
 rand = "0.10.0"
 tobj = { version = "3.2", default-features = false, features = ["async"]}
+tokio = { version = "1.50.0", features = ["full"] }
 wgpu = "28.0.0"
 winit = "0.30.13"
 

@@ -12,7 +12,7 @@ impl GpuTexture {
     pub fn new(device: &wgpu::Device, buffer: Arc<FrameBuffer>) -> Self {
         let texture_format = wgpu::TextureFormat::Rgba8UnormSrgb;
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: None,
+            label: Some("Texture"),
             size: wgpu::Extent3d {
                 width: buffer.width as u32,
                 height: buffer.height as u32,

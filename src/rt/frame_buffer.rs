@@ -32,7 +32,18 @@ impl FrameBuffer {
         let start = (y * self.width * PIXEL_SIZE) as usize;
         for (i, color) in line.iter().enumerate() {
             let rgba = Self::to_rgba(color);
-            buffer[(start + i * PIXEL_SIZE)..(start + (i + 1) * PIXEL_SIZE)].copy_from_slice(&rgba);
+            let pixel_idx = start + i * PIXEL_SIZE;
+            buffer[pixel_idx..(pixel_idx + PIXEL_SIZE)].copy_from_slice(&rgba);
+        }
+    }
+
+    pub fn set_frame(&self, frame: &Vec<[u8; 3]>) {
+        let mut buffer = self.data.lock().unwrap();
+        eprintln!("Setting frame with {} pixels", frame.len());
+        for (idx, color) in frame.iter().enumerate() {
+            let rgba = Self::to_rgba(color);
+            let pixel_idx = idx * PIXEL_SIZE;
+            buffer[pixel_idx..(pixel_idx + PIXEL_SIZE)].copy_from_slice(&rgba);
         }
     }
 
@@ -49,7 +60,6 @@ impl FrameBuffer {
     fn to_rgba(color: &[u8; 3]) -> [u8; PIXEL_SIZE] {
         [color[0], color[1], color[2], 255u8]
     }
-    
 }
 
 impl Clone for FrameBuffer {

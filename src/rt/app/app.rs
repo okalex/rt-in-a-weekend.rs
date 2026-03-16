@@ -1,4 +1,4 @@
-use std::{sync::Arc, thread::JoinHandle};
+use std::sync::Arc;
 
 use winit::{
     application::ApplicationHandler,
@@ -9,26 +9,32 @@ use winit::{
     window::{Window, WindowId},
 };
 
-use crate::rt::{app::state::State, objects::scene::Scene, renderer::Renderer};
+use crate::rt::{app::state::State, frame_buffer::FrameBuffer, renderer::renderer::Renderer};
 
 #[allow(unused)]
 pub struct App {
     width: u32,
     height: u32,
     state: Option<State>,
-    renderer: Arc<Renderer>,
-    thread_handles: Vec<JoinHandle<()>>,
+    frame_buffer: Arc<FrameBuffer>,
 }
 
 impl App {
-    pub fn new(width: u32, height: u32, renderer: Arc<Renderer>, scene: Arc<Scene>) -> Self {
-        let thread_handles = renderer.render(scene);
+    pub fn new(
+        width: u32,
+        height: u32,
+        renderer: Arc<Renderer>,
+        frame_buffer: Arc<FrameBuffer>,
+    ) -> Self {
+        tokio::spawn(async move {
+            renderer.render().await;
+        });
+
         Self {
             width,
             height,
             state: None,
-            renderer,
-            thread_handles,
+            frame_buffer,
         }
     }
 }
@@ -44,10 +50,8 @@ impl ApplicationHandler<State> for App {
             .with_resizable(false);
 
         let window = Arc::new(event_loop.create_window(window_attrs).unwrap());
-        self.state = Some(
-            pollster::block_on(State::new(window, Arc::clone(&self.renderer.frame_buffer)))
-                .unwrap(),
-        );
+        self.state =
+            Some(pollster::block_on(State::new(window, Arc::clone(&self.frame_buffer))).unwrap());
     }
 
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: State) {

@@ -1,22 +1,178 @@
 use std::sync::Arc;
 
+use bytemuck::NoUninit;
+use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::rt::{frame_buffer::FrameBuffer, gpu::gpu_texture::GpuTexture};
 
-pub struct Gpu {
-    pub instance: wgpu::Instance,
-    pub surface: wgpu::Surface<'static>,
-    pub is_surface_configured: bool,
-    pub adapter: wgpu::Adapter,
-    pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
-    pub config: wgpu::SurfaceConfiguration,
-    pub shader: wgpu::ShaderModule,
+pub enum Gpu {
+    Windowed(GpuWindowed),
+    Headless(GpuHeadless),
 }
 
 impl Gpu {
-    pub async fn init(window: Arc<Window>) -> anyhow::Result<Self> {
+    pub async fn new_windowed(window: Arc<Window>) -> anyhow::Result<Self> {
+        let gpu = GpuWindowed::new(window).await?;
+        Ok(Self::Windowed(gpu))
+    }
+
+    pub async fn new_headless() -> anyhow::Result<Self> {
+        let gpu = GpuHeadless::new().await?;
+        Ok(Self::Headless(gpu))
+    }
+
+    pub fn device(&self) -> &wgpu::Device {
+        match self {
+            Self::Windowed(gpu) => &gpu.device,
+            Self::Headless(gpu) => &gpu.device,
+        }
+    }
+
+    pub fn queue(&self) -> &wgpu::Queue {
+        match self {
+            Self::Windowed(gpu) => &gpu.queue,
+            Self::Headless(gpu) => &gpu.queue,
+        }
+    }
+
+    pub fn is_ready(&self) -> bool {
+        match self {
+            Self::Windowed(gpu) => gpu.is_surface_configured,
+            Self::Headless(_) => true,
+        }
+    }
+
+    pub fn create_shader(&self, desc: wgpu::ShaderModuleDescriptor) -> wgpu::ShaderModule {
+        self.device().create_shader_module(desc)
+    }
+
+    #[allow(unused)]
+    pub fn create_vertex_buffer<T: NoUninit>(&self, buffer: &[T]) -> wgpu::Buffer {
+        self.device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(buffer),
+                usage: wgpu::BufferUsages::VERTEX,
+            })
+    }
+
+    pub fn create_bind_group_layout(
+        &self,
+        entries: &[wgpu::BindGroupLayoutEntry],
+    ) -> wgpu::BindGroupLayout {
+        self.device()
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Bind group layout"),
+                entries: entries,
+            })
+    }
+
+    pub fn create_bind_group(
+        &self,
+        layout: &wgpu::BindGroupLayout,
+        entries: &[wgpu::BindGroupEntry],
+    ) -> wgpu::BindGroup {
+        self.device().create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Bind group"),
+            layout: layout,
+            entries: entries,
+        })
+    }
+
+    pub fn write_texture(&self, frame_buffer: Arc<FrameBuffer>, texture: &GpuTexture) {
+        // Lock only long enough to copy the buffer
+        let buffer = { frame_buffer.data.lock().unwrap().clone() };
+        self.queue().write_texture(
+            texture.as_image_copy(),
+            &buffer,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * frame_buffer.width as u32),
+                rows_per_image: None,
+            },
+            wgpu::Extent3d {
+                width: frame_buffer.width as u32,
+                height: frame_buffer.height as u32,
+                depth_or_array_layers: 1,
+            },
+        )
+    }
+
+    pub fn create_render_pipeline(
+        &self,
+        bind_group_layouts: &[&wgpu::BindGroupLayout],
+        shader: &wgpu::ShaderModule,
+    ) -> wgpu::RenderPipeline {
+        match self {
+            Self::Headless(_) => panic!(),
+            Self::Windowed(gpu) => gpu.create_render_pipeline(bind_group_layouts, shader),
+        }
+    }
+
+    pub fn create_compute_pipeline(&self, shader: &wgpu::ShaderModule) -> wgpu::ComputePipeline {
+        self.device()
+            .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: Some("Compute Pipeline"),
+                layout: None,
+                module: shader,
+                entry_point: None,
+                compilation_options: Default::default(),
+                cache: Default::default(),
+            })
+    }
+
+    pub fn render(&self, render_pipeline: &wgpu::RenderPipeline, bind_group: &wgpu::BindGroup) {
+        match self {
+            Self::Headless(_) => panic!(),
+            Self::Windowed(gpu) => gpu.render(render_pipeline, bind_group),
+        }
+    }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        match self {
+            Self::Headless(_) => panic!(),
+            Self::Windowed(gpu) => gpu.resize(width, height),
+        }
+    }
+}
+
+#[allow(unused)]
+pub struct GpuHeadless {
+    pub instance: wgpu::Instance,
+    pub adapter: wgpu::Adapter,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+}
+
+impl GpuHeadless {
+    pub async fn new() -> anyhow::Result<Self> {
+        let instance = wgpu::Instance::new(&Default::default());
+        let adapter = instance.request_adapter(&Default::default()).await?;
+        let (device, queue) = adapter.request_device(&Default::default()).await?;
+
+        Ok(Self {
+            instance,
+            adapter,
+            device,
+            queue,
+        })
+    }
+}
+
+#[allow(unused)]
+pub struct GpuWindowed {
+    pub instance: wgpu::Instance,
+    pub adapter: wgpu::Adapter,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+    pub surface: wgpu::Surface<'static>,
+    pub is_surface_configured: bool,
+    pub config: wgpu::SurfaceConfiguration,
+}
+
+impl GpuWindowed {
+    pub async fn new(window: Arc<Window>) -> anyhow::Result<Self> {
         let size = window.inner_size();
 
         let instance = Self::new_instance();
@@ -24,31 +180,26 @@ impl Gpu {
         let adapter = Self::get_adapter(&instance, &surface).await?;
         let (device, queue) = Self::get_device_queue(&adapter).await?;
         let config = Self::get_surface_config(&size, &surface, &adapter);
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
-        });
 
         Ok(Self {
             instance,
-            surface,
-            is_surface_configured: false,
             adapter,
             device,
             queue,
+            surface,
+            is_surface_configured: false,
             config,
-            shader,
         })
     }
 
-    pub fn new_instance() -> wgpu::Instance {
+    fn new_instance() -> wgpu::Instance {
         wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         })
     }
 
-    pub async fn get_adapter(
+    async fn get_adapter(
         instance: &wgpu::Instance,
         surface: &wgpu::Surface<'static>,
     ) -> anyhow::Result<wgpu::Adapter> {
@@ -61,7 +212,7 @@ impl Gpu {
             .await?)
     }
 
-    pub async fn get_device_queue(
+    async fn get_device_queue(
         adapter: &wgpu::Adapter,
     ) -> anyhow::Result<(wgpu::Device, wgpu::Queue)> {
         Ok(adapter
@@ -76,7 +227,7 @@ impl Gpu {
             .await?)
     }
 
-    pub fn get_surface_config(
+    fn get_surface_config(
         size: &PhysicalSize<u32>,
         surface: &wgpu::Surface,
         adapter: &wgpu::Adapter,
@@ -101,53 +252,31 @@ impl Gpu {
         }
     }
 
-    pub fn create_bind_group_layout(
-        &self,
-        entries: &[wgpu::BindGroupLayoutEntry],
-    ) -> wgpu::BindGroupLayout {
-        self.device
-            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Bind group layout"),
-                entries: entries,
-            })
-    }
-
-    pub fn create_bind_group(
-        &self,
-        layout: &wgpu::BindGroupLayout,
-        entries: &[wgpu::BindGroupEntry],
-    ) -> wgpu::BindGroup {
-        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Bind group"),
-            layout: layout,
-            entries: entries,
-        })
-    }
-
     pub fn create_render_pipeline(
         &self,
         bind_group_layouts: &[&wgpu::BindGroupLayout],
+        shader: &wgpu::ShaderModule,
     ) -> wgpu::RenderPipeline {
         let pipeline_layout = self
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: None,
+                label: Some("Pipeline layout"),
                 bind_group_layouts: bind_group_layouts,
                 immediate_size: 0,
             });
 
         self.device
             .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: None,
+                label: Some("Render pipeline"),
                 layout: Some(&pipeline_layout),
                 vertex: wgpu::VertexState {
-                    module: &self.shader,
+                    module: shader,
                     entry_point: Some("vs_main"),
                     buffers: &[],
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
-                    module: &self.shader,
+                    module: shader,
                     entry_point: Some("fs_main"),
                     targets: &[Some(wgpu::ColorTargetState {
                         format: self.config.format,
@@ -171,25 +300,6 @@ impl Gpu {
             self.surface.configure(&self.device, &self.config);
             self.is_surface_configured = true;
         }
-    }
-
-    pub fn write_texture(&self, frame_buffer: Arc<FrameBuffer>, texture: &GpuTexture) {
-        // Lock only long enough to copy the buffer
-        let buffer = { frame_buffer.data.lock().unwrap().clone() };
-        self.queue.write_texture(
-            texture.as_image_copy(),
-            &buffer,
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4 * frame_buffer.width as u32),
-                rows_per_image: None,
-            },
-            wgpu::Extent3d {
-                width: frame_buffer.width as u32,
-                height: frame_buffer.height as u32,
-                depth_or_array_layers: 1,
-            },
-        )
     }
 
     pub fn render(&self, render_pipeline: &wgpu::RenderPipeline, bind_group: &wgpu::BindGroup) {

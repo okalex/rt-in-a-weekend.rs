@@ -9,9 +9,9 @@ use crate::rt::app::app::App;
 use crate::rt::camera::Camera;
 use crate::rt::color::Color;
 use crate::rt::frame_buffer::FrameBuffer;
-use crate::rt::objects::scene::Scene;
 use crate::rt::ppm_writer::PpmWriter;
-use crate::rt::renderer::{LineServer, RenderOptionsBuilder, Renderer};
+use crate::rt::renderer::cpu_renderer::{LineServer, RenderOptions, RenderOptionsBuilder};
+use crate::rt::renderer::renderer::Renderer;
 use crate::rt::sampler::Sampler;
 use crate::rt::test_scenes::get_camera_and_scene;
 use crate::rt::viewport::Viewport;
@@ -43,14 +43,18 @@ struct Args {
     #[arg(long, default_value_t = false)]
     importance: bool,
 
+    #[arg(long, default_value_t = false)]
+    gpu: bool,
+
     #[arg(long, default_value_t = 1)]
     sampler: u32,
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     env_logger::init();
 
-    let args = Args::parse();
+    let args = Arc::new(Args::parse());
 
     let render_options = Arc::new(
         RenderOptionsBuilder::new()
@@ -63,6 +67,32 @@ fn main() {
             .build(args.aspect as f64),
     );
 
+    print_config(Arc::clone(&args), Arc::clone(&render_options));
+
+    let frame_buffer = Arc::new(FrameBuffer::new(
+        render_options.img_width as usize,
+        render_options.img_height as usize,
+    ));
+    let renderer = get_renderer(
+        Arc::clone(&args),
+        Arc::clone(&render_options),
+        Arc::clone(&frame_buffer),
+    )
+    .await;
+
+    if args.interactive {
+        let _ = run_windowed(
+            render_options.img_width,
+            render_options.img_height,
+            renderer,
+            frame_buffer,
+        );
+    } else {
+        let _ = run_headless(renderer, frame_buffer).await;
+    }
+}
+
+fn print_config(args: Arc<Args>, render_options: Arc<RenderOptions>) {
     eprintln!("Render settings:");
     eprintln!("  interactive         = {}", args.interactive);
     eprintln!("  scene index         = {}", args.scene);
@@ -72,6 +102,7 @@ fn main() {
     eprintln!("  max depth           = {}", args.depth);
     eprintln!("  multithreading      = {}", args.multithreading);
     eprintln!("  importance sampling = {}", args.importance);
+    eprintln!("  GPU rendering       = {}", args.gpu);
     eprintln!(
         "  sampler             = {}",
         if args.sampler == 2 {
@@ -80,7 +111,13 @@ fn main() {
             "random"
         }
     );
+}
 
+async fn get_renderer(
+    args: Arc<Args>,
+    render_options: Arc<RenderOptions>,
+    frame_buffer: Arc<FrameBuffer>,
+) -> Arc<Renderer> {
     let (camera_options, scene) = get_camera_and_scene(args.scene);
 
     let viewport = Viewport::new(
@@ -96,45 +133,52 @@ fn main() {
 
     let camera = Arc::new(Camera::new(camera_options, viewport, sampler));
 
-    let frame_buffer = Arc::new(FrameBuffer::new(
-        render_options.img_width as usize,
-        render_options.img_height as usize,
-    ));
-
-    let line_server = Arc::new(LineServer::new(render_options.img_height));
-
-    let renderer = Arc::new(Renderer::new(
-        Arc::clone(&render_options),
-        Arc::clone(&camera),
-        Arc::clone(&frame_buffer),
-        Arc::clone(&line_server),
-    ));
-
-    if args.interactive {
-        let _ = run_windowed(
-            render_options.img_width,
-            render_options.img_height,
-            Arc::clone(&renderer),
+    let result = if args.gpu {
+        Renderer::gpu(
+            Arc::clone(&render_options),
             Arc::new(scene),
-        );
+            Arc::clone(&camera),
+            Arc::clone(&frame_buffer),
+        )
+        .await
     } else {
-        let writer = PpmWriter::new(Arc::clone(&frame_buffer), 255);
+        let line_server = Arc::new(LineServer::new(render_options.img_height));
 
-        let thread_handles = renderer.render(Arc::new(scene));
-        thread_handles.into_iter().for_each(|h| h.join().unwrap());
+        Renderer::cpu(
+            Arc::clone(&render_options),
+            Arc::new(scene),
+            Arc::clone(&camera),
+            Arc::clone(&frame_buffer),
+            Arc::clone(&line_server),
+        )
+        .await
+    };
 
-        writer.write();
+    match result {
+        Ok(renderer) => Arc::new(renderer),
+        _ => panic!(),
     }
+}
+
+async fn run_headless(
+    renderer: Arc<Renderer>,
+    frame_buffer: Arc<FrameBuffer>,
+) -> anyhow::Result<()> {
+    let writer = PpmWriter::new(frame_buffer, 255);
+    renderer.render().await;
+    writer.write();
+
+    Ok(())
 }
 
 fn run_windowed(
     width: u32,
     height: u32,
     renderer: Arc<Renderer>,
-    scene: Arc<Scene>,
+    frame_buffer: Arc<FrameBuffer>,
 ) -> anyhow::Result<()> {
     let event_loop = EventLoop::with_user_event().build()?;
-    let mut app = App::new(width, height, Arc::clone(&renderer), scene);
+    let mut app = App::new(width, height, renderer, frame_buffer);
     event_loop.run_app(&mut app)?;
 
     Ok(())
