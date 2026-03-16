@@ -60,7 +60,7 @@ impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> 
             .write_buffer(&self.dim_buf, 0, bytemuck::cast_slice(&dims));
     }
 
-    pub async fn dispatch(&self, workgroup_dims: [u32; 3]) -> anyhow::Result<Vec<O>> {
+    pub async fn dispatch(&self, workgroup_dims: [u32; 2]) -> anyhow::Result<Vec<O>> {
         let mut encoder = self
             .gpu
             .device()
@@ -70,7 +70,7 @@ impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> 
             let mut pass = encoder.begin_compute_pass(&Default::default());
             pass.set_pipeline(&self.pipeline);
             pass.set_bind_group(0, &self.bind_group, &[]);
-            pass.dispatch_workgroups(workgroup_dims[0], workgroup_dims[1], workgroup_dims[2]);
+            pass.dispatch_workgroups(workgroup_dims[0], workgroup_dims[1], 1);
         }
 
         encoder.copy_buffer_to_buffer(

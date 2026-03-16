@@ -9,20 +9,22 @@ use winit::{
     window::{Window, WindowId},
 };
 
-use crate::rt::{app::state::State, frame_buffer::FrameBuffer, renderer::renderer::Renderer};
+use crate::rt::{
+    app::state::State, frame_buffer::FrameBuffer, renderer::renderer::Renderer, types::Uint,
+};
 
 #[allow(unused)]
 pub struct App {
-    width: u32,
-    height: u32,
+    width: Uint,
+    height: Uint,
     state: Option<State>,
     frame_buffer: Arc<FrameBuffer>,
 }
 
 impl App {
     pub fn new(
-        width: u32,
-        height: u32,
+        width: Uint,
+        height: Uint,
         renderer: Arc<Renderer>,
         frame_buffer: Arc<FrameBuffer>,
     ) -> Self {
@@ -44,8 +46,8 @@ impl ApplicationHandler<State> for App {
         log::info!("Window resumed");
         let window_attrs = Window::default_attributes()
             .with_inner_size(LogicalSize {
-                width: self.width,
-                height: self.height,
+                width: self.width as u32,
+                height: self.height as u32,
             })
             .with_resizable(false);
 
@@ -72,10 +74,7 @@ impl ApplicationHandler<State> for App {
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
 
-            WindowEvent::Resized(size) => {
-                log::info!("Resized to {}x{}", size.width, size.height);
-                state.resize(size.width, size.height)
-            }
+            WindowEvent::Resized(size) => state.resize(size.width as Uint, size.height as Uint),
 
             WindowEvent::RedrawRequested => {
                 state.update();
@@ -83,7 +82,7 @@ impl ApplicationHandler<State> for App {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
                         let size = state.window.inner_size();
-                        state.resize(size.width, size.height);
+                        state.resize(size.width as Uint, size.height as Uint);
                     }
                     Err(e) => {
                         log::error!("Unable to render {}", e);

@@ -1,16 +1,17 @@
-use nalgebra::{Point3, Vector3};
-
-use crate::rt::random::{rand_int, rand_range_vector};
+use crate::rt::{
+    random::{rand_int, rand_range_vector},
+    types::{Float, Int, Point, Vector},
+};
 
 pub struct Perlin {
-    rand_vec: Vec<Vector3<f64>>,
-    perm_x: Vec<i32>,
-    perm_y: Vec<i32>,
-    perm_z: Vec<i32>,
+    rand_vec: Vec<Vector>,
+    perm_x: Vec<Int>,
+    perm_y: Vec<Int>,
+    perm_z: Vec<Int>,
 }
 
 impl Perlin {
-    const POINT_COUNT: i32 = 256;
+    const POINT_COUNT: Int = 256;
 
     pub fn new() -> Self {
         Self {
@@ -23,16 +24,16 @@ impl Perlin {
         }
     }
 
-    pub fn noise(&self, point: &Point3<f64>) -> f64 {
+    pub fn noise(&self, point: &Point) -> Float {
         let u = point.x - point.x.floor();
         let v = point.y - point.y.floor();
         let w = point.z - point.z.floor();
 
-        let i = point.x.floor() as i32;
-        let j = point.y.floor() as i32;
-        let k = point.z.floor() as i32;
+        let i = point.x.floor() as Int;
+        let j = point.y.floor() as Int;
+        let k = point.z.floor() as Int;
 
-        let mut c = vec![vec![vec![Vector3::zeros(); 2]; 2]; 2];
+        let mut c = vec![vec![vec![Vector::zeros(); 2]; 2]; 2];
         for di in 0..2 {
             for dj in 0..2 {
                 for dk in 0..2 {
@@ -49,10 +50,10 @@ impl Perlin {
         Self::perlin_interpolate(c, u, v, w)
     }
 
-    pub fn turb(&self, point: &Point3<f64>, depth: i32) -> f64 {
-        let mut accum = 0.0f64;
+    pub fn turb(&self, point: &Point, depth: Int) -> Float {
+        let mut accum = 0.0;
         let mut temp_p = *point;
-        let mut weight = 1.0f64;
+        let mut weight = 1.0;
 
         for _ in 0..depth {
             accum += weight * self.noise(&temp_p);
@@ -63,12 +64,12 @@ impl Perlin {
         accum.abs()
     }
 
-    fn generate_perm() -> Vec<i32> {
-        let p: Vec<i32> = (0..Self::POINT_COUNT).collect();
+    fn generate_perm() -> Vec<Int> {
+        let p: Vec<Int> = (0..Self::POINT_COUNT).collect();
         Self::permute(p, Self::POINT_COUNT)
     }
 
-    fn permute(p: Vec<i32>, n: i32) -> Vec<i32> {
+    fn permute(p: Vec<Int>, n: Int) -> Vec<Int> {
         let mut new_p = p;
         for i in (1..n).rev() {
             let target = rand_int(0, i) as usize;
@@ -79,20 +80,20 @@ impl Perlin {
         new_p
     }
 
-    fn perlin_interpolate(c: Vec<Vec<Vec<Vector3<f64>>>>, u: f64, v: f64, w: f64) -> f64 {
+    fn perlin_interpolate(c: Vec<Vec<Vec<Vector>>>, u: Float, v: Float, w: Float) -> Float {
         let uu = u * u * (3.0 - 2.0 * u);
         let vv = v * v * (3.0 - 2.0 * v);
         let ww = w * w * (3.0 - 2.0 * w);
-        let mut accum = 0.0f64;
+        let mut accum = 0.0;
 
         for i in 0..2 {
             for j in 0..2 {
                 for k in 0..2 {
-                    let fi = f64::from(i as i32);
-                    let fj = f64::from(j as i32);
-                    let fk = f64::from(k as i32);
+                    let fi = i as Float;
+                    let fj = j as Float;
+                    let fk = k as Float;
 
-                    let weight_v = Vector3::new(u - fi, v - fj, w - fk);
+                    let weight_v = Vector::new(u - fi, v - fj, w - fk);
 
                     let i_acc = (fi * uu) + (1.0 - fi) * (1.0 - uu);
                     let j_acc = (fj * vv) + (1.0 - fj) * (1.0 - vv);

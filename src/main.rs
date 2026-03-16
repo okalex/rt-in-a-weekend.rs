@@ -14,6 +14,7 @@ use crate::rt::renderer::cpu_renderer::{LineServer, RenderOptions, RenderOptions
 use crate::rt::renderer::renderer::Renderer;
 use crate::rt::sampler::Sampler;
 use crate::rt::test_scenes::get_camera_and_scene;
+use crate::rt::types::{Float, Uint};
 use crate::rt::viewport::Viewport;
 
 #[derive(Parser, Debug)]
@@ -23,19 +24,19 @@ struct Args {
     interactive: bool,
 
     #[arg(short, long, default_value_t = 2)]
-    scene: u32,
+    scene: Uint,
 
     #[arg(short, long, default_value_t = 400)]
-    width: u32,
+    width: Uint,
 
     #[arg(short, long, default_value_t = 16.0/9.0)]
-    aspect: f32,
+    aspect: Float,
 
     #[arg(long, default_value_t = 100)]
-    samples: u32,
+    samples: Uint,
 
     #[arg(short, long, default_value_t = 10)]
-    depth: u32,
+    depth: Uint,
 
     #[arg(short, long, default_value_t = false)]
     multithreading: bool,
@@ -47,7 +48,7 @@ struct Args {
     gpu: bool,
 
     #[arg(long, default_value_t = 1)]
-    sampler: u32,
+    sampler: Uint,
 }
 
 #[tokio::main]
@@ -64,7 +65,7 @@ async fn main() {
             .use_multithreading(args.multithreading)
             .use_importance_sampling(args.importance)
             .background(Color::black())
-            .build(args.aspect as f64),
+            .build(args.aspect as Float),
     );
 
     print_config(Arc::clone(&args), Arc::clone(&render_options));
@@ -172,8 +173,8 @@ async fn run_headless(
 }
 
 fn run_windowed(
-    width: u32,
-    height: u32,
+    width: Uint,
+    height: Uint,
     renderer: Arc<Renderer>,
     frame_buffer: Arc<FrameBuffer>,
 ) -> anyhow::Result<()> {

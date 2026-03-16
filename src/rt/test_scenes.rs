@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use nalgebra::{Point3, Vector3};
-
 use crate::rt::{
     camera::CameraOptions,
     color::Color,
@@ -19,16 +17,16 @@ use crate::rt::{
         quad::Quad,
         scene::Scene,
         sphere::Sphere,
-        transformations::{rotate_y, translate},
-        triangle::Triangle,
+        transformations::{rotate_y, translate}, triangle::Triangle,
     },
     random::{rand, rand_range, rand_range_vector},
     textures::{
         checkered::Checkered, image_map::ImageMap, perlin_noise::PerlinNoise, texture::Texture,
     },
+    types::{Float, Point, Uint, Vector},
 };
 
-pub fn get_camera_and_scene(scene_idx: u32) -> (CameraOptions, Scene) {
+pub fn get_camera_and_scene(scene_idx: Uint) -> (CameraOptions, Scene) {
     let (camera_options, scene) = match scene_idx {
         1 => (camera_a(), scene_a()),
         2 => (camera_b(), scene_b()),
@@ -48,7 +46,7 @@ pub fn get_camera_and_scene(scene_idx: u32) -> (CameraOptions, Scene) {
     (camera_options, scene)
 }
 
-fn rand_arr3() -> [f64; 3] {
+fn rand_arr3() -> [Float; 3] {
     [rand(), rand(), rand()]
 }
 
@@ -123,7 +121,7 @@ impl Materials {
         }
     }
 
-    fn lambertian(color: [f64; 3]) -> Material {
+    fn lambertian(color: [Float; 3]) -> Material {
         Material::Lambertian(Lambertian::from_color_values(color))
     }
 
@@ -136,11 +134,11 @@ impl Materials {
         Self::lambertian(albedo)
     }
 
-    fn dielectric(refraction_idx: f64) -> Material {
+    fn dielectric(refraction_idx: Float) -> Material {
         Material::Dielectric(Dielectric::new(refraction_idx))
     }
 
-    fn metal(color: [f64; 3], fuzz: f64) -> Material {
+    fn metal(color: [Float; 3], fuzz: Float) -> Material {
         Material::Metal(Metal::new(color, fuzz))
     }
 
@@ -150,21 +148,21 @@ impl Materials {
         Self::metal(albedo, fuzz)
     }
 
-    fn diffuse_light(color: [f64; 3]) -> Material {
+    fn diffuse_light(color: [Float; 3]) -> Material {
         Material::DiffuseLight(DiffuseLight::from_color(Color::from_arr(color)))
     }
 
-    fn image_map(file_name: &str, scale_factor: f64) -> Material {
+    fn image_map(file_name: &str, scale_factor: Float) -> Material {
         let tex = Arc::new(Texture::ImageMap(ImageMap::new(file_name, scale_factor)));
         Self::from_texture(tex)
     }
 
-    fn pbr(albedo: [f64; 3], metallicity: f64) -> Material {
+    fn pbr(albedo: [Float; 3], metallicity: Float) -> Material {
         let color = Color::from_arr(albedo);
         Material::PbrMaterial(PbrMaterial::new(color, metallicity))
     }
 
-    fn isotropic(albedo: [f64; 3]) -> Material {
+    fn isotropic(albedo: [Float; 3]) -> Material {
         Material::Isotropic(Isotropic::from_color(Color::from_arr(albedo)))
     }
 }
@@ -172,27 +170,27 @@ impl Materials {
 pub struct Shapes {}
 
 impl Shapes {
-    pub fn sphere(center: [f64; 3], radius: f64, mat_idx: usize) -> Hittable {
-        Hittable::Sphere(Sphere::stationary(Point3::from(center), radius, mat_idx))
+    pub fn sphere(center: [Float; 3], radius: Float, mat_idx: usize) -> Hittable {
+        Hittable::Sphere(Sphere::stationary(Point::from(center), radius, mat_idx))
     }
 
-    pub fn quad(q: [f64; 3], u: [f64; 3], v: [f64; 3], mat_idx: usize) -> Hittable {
+    pub fn quad(q: [Float; 3], u: [Float; 3], v: [Float; 3], mat_idx: usize) -> Hittable {
         Hittable::Quad(Quad::from_arr(q, u, v, mat_idx))
     }
 
-    pub fn triangle(a: [f64; 3], b: [f64; 3], c: [f64; 3], mat_idx: usize) -> Hittable {
+    pub fn triangle(a: [Float; 3], b: [Float; 3], c: [Float; 3], mat_idx: usize) -> Hittable {
         Hittable::Triangle(Triangle::new(a, b, c, mat_idx))
     }
 
-    pub fn box3d(a: [f64; 3], b: [f64; 3], mat_idx: usize) -> Hittable {
-        Hittable::HittableList(Box3d::new(Vector3::from(a), Vector3::from(b), mat_idx))
+    pub fn box3d(a: [Float; 3], b: [Float; 3], mat_idx: usize) -> Hittable {
+        Hittable::HittableList(Box3d::new(Vector::from(a), Vector::from(b), mat_idx))
     }
 
     pub fn constant_medium(
         materials: &mut Materials,
         boundary: Arc<Hittable>,
-        color: [f64; 3],
-        density: f64,
+        color: [Float; 3],
+        density: Float,
     ) -> Hittable {
         let mat = Materials::isotropic(color);
         let mat_idx = materials.add(mat);
@@ -205,7 +203,7 @@ impl Shapes {
 }
 
 impl HittableList {
-    fn cornell_room(materials: &Materials, width: f64) -> (Hittable, Hittable) {
+    fn cornell_room(materials: &Materials, width: Float) -> (Hittable, Hittable) {
         let mut objects = HittableList::new();
         let mut lights = HittableList::new();
 
@@ -316,7 +314,7 @@ fn scene_triangle() -> Scene {
     Scene::no_lights(scene, materials.materials)
 }
 
-fn scene_obj(scale: f64) -> Scene {
+fn scene_obj(scale: Float) -> Scene {
     let mut scene = HittableList::new();
     let mut lights = HittableList::new();
     let materials = Materials::new();
@@ -337,7 +335,7 @@ fn scene_obj(scale: f64) -> Scene {
     Scene::new(scene, materials.materials, lights)
 }
 
-fn scene_pbr(scale: f64) -> Scene {
+fn scene_pbr(scale: Float) -> Scene {
     let mut scene = HittableList::new();
     let mut lights = HittableList::new();
     let materials = Materials::new();
@@ -406,13 +404,13 @@ fn scene_b() -> Scene {
     for a in -11..11 {
         for b in -11..11 {
             let choose_mat = rand();
-            let center = [a as f64 + 0.9 * rand(), 0.2, b as f64 + 0.9 * rand()];
+            let center = [a as Float + 0.9 * rand(), 0.2, b as Float + 0.9 * rand()];
 
-            let center1 = Point3::from(center);
-            if (center1 - Point3::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
+            let center1 = Point::from(center);
+            if (center1 - Point::new(4.0, 0.2, 0.0)).magnitude() > 0.9 {
                 if choose_mat < 0.4 {
                     // Diffuse
-                    let center2 = center1 + Vector3::new(0.0, rand_range(0.0, 0.5), 0.0);
+                    let center2 = center1 + Vector::new(0.0, rand_range(0.0, 0.5), 0.0);
                     let mat = Materials::rand_lambertian();
                     let mat_idx = materials.add(mat);
                     let sphere = Hittable::Sphere(Sphere::moving(center1, center2, 0.2, mat_idx));
@@ -576,7 +574,7 @@ fn scene_g() -> Scene {
     Scene::no_lights(scene, materials.materials)
 }
 
-fn camera_cornell(room_width: f64) -> CameraOptions {
+fn camera_cornell(room_width: Float) -> CameraOptions {
     CameraOptions::new()
         .vfov(40.0)
         .position([room_width / 2.0, room_width / 2.0, -1.44 * room_width])
@@ -676,8 +674,8 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     let boxes_per_side = 20;
     for i in 0..boxes_per_side {
         for j in 0..boxes_per_side {
-            let fi = i as f64;
-            let fj = j as f64;
+            let fi = i as Float;
+            let fj = j as Float;
 
             let w = 100.0;
 
@@ -707,8 +705,8 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     lights.add_arc(Arc::clone(&light));
 
     // Moving sphere
-    let center1 = Point3::new(400.0, 400.0, 200.0);
-    let center2 = center1 + Vector3::new(30.0, 0.0, 0.0);
+    let center1 = Point::new(400.0, 400.0, 200.0);
+    let center2 = center1 + Vector::new(30.0, 0.0, 0.0);
     let sphere_mat_idx = materials.add(Materials::lambertian([0.7, 0.3, 0.1]));
     let sphere = Hittable::Sphere(Sphere::moving(center1, center2, 50.0, sphere_mat_idx));
     scene.add(sphere);
@@ -754,7 +752,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     let mut boxes2 = HittableList::new();
     for _ in 0..1000 {
         let sphere = Hittable::Sphere(Sphere::stationary(
-            Point3::from(rand_range_vector(0.0, 165.0)),
+            Point::from(rand_range_vector(0.0, 165.0)),
             10.0,
             materials.get("white"),
         ));

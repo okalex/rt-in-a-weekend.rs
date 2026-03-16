@@ -1,10 +1,10 @@
-use std::f64::consts::PI;
 use std::sync::Arc;
 
 use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::pdf::{Pdf, SpherePdf};
 use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;
+use crate::rt::types::{Float, PI};
 use crate::rt::{color::Color, textures::texture::Texture};
 
 use super::material::ScatterRecord;
@@ -15,9 +15,7 @@ pub struct Isotropic {
 
 impl Isotropic {
     pub fn new(texture: Arc<Texture>) -> Self {
-        Self {
-            texture,
-        }
+        Self { texture }
     }
 
     #[allow(dead_code)]
@@ -36,7 +34,7 @@ impl Isotropic {
     }
 
     #[allow(unused)]
-    pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+    pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> Float {
         1.0 / (4.0 * PI)
     }
 }

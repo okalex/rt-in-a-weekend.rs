@@ -59,8 +59,8 @@ impl BvhNode {
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         let r = ray.to_parry3d();
-        match self.bbox.cast_local_ray(&r, ray_t.max, false) {
-            Some(toi) if toi >= ray_t.min => {}
+        match self.bbox.cast_local_ray(&r, ray_t.max as f64, false) {
+            Some(toi) if toi >= (ray_t.min as f64) => {}
             _ => return None,
         }
 

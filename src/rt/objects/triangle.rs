@@ -6,6 +6,7 @@ use parry3d_f64::shape::Triangle as Parry3dTriangle;
 use crate::rt::interval::Interval;
 use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::ray::Ray;
+use crate::rt::types::{Float, new_vec3};
 use crate::rt::util::from_parry_vec;
 
 pub struct Triangle {
@@ -15,8 +16,8 @@ pub struct Triangle {
 }
 
 impl Triangle {
-    pub fn new(a: [f64; 3], b: [f64; 3], c: [f64; 3], mat_idx: usize) -> Self {
-        let underlying = Parry3dTriangle::new(Vec3::from(a), Vec3::from(b), Vec3::from(c));
+    pub fn new(a: [Float; 3], b: [Float; 3], c: [Float; 3], mat_idx: usize) -> Self {
+        let underlying = Parry3dTriangle::new(new_vec3(a), new_vec3(b), new_vec3(c));
         Self {
             underlying,
             bbox: underlying.local_aabb(),
@@ -24,7 +25,7 @@ impl Triangle {
         }
     }
 
-    pub fn barycentric_coords(a: &Vec3, b: &Vec3, c: &Vec3, p: &Vec3) -> (f64, f64, f64) {
+    pub fn barycentric_coords(a: &Vec3, b: &Vec3, c: &Vec3, p: &Vec3) -> (Float, Float, Float) {
         let v0 = b - a;
         let v1 = c - a;
         let v2 = p - a;
@@ -37,23 +38,23 @@ impl Triangle {
         let v = (d11 * d20 - d01 * d21) / denom;
         let w = (d00 * d21 - d01 * d20) / denom;
         let u = 1.0 - v - w;
-        (u, v, w)
+        (u as Float, v as Float, w as Float)
     }
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         let r = ray.to_parry3d();
         match self
             .underlying
-            .cast_local_ray_and_get_normal(&r, ray_t.max, true)
+            .cast_local_ray_and_get_normal(&r, ray_t.max as f64, true)
         {
-            Some(intersection) if intersection.time_of_impact >= ray_t.min => {
+            Some(intersection) if intersection.time_of_impact >= (ray_t.min as f64) => {
                 let normal = intersection.normal;
                 let front_face = r.dir.dot(normal) >= 0.0;
                 Some(HitRecord::new(
-                    ray.at(intersection.time_of_impact),
+                    ray.at(intersection.time_of_impact as Float),
                     from_parry_vec(normal),
                     front_face,
-                    intersection.time_of_impact,
+                    intersection.time_of_impact as Float,
                     0.0, // TODO
                     0.0, // TODO
                     self.mat_idx,

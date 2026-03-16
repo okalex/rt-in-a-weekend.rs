@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use crate::rt::frame_buffer::FrameBuffer;
+use crate::rt::{frame_buffer::FrameBuffer, types::Uint};
 
 pub struct PpmWriter {
-    max_color_val: u32,
+    max_color_val: Uint,
     pub frame_buffer: Arc<FrameBuffer>,
 }
 
 impl PpmWriter {
-    pub fn new(frame_buffer: Arc<FrameBuffer>, max_color_val: u32) -> PpmWriter {
+    pub fn new(frame_buffer: Arc<FrameBuffer>, max_color_val: Uint) -> PpmWriter {
         PpmWriter {
             max_color_val,
             frame_buffer,

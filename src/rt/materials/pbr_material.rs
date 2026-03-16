@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use nalgebra::Vector3;
-
 use crate::rt::{
     color::Color,
     materials::material::{ScatterRecord, reflect},
@@ -9,13 +7,14 @@ use crate::rt::{
     pdf::{Pdf, SpherePdf},
     random::rand_on_hemisphere,
     ray::Ray,
+    types::{Float, Vector},
 };
 
 pub struct PbrMaterial {
     pub albedo: Color,
     // pub roughness: f64,
     // pub opacity: f64,
-    pub metallicity: f64,
+    pub metallicity: Float,
     // pub color_map: Option<ImageMap>,
     // pub normal_map: Option<ImageMap>,
     // pub roughness_map: Option<ImageMap>,
@@ -23,7 +22,7 @@ pub struct PbrMaterial {
 }
 
 impl PbrMaterial {
-    pub fn new(albedo: Color, metallicity: f64) -> Self {
+    pub fn new(albedo: Color, metallicity: Float) -> Self {
         Self {
             albedo,
             metallicity,
@@ -31,20 +30,20 @@ impl PbrMaterial {
     }
 
     #[allow(unused)]
-    fn diffuse_scatter(&self, in_dir: &Vector3<f64>, normal: &Vector3<f64>) -> Vector3<f64> {
+    fn diffuse_scatter(&self, in_dir: &Vector, normal: &Vector) -> Vector {
         let diffuse_scale = 1.0 - self.metallicity;
         if diffuse_scale > 0.0 {
             normal + rand_on_hemisphere(normal)
         } else {
-            Vector3::zeros()
+            Vector::zeros()
         }
     }
 
-    fn metallic_scatter(&self, in_dir: &Vector3<f64>, normal: &Vector3<f64>) -> Vector3<f64> {
+    fn metallic_scatter(&self, in_dir: &Vector, normal: &Vector) -> Vector {
         if self.metallicity > 0.0 {
             reflect(&in_dir, &normal).normalize()
         } else {
-            Vector3::zeros()
+            Vector::zeros()
         }
     }
 
@@ -66,6 +65,6 @@ impl PbrMaterial {
     }
 }
 
-fn all_are_less_than(vec: Vector3<f64>, limit: f64) -> bool {
+fn all_are_less_than(vec: Vector, limit: Float) -> bool {
     (vec.x.abs() < limit) && (vec.y.abs() < limit) && (vec.z.abs() < limit)
 }

@@ -3,17 +3,18 @@ use std::sync::Arc;
 use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::pdf::{Pdf, SpherePdf};
 use crate::rt::ray::Ray;
+use crate::rt::types::Float;
 use crate::rt::{color::Color, random::rand_unit_vector};
 
 use super::material::{ScatterRecord, reflect};
 
 pub struct Metal {
     albedo: Color,
-    fuzz: f64,
+    fuzz: Float,
 }
 
 impl Metal {
-    pub fn new(albedo: [f64; 3], fuzz: f64) -> Self {
+    pub fn new(albedo: [Float; 3], fuzz: Float) -> Self {
         return Self {
             albedo: Color::from_arr(albedo),
             fuzz: if fuzz < 1.0 { fuzz } else { 1.0 },

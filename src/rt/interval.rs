@@ -1,14 +1,15 @@
-use core::f64;
 use std::ops::Add;
+
+use crate::rt::types::{Float, INFINITY};
 
 #[derive(Clone, Copy)]
 pub struct Interval {
-    pub min: f64,
-    pub max: f64,
+    pub min: Float,
+    pub max: Float,
 }
 
 impl Interval {
-    pub fn new(min: f64, max: f64) -> Interval {
+    pub fn new(min: Float, max: Float) -> Interval {
         if min <= max {
             Interval { min, max }
         } else {
@@ -22,7 +23,7 @@ impl Interval {
     }
 
     pub fn universe() -> Interval {
-        Self::new(-f64::INFINITY, f64::INFINITY)
+        Self::new(-INFINITY, INFINITY)
     }
 
     #[allow(dead_code)]
@@ -34,28 +35,28 @@ impl Interval {
     }
 
     #[allow(dead_code)]
-    pub fn update_min(&self, new_min: f64) -> Interval {
+    pub fn update_min(&self, new_min: Float) -> Interval {
         Self::new(new_min, self.max)
     }
 
-    pub fn update_max(&self, new_max: f64) -> Interval {
+    pub fn update_max(&self, new_max: Float) -> Interval {
         Self::new(self.min, new_max)
     }
 
     #[allow(dead_code)]
-    pub fn size(&self) -> f64 {
+    pub fn size(&self) -> Float {
         self.max - self.min
     }
 
-    pub fn contains(&self, x: f64) -> bool {
+    pub fn contains(&self, x: Float) -> bool {
         self.min <= x && x <= self.max
     }
 
-    pub fn surrounds(&self, x: f64) -> bool {
+    pub fn surrounds(&self, x: Float) -> bool {
         self.min < x && x < self.max
     }
 
-    pub fn clamp(&self, x: f64) -> f64 {
+    pub fn clamp(&self, x: Float) -> Float {
         if x < self.min {
             return self.min;
         }
@@ -66,16 +67,16 @@ impl Interval {
     }
 
     #[allow(dead_code)]
-    pub fn expand(&self, delta: f64) -> Interval {
+    pub fn expand(&self, delta: Float) -> Interval {
         let padding = delta / 2.0;
         Self::new(self.min - padding, self.max + padding)
     }
 }
 
-impl Add<f64> for Interval {
+impl Add<Float> for Interval {
     type Output = Self;
 
-    fn add(self, b: f64) -> Self {
+    fn add(self, b: Float) -> Self {
         Self::new(self.min + b, self.max + b)
     }
 }

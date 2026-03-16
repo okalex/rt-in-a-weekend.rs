@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use nalgebra::Point3;
 use parry3d_f64::{
     bounding_volume::Aabb,
     math::Vec3,
@@ -12,13 +11,14 @@ use crate::rt::{
     interval::Interval,
     objects::{hit_record::HitRecord, triangle::Triangle},
     ray::Ray,
-    util::from_parry_vec,
+    types::{Float, Point, Uint},
+    util::{from_parry_vec, to_parry_vec},
 };
 
 pub struct Mesh {
     underlying: TriMesh,
-    tex_coords: Arc<Vec<[f64; 2]>>,
-    tex_coord_indices: Arc<Vec<u32>>,
+    tex_coords: Arc<Vec<[Float; 2]>>,
+    tex_coord_indices: Arc<Vec<Uint>>,
     bbox: Aabb,
     mat_idx: usize,
 }
@@ -35,13 +35,19 @@ impl Mesh {
             .chunks_exact(3)
             .map(|i| [i[0], i[1], i[2]])
             .collect();
-        let tex_coords: Arc<Vec<[f64; 2]>> = Arc::new(
+        let tex_coords: Arc<Vec<[Float; 2]>> = Arc::new(
             obj.texcoords
                 .chunks_exact(2)
-                .map(|vt| [vt[0] as f64, vt[1] as f64])
+                .map(|vt| [vt[0] as Float, vt[1] as Float])
                 .collect(),
         );
-        let tex_coord_indices = Arc::new(obj.texcoord_indices.clone());
+        let tex_coord_indices = Arc::new(
+            obj.texcoord_indices
+                .clone()
+                .into_iter()
+                .map(|i| i as Uint)
+                .collect(),
+        );
         let underlying = match TriMesh::new(vertices, indices) {
             Ok(mesh) => mesh,
             _ => panic!(),
@@ -57,7 +63,7 @@ impl Mesh {
         }
     }
 
-    pub fn get_face_uvs(&self, face_id: usize, hit_point: Point3<f64>) -> [f64; 2] {
+    pub fn get_face_uvs(&self, face_id: usize, hit_point: Point) -> [Float; 2] {
         if face_id >= self.tex_coord_indices.len() {
             return [0.0, 0.0];
         }
@@ -77,7 +83,7 @@ impl Mesh {
         let tri = self.underlying.triangle(face_id as u32);
         // Compute barycentric coords of hit point on the triangle
         let verts = tri.vertices();
-        let hit = Vec3::new(hit_point.x, hit_point.y, hit_point.z);
+        let hit = to_parry_vec(hit_point.coords);
         let (w0, w1, w2) = Triangle::barycentric_coords(&verts[0], &verts[1], &verts[2], &hit); // returns (u, v, w)
 
         // Interpolate UVs
@@ -90,10 +96,10 @@ impl Mesh {
         let r = ray.to_parry3d();
         match self
             .underlying
-            .cast_local_ray_and_get_normal(&r, ray_t.max, true)
+            .cast_local_ray_and_get_normal(&r, ray_t.max as f64, true)
         {
-            Some(intersection) if intersection.time_of_impact >= ray_t.min => {
-                let point = ray.at(intersection.time_of_impact);
+            Some(intersection) if intersection.time_of_impact >= (ray_t.min as f64) => {
+                let point = ray.at(intersection.time_of_impact as Float);
                 let normal = intersection.normal;
                 let front_face = r.dir.dot(normal) >= 0.0;
 
@@ -111,9 +117,9 @@ impl Mesh {
                     point,
                     from_parry_vec(normal),
                     front_face,
-                    intersection.time_of_impact,
-                    u, // TODO
-                    v, // TODO
+                    intersection.time_of_impact as Float,
+                    u,
+                    v,
                     self.mat_idx,
                 ))
             }

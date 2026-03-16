@@ -1,4 +1,3 @@
-use nalgebra::{Point3, Vector3};
 use parry3d_f64::{
     bounding_volume::Aabb,
     math::{Pose, Vec3},
@@ -8,17 +7,18 @@ use crate::rt::{
     interval::Interval,
     objects::{hit_record::HitRecord, hittable::Hittable},
     ray::Ray,
+    types::{Float, Point, Vector, new_vec3},
     util::{degrees_to_radians, to_parry_vec},
 };
 
 pub struct Translate {
     object: Box<Hittable>,
-    offset: Vector3<f64>,
+    offset: Vector,
     bbox: Aabb,
 }
 
 impl Translate {
-    pub fn new(object: Hittable, offset: Vector3<f64>) -> Self {
+    pub fn new(object: Hittable, offset: Vector) -> Self {
         let bbox = object.bounding_box().translated(to_parry_vec(offset));
         Self {
             object: Box::new(object),
@@ -43,19 +43,19 @@ impl Translate {
 
 pub struct RotateY {
     object: Box<Hittable>,
-    sin_theta: f64,
-    cos_theta: f64,
+    sin_theta: Float,
+    cos_theta: Float,
     bbox: Aabb,
 }
 
 impl RotateY {
-    pub fn new(object: Hittable, angle: f64) -> Self {
+    pub fn new(object: Hittable, angle: Float) -> Self {
         let radians = degrees_to_radians(angle);
         let sin_theta = radians.sin();
         let cos_theta = radians.cos();
 
         let bbox = object.bounding_box().clone();
-        let rotation = Pose::rotation(Vec3::new(0.0, degrees_to_radians(angle), 0.0));
+        let rotation = Pose::rotation(new_vec3([0.0, degrees_to_radians(angle), 0.0]));
 
         Self {
             object: Box::new(object),
@@ -65,8 +65,8 @@ impl RotateY {
         }
     }
 
-    fn rotate_y(vec: &Vector3<f64>, sin_theta: f64, cos_theta: f64) -> Vector3<f64> {
-        Vector3::new(
+    fn rotate_y(vec: &Vector, sin_theta: Float, cos_theta: Float) -> Vector {
+        Vector::new(
             cos_theta * vec.x - sin_theta * vec.z,
             vec.y,
             sin_theta * vec.x + cos_theta * vec.z,
@@ -74,7 +74,7 @@ impl RotateY {
     }
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        let orig = Point3::from(Self::rotate_y(
+        let orig = Point::from(Self::rotate_y(
             &ray.orig.coords,
             self.sin_theta,
             self.cos_theta,
@@ -83,7 +83,7 @@ impl RotateY {
         let rotated_ray = Ray::new(orig, dir, ray.time);
 
         self.object.hit(&rotated_ray, ray_t).map(|hit_record| {
-            let new_point = Point3::from(Self::rotate_y(
+            let new_point = Point::from(Self::rotate_y(
                 &hit_record.point.coords,
                 -self.sin_theta,
                 self.cos_theta,
@@ -98,10 +98,10 @@ impl RotateY {
     }
 }
 
-pub fn rotate_y(object: Hittable, degrees: f64) -> Hittable {
+pub fn rotate_y(object: Hittable, degrees: Float) -> Hittable {
     Hittable::RotateY(RotateY::new(object, degrees))
 }
 
-pub fn translate(object: Hittable, offset: [f64; 3]) -> Hittable {
-    Hittable::Translate(Translate::new(object, Vector3::from(offset)))
+pub fn translate(object: Hittable, offset: [Float; 3]) -> Hittable {
+    Hittable::Translate(Translate::new(object, Vector::from(offset)))
 }

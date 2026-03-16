@@ -9,6 +9,7 @@ use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::objects::scene::Scene;
 use crate::rt::pdf::{CosinePdf, HittablePdf, MixturePdf, Pdf};
 use crate::rt::ray::Ray;
+use crate::rt::types::{Float, INFINITY, Uint};
 
 pub struct CpuRenderer {
     workers: Vec<Arc<CpuRenderWorker>>,
@@ -102,7 +103,7 @@ impl CpuRenderWorker {
         eprint!("\rLines remaining: {}       ", remaining_lines);
     }
 
-    fn render_line(&self, line_idx: u32) {
+    fn render_line(&self, line_idx: Uint) {
         let data: Vec<[u8; 3]> = (0..self.options.img_width)
             .map(|i| self.sample_pixel(i, line_idx).to_gamma().to_u8())
             .collect();
@@ -110,7 +111,7 @@ impl CpuRenderWorker {
         self.frame_buffer.set_line(line_idx as usize, &data);
     }
 
-    fn sample_pixel(&self, i: u32, j: u32) -> Color {
+    fn sample_pixel(&self, i: Uint, j: Uint) -> Color {
         let mut pixel_color = Color::black();
         self.camera.foreach_ray(i, j, |ray| {
             pixel_color = pixel_color + self.ray_color(&ray, 0);
@@ -118,12 +119,12 @@ impl CpuRenderWorker {
         return self.camera.sampler.integrate_samples(pixel_color);
     }
 
-    fn ray_color(&self, ray: &Ray, depth: u32) -> Color {
+    fn ray_color(&self, ray: &Ray, depth: Uint) -> Color {
         if depth >= self.options.max_depth {
             return Color::black();
         }
 
-        match self.scene.hit(ray, Interval::new(0.001, f64::INFINITY)) {
+        match self.scene.hit(ray, Interval::new(0.001, INFINITY)) {
             Some(hit_record) => {
                 let mat = self.scene.get_material(hit_record.mat_idx);
                 let emitted = mat.emitted(ray, &hit_record);
@@ -145,7 +146,7 @@ impl CpuRenderWorker {
     fn scatter_color(
         &self,
         ray: &Ray,
-        depth: u32,
+        depth: Uint,
         hit_record: &HitRecord,
         scatter_record: &ScatterRecord,
         mat: &Material,
@@ -190,19 +191,19 @@ impl CpuRenderWorker {
 }
 
 pub struct RenderOptions {
-    pub img_width: u32,
-    pub img_height: u32,
-    pub samples_per_pixel: u32,
-    pub max_depth: u32,
+    pub img_width: Uint,
+    pub img_height: Uint,
+    pub samples_per_pixel: Uint,
+    pub max_depth: Uint,
     pub use_multithreading: bool,
     pub use_importance_sampling: bool,
     pub background: Color,
 }
 
 pub struct RenderOptionsBuilder {
-    img_width: u32,
-    samples_per_pixel: u32,
-    max_depth: u32,
+    img_width: Uint,
+    samples_per_pixel: Uint,
+    max_depth: Uint,
     use_multithreading: bool,
     use_importance_sampling: bool,
     background: Color,
@@ -220,10 +221,10 @@ impl RenderOptionsBuilder {
         }
     }
 
-    pub fn build(&self, aspect_ratio: f64) -> RenderOptions {
+    pub fn build(&self, aspect_ratio: Float) -> RenderOptions {
         RenderOptions {
             img_width: self.img_width,
-            img_height: (self.img_width as f64 / aspect_ratio) as u32,
+            img_height: (self.img_width as Float / aspect_ratio) as Uint,
             samples_per_pixel: self.samples_per_pixel,
             max_depth: self.max_depth,
             use_multithreading: self.use_multithreading,
@@ -232,17 +233,17 @@ impl RenderOptionsBuilder {
         }
     }
 
-    pub fn width(mut self, new_width: u32) -> Self {
+    pub fn width(mut self, new_width: Uint) -> Self {
         self.img_width = new_width;
         self
     }
 
-    pub fn samples_per_pixel(mut self, new_samples_per_pixel: u32) -> Self {
+    pub fn samples_per_pixel(mut self, new_samples_per_pixel: Uint) -> Self {
         self.samples_per_pixel = new_samples_per_pixel;
         self
     }
 
-    pub fn max_depth(mut self, new_max_depth: u32) -> Self {
+    pub fn max_depth(mut self, new_max_depth: Uint) -> Self {
         self.max_depth = new_max_depth;
         self
     }
@@ -265,20 +266,20 @@ impl RenderOptionsBuilder {
 }
 
 pub struct LineServer {
-    lines: Arc<Mutex<Vec<u32>>>,
+    lines: Arc<Mutex<Vec<Uint>>>,
 }
 
 impl LineServer {
-    pub fn new(num_lines: u32) -> Self {
-        let lines: Arc<Mutex<Vec<u32>>> = Arc::new(Mutex::new((0..num_lines).rev().collect()));
+    pub fn new(num_lines: Uint) -> Self {
+        let lines: Arc<Mutex<Vec<Uint>>> = Arc::new(Mutex::new((0..num_lines).rev().collect()));
         Self { lines }
     }
 
-    pub fn next_line(&self) -> Option<u32> {
+    pub fn next_line(&self) -> Option<Uint> {
         self.lines.lock().unwrap().pop()
     }
 
-    pub fn len(&self) -> u32 {
-        self.lines.lock().unwrap().len() as u32
+    pub fn len(&self) -> Uint {
+        self.lines.lock().unwrap().len() as Uint
     }
 }

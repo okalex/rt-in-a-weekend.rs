@@ -1,7 +1,4 @@
-use std::f64::consts::PI;
 use std::sync::Arc;
-
-use nalgebra::Vector3;
 
 use crate::rt::color::Color;
 use crate::rt::materials::material::ScatterRecord;
@@ -10,6 +7,7 @@ use crate::rt::pdf::{CosinePdf, Pdf};
 use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;
 use crate::rt::textures::texture::Texture;
+use crate::rt::types::{Float, PI, Vector};
 
 pub struct Lambertian {
     texture: Arc<Texture>,
@@ -25,12 +23,12 @@ impl Lambertian {
         Self::new(arc_color)
     }
 
-    pub fn from_color_values(color_values: [f64; 3]) -> Self {
+    pub fn from_color_values(color_values: [Float; 3]) -> Self {
         Self::from_color(Color::from_arr(color_values))
     }
 
     #[allow(dead_code)]
-    fn all_are_less_than(vec: Vector3<f64>, limit: f64) -> bool {
+    fn all_are_less_than(vec: Vector, limit: Float) -> bool {
         (vec.x.abs() < limit) && (vec.y.abs() < limit) && (vec.z.abs() < limit)
     }
 
@@ -44,7 +42,7 @@ impl Lambertian {
     }
 
     #[allow(unused)]
-    pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+    pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> Float {
         let cos_theta = rec.normal.dot(&scattered.dir.normalize());
         if cos_theta >= 0.0 {
             cos_theta / PI

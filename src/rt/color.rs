@@ -1,27 +1,24 @@
-use nalgebra::Vector3;
-
-use crate::rt::interval::Interval;
 use crate::rt::random::rand;
+use crate::rt::types::Float;
+use crate::rt::{interval::Interval, types::Vector};
 use std::ops::{Add, Div, Mul, Sub};
-
-type Base = Vector3<f64>;
 
 #[derive(Clone, Copy)]
 pub struct Color {
-    base: Vector3<f64>,
+    base: Vector,
 }
 
 impl Color {
-    pub fn wrap_vec(base: Base) -> Color {
+    pub fn wrap_vec(base: Vector) -> Color {
         Color { base }
     }
 
-    pub fn new(r: f64, g: f64, b: f64) -> Color {
-        Self::wrap_vec(Base::new(r, g, b))
+    pub fn new(r: Float, g: Float, b: Float) -> Color {
+        Self::wrap_vec(Vector::new(r, g, b))
     }
 
-    pub fn from_arr(values: [f64; 3]) -> Color {
-        Self::wrap_vec(Base::from(values))
+    pub fn from_arr(values: [Float; 3]) -> Color {
+        Self::wrap_vec(Vector::from(values))
     }
 
     #[allow(dead_code)]
@@ -34,7 +31,7 @@ impl Color {
         Self::new(rand(), rand(), rand())
     }
 
-    pub fn fill(c: f64) -> Color {
+    pub fn fill(c: Float) -> Color {
         Self::new(c, c, c)
     }
 
@@ -46,15 +43,15 @@ impl Color {
         Self::fill(1.0)
     }
 
-    pub fn r(&self) -> f64 {
+    pub fn r(&self) -> Float {
         self.base.x
     }
 
-    pub fn g(&self) -> f64 {
+    pub fn g(&self) -> Float {
         self.base.y
     }
 
-    pub fn b(&self) -> f64 {
+    pub fn b(&self) -> Float {
         self.base.z
     }
 
@@ -86,10 +83,10 @@ impl Add for Color {
     }
 }
 
-impl Add<f64> for Color {
+impl Add<Float> for Color {
     type Output = Self;
 
-    fn add(self, b: f64) -> Self {
+    fn add(self, b: Float) -> Self {
         self + Self::fill(b)
     }
 }
@@ -102,10 +99,10 @@ impl Sub for Color {
     }
 }
 
-impl Sub<f64> for Color {
+impl Sub<Float> for Color {
     type Output = Self;
 
-    fn sub(self, b: f64) -> Self {
+    fn sub(self, b: Float) -> Self {
         self - Self::fill(b)
     }
 }
@@ -118,10 +115,10 @@ impl Mul for Color {
     }
 }
 
-impl Mul<f64> for Color {
+impl Mul<Float> for Color {
     type Output = Self;
 
-    fn mul(self, b: f64) -> Self {
+    fn mul(self, b: Float) -> Self {
         Self::wrap_vec(self.base * b)
     }
 }
@@ -134,30 +131,30 @@ impl Div for Color {
     }
 }
 
-impl Div<f64> for Color {
+impl Div<Float> for Color {
     type Output = Self;
 
-    fn div(self, b: f64) -> Self {
+    fn div(self, b: Float) -> Self {
         Self::wrap_vec(self.base / b)
     }
 }
 
-pub fn to_u8(real: f64) -> u8 {
+pub fn to_u8(real: Float) -> u8 {
     let intensity = Interval::new(0.0, 0.999);
     return (256.0 * intensity.clamp(real)) as u8;
 }
 
-pub fn from_u8(i: u8) -> f64 {
-    return i as f64 / 255.0;
+pub fn from_u8(i: u8) -> Float {
+    return i as Float / 255.0;
 }
 
-fn linear_to_gamma(linear: f64) -> f64 {
+fn linear_to_gamma(linear: Float) -> Float {
     if linear > 0.0 {
         return linear.sqrt();
     }
     return 0.0;
 }
 
-fn gamma_to_linear(gamma: f64) -> f64 {
+fn gamma_to_linear(gamma: Float) -> Float {
     return gamma * gamma;
 }

@@ -4,16 +4,17 @@ use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::pdf::Pdf;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;
+use crate::rt::types::Float;
 use crate::rt::{color::Color, pdf::SpherePdf};
 
 use super::material::{ScatterRecord, reflect, reflectance, refract};
 
 pub struct Dielectric {
-    refraction_idx: f64,
+    refraction_idx: Float,
 }
 
 impl Dielectric {
-    pub fn new(refraction_idx: f64) -> Self {
+    pub fn new(refraction_idx: Float) -> Self {
         Self {
             refraction_idx: refraction_idx,
         }
@@ -27,7 +28,7 @@ impl Dielectric {
         };
 
         let unit_dir = r_in.dir.normalize();
-        let cos_theta = f64::min((-unit_dir).dot(&rec.normal), 1.0);
+        let cos_theta = Float::min((-unit_dir).dot(&rec.normal), 1.0);
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
         let cannot_refract = (ri * sin_theta) > 1.0;

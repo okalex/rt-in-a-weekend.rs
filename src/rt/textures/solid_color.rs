@@ -1,6 +1,7 @@
-use nalgebra::Point3;
-
-use crate::rt::color::Color;
+use crate::rt::{
+    color::Color,
+    types::{Float, Point},
+};
 
 pub struct SolidColor {
     albedo: Color,
@@ -12,12 +13,12 @@ impl SolidColor {
     }
 
     #[allow(dead_code)]
-    pub fn from_arr(color: [f64; 3]) -> Self {
+    pub fn from_arr(color: [Float; 3]) -> Self {
         Self::new(Color::from_arr(color))
     }
 
     #[allow(unused_variables)]
-    pub fn value(&self, u: f64, v: f64, point: &Point3<f64>) -> Color {
+    pub fn value(&self, u: Float, v: Float, point: &Point) -> Color {
         self.albedo
     }
 }

@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use nalgebra::Vector3;
-
 use crate::rt::color::Color;
 use crate::rt::materials::dielectric::Dielectric;
 use crate::rt::materials::diffuse_light::DiffuseLight;
@@ -12,6 +10,7 @@ use crate::rt::materials::pbr_material::PbrMaterial;
 use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::pdf::Pdf;
 use crate::rt::ray::Ray;
+use crate::rt::types::{Float, Vector};
 
 pub struct ScatterRecord {
     pub attenuation: Color,
@@ -41,7 +40,7 @@ impl Material {
         }
     }
 
-    pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> f64 {
+    pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> Float {
         let default = 0.0;
         match self {
             Self::Dielectric(_) => default,
@@ -66,18 +65,18 @@ impl Material {
     }
 }
 
-pub fn reflectance(cosine: f64, refraction_idx: f64) -> f64 {
+pub fn reflectance(cosine: Float, refraction_idx: Float) -> Float {
     let r0_tmp = (1.0 - refraction_idx) / (1.0 + refraction_idx);
     let r0 = r0_tmp * r0_tmp;
     return r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0);
 }
 
-pub fn reflect(vec: &Vector3<f64>, normal: &Vector3<f64>) -> Vector3<f64> {
+pub fn reflect(vec: &Vector, normal: &Vector) -> Vector {
     *vec - *normal * vec.dot(normal) * 2.0
 }
 
-pub fn refract(vec: &Vector3<f64>, n: &Vector3<f64>, etai_over_etat: f64) -> Vector3<f64> {
-    let cos_theta = f64::min(-vec.dot(n), 1.0);
+pub fn refract(vec: &Vector, n: &Vector, etai_over_etat: Float) -> Vector {
+    let cos_theta = Float::min(-vec.dot(n), 1.0);
     let r_out_perp = (*vec + *n * cos_theta) * etai_over_etat;
     let r_out_parallel = *n * (-(1.0 - r_out_perp.magnitude_squared()).abs().sqrt());
     return r_out_perp + r_out_parallel;

@@ -4,7 +4,7 @@ use bytemuck::NoUninit;
 use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::rt::{frame_buffer::FrameBuffer, gpu::gpu_texture::GpuTexture};
+use crate::rt::{frame_buffer::FrameBuffer, gpu::gpu_texture::GpuTexture, types::Uint};
 
 pub enum Gpu {
     Windowed(GpuWindowed),
@@ -138,7 +138,7 @@ impl Gpu {
         }
     }
 
-    pub fn resize(&mut self, width: u32, height: u32) {
+    pub fn resize(&mut self, width: Uint, height: Uint) {
         match self {
             Self::Headless(_) => panic!(),
             Self::Windowed(gpu) => gpu.resize(width, height),
@@ -302,10 +302,10 @@ impl GpuWindowed {
             })
     }
 
-    pub fn resize(&mut self, width: u32, height: u32) {
+    pub fn resize(&mut self, width: Uint, height: Uint) {
         if width > 0 && height > 0 {
-            self.config.width = width;
-            self.config.height = height;
+            self.config.width = width as u32;
+            self.config.height = height as u32;
             self.surface.configure(&self.device, &self.config);
             self.is_surface_configured = true;
         }

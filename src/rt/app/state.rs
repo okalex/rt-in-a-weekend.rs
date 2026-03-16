@@ -5,6 +5,7 @@ use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 use crate::rt::{
     frame_buffer::FrameBuffer,
     gpu::{gpu::Gpu, gpu_texture::GpuTexture},
+    types::Uint,
 };
 
 pub struct State {
@@ -38,7 +39,7 @@ impl State {
 
     pub fn update(&mut self) {}
 
-    pub fn resize(&mut self, width: u32, height: u32) {
+    pub fn resize(&mut self, width: Uint, height: Uint) {
         self.gpu.resize(width, height);
     }
 

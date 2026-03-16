@@ -1,18 +1,15 @@
-use core::f64;
-
-use nalgebra::{Point3, Vector3};
-
 use crate::rt::{
     random::{rand, rand_in_unit_disk},
     ray::Ray,
     sampler::Sampler,
+    types::{Float, Point, Uint, Vector},
     util::degrees_to_radians,
     viewport::Viewport,
 };
 
 struct Disk {
-    pub u: Vector3<f64>,
-    pub v: Vector3<f64>,
+    pub u: Vector,
+    pub v: Vector,
 }
 
 pub struct Camera {
@@ -38,7 +35,7 @@ impl Camera {
         }
     }
 
-    pub fn foreach_ray<F>(&self, i: u32, j: u32, mut f: F)
+    pub fn foreach_ray<F>(&self, i: Uint, j: Uint, mut f: F)
     where
         F: FnMut(Ray) -> (),
     {
@@ -48,10 +45,10 @@ impl Camera {
         });
     }
 
-    fn get_ray(&self, i: u32, j: u32, offset: Vector3<f64>) -> Ray {
+    fn get_ray(&self, i: Uint, j: Uint, offset: Vector) -> Ray {
         let pixel_sample = self
             .viewport
-            .pixel_loc(i as f64 + offset.x, j as f64 + offset.y);
+            .pixel_loc(i as Float + offset.x, j as Float + offset.y);
 
         let ray_origin = if self.options.defocus_angle <= 0.0 {
             self.options.position
@@ -64,9 +61,9 @@ impl Camera {
         Ray::new(ray_origin, ray_dir, ray_time)
     }
 
-    fn defocus_disk_sample(&self) -> Point3<f64> {
+    fn defocus_disk_sample(&self) -> Point {
         let p = rand_in_unit_disk();
-        return Point3::from(
+        return Point::from(
             self.options.position.coords
                 + (self.defocus_disk.u * p.x)
                 + (self.defocus_disk.v * p.y),
@@ -75,20 +72,20 @@ impl Camera {
 }
 
 pub struct CameraOptions {
-    pub position: Point3<f64>,
-    pub target: Point3<f64>,
-    pub vup: Vector3<f64>,
-    pub vfov: f64,
-    pub focus_dist: f64,
-    pub defocus_angle: f64,
+    pub position: Point,
+    pub target: Point,
+    pub vup: Vector,
+    pub vfov: Float,
+    pub focus_dist: Float,
+    pub defocus_angle: Float,
 }
 
 impl CameraOptions {
     pub fn new() -> CameraOptions {
         CameraOptions {
-            position: Point3::new(0.0, 1.0, 0.0),
-            target: Point3::new(0.0, 0.0, 0.0),
-            vup: Vector3::new(0.0, 1.0, 0.0),
+            position: Point::new(0.0, 1.0, 0.0),
+            target: Point::new(0.0, 0.0, 0.0),
+            vup: Vector::new(0.0, 1.0, 0.0),
             vfov: 20.0,
             defocus_angle: 0.0,
             focus_dist: 1.0,
@@ -96,37 +93,37 @@ impl CameraOptions {
     }
 
     #[allow(dead_code)]
-    pub fn vfov(mut self, new_vfov: f64) -> Self {
+    pub fn vfov(mut self, new_vfov: Float) -> Self {
         self.vfov = new_vfov;
         self
     }
 
     #[allow(dead_code)]
-    pub fn position(mut self, new_position: [f64; 3]) -> Self {
-        self.position = Point3::from(new_position);
+    pub fn position(mut self, new_position: [Float; 3]) -> Self {
+        self.position = Point::from(new_position);
         self
     }
 
     #[allow(dead_code)]
-    pub fn target(mut self, new_target: [f64; 3]) -> Self {
-        self.target = Point3::from(new_target);
+    pub fn target(mut self, new_target: [Float; 3]) -> Self {
+        self.target = Point::from(new_target);
         self
     }
 
     #[allow(dead_code)]
-    pub fn vup(mut self, new_vup: [f64; 3]) -> Self {
-        self.vup = Vector3::from(new_vup);
+    pub fn vup(mut self, new_vup: [Float; 3]) -> Self {
+        self.vup = Vector::from(new_vup);
         self
     }
 
     #[allow(dead_code)]
-    pub fn defocus_angle(mut self, new_defocus_angle: f64) -> Self {
+    pub fn defocus_angle(mut self, new_defocus_angle: Float) -> Self {
         self.defocus_angle = new_defocus_angle;
         self
     }
 
     #[allow(dead_code)]
-    pub fn focus_dist(mut self, new_focus_dist: f64) -> Self {
+    pub fn focus_dist(mut self, new_focus_dist: Float) -> Self {
         self.focus_dist = new_focus_dist;
         self
     }

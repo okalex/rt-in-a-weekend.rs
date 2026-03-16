@@ -7,6 +7,7 @@ use crate::rt::{
     gpu::{gpu::Gpu, gpu_compute::GpuCompute},
     objects::scene::Scene,
     renderer::cpu_renderer::RenderOptions,
+    types::Float,
 };
 
 pub struct GpuRenderer {
@@ -27,11 +28,11 @@ impl GpuRenderer {
         let gpu = Arc::new(Gpu::new_headless().await?);
         let compute_shader = gpu.create_shader(wgpu::include_wgsl!("compute.wgsl"));
 
-        let num_pixels = options.img_height * options.img_width;
+        let num_pixels = (options.img_height * options.img_width) as u32;
         let output_buf_size = (num_pixels * std::mem::size_of::<[f32; 3]>() as u32) as u64;
         let gpu_compute = GpuCompute::new(gpu, &compute_shader, output_buf_size);
 
-        gpu_compute.set_dims([options.img_width, options.img_height]);
+        gpu_compute.set_dims([options.img_width as u32, options.img_height as u32]);
 
         Ok(Self {
             options,
@@ -50,7 +51,6 @@ impl GpuRenderer {
         let workgroup_dims = [
             (width as u32).div_ceil(workgroup_size),
             (height as u32).div_ceil(workgroup_size),
-            1,
         ];
         let result = self.gpu_compute.dispatch(workgroup_dims).await;
 
@@ -60,7 +60,7 @@ impl GpuRenderer {
                     .iter()
                     .map(|values| {
                         let color =
-                            Color::new(values[0] as f64, values[1] as f64, values[2] as f64);
+                            Color::new(values[0] as Float, values[1] as Float, values[2] as Float);
                         color.to_gamma().to_u8()
                     })
                     .collect();

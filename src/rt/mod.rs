@@ -18,5 +18,6 @@ pub mod renderer;
 pub mod sampler;
 pub mod test_scenes;
 pub mod textures;
+pub mod types;
 pub mod util;
 pub mod viewport;

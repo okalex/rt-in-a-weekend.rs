@@ -1,11 +1,9 @@
-use nalgebra::Point3;
-
 use crate::rt::{
     color::Color,
     textures::{
         checkered::Checkered, image_map::ImageMap, perlin_noise::PerlinNoise,
         solid_color::SolidColor,
-    },
+    }, types::{Float, Point},
 };
 
 pub enum Texture {
@@ -16,7 +14,7 @@ pub enum Texture {
 }
 
 impl Texture {
-    pub fn value(&self, u: f64, v: f64, point: &Point3<f64>) -> Color {
+    pub fn value(&self, u: Float, v: Float, point: &Point) -> Color {
         match self {
             Self::Checkered(tex) => tex.value(u, v, point),
             Self::ImageMap(tex) => tex.value(u, v, point),

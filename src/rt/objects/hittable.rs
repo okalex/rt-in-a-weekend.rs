@@ -1,4 +1,3 @@
-use nalgebra::{Point3, Vector3};
 use parry3d_f64::bounding_volume::Aabb;
 
 use crate::rt::interval::Interval;
@@ -12,9 +11,7 @@ use crate::rt::objects::sphere::Sphere;
 use crate::rt::objects::transformations::{RotateY, Translate};
 use crate::rt::objects::triangle::Triangle;
 use crate::rt::ray::Ray;
-use core::f64;
-
-
+use crate::rt::types::{Float, Point, Vector};
 
 pub enum Hittable {
     BvhNode(BvhNode),
@@ -57,7 +54,7 @@ impl Hittable {
         }
     }
 
-    pub fn pdf_value(&self, origin: &Point3<f64>, direction: &Vector3<f64>) -> f64 {
+    pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {
         let default = 0.0;
         match self {
             Self::BvhNode(_) => default,
@@ -72,8 +69,8 @@ impl Hittable {
         }
     }
 
-    pub fn random(&self, origin: &Point3<f64>) -> Vector3<f64> {
-        let default = Vector3::new(1.0, 0.0, 0.0);
+    pub fn random(&self, origin: &Point) -> Vector {
+        let default = Vector::new(1.0, 0.0, 0.0);
         match self {
             Self::BvhNode(_) => default,
             Self::ConstantMedium(_) => default,
@@ -87,5 +84,3 @@ impl Hittable {
         }
     }
 }
-
-

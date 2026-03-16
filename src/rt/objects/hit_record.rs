@@ -1,25 +1,26 @@
-use nalgebra::{Point3, Vector3};
-
-use crate::rt::ray::Ray;
+use crate::rt::{
+    ray::Ray,
+    types::{Float, Point, Vector},
+};
 
 pub struct HitRecord {
-    pub point: Point3<f64>,
-    pub normal: Vector3<f64>,
-    pub t: f64,
-    pub u: f64,
-    pub v: f64,
+    pub point: Point,
+    pub normal: Vector,
+    pub t: Float,
+    pub u: Float,
+    pub v: Float,
     pub front_face: bool,
     pub mat_idx: usize,
 }
 
 impl HitRecord {
     pub fn new(
-        point: Point3<f64>,
-        normal: Vector3<f64>,
+        point: Point,
+        normal: Vector,
         front_face: bool,
-        t: f64,
-        u: f64,
-        v: f64,
+        t: Float,
+        u: Float,
+        v: Float,
         mat_idx: usize,
     ) -> Self {
         Self {
@@ -33,7 +34,7 @@ impl HitRecord {
         }
     }
 
-    pub fn get_front_face(ray: &Ray, outward_normal: Vector3<f64>) -> (bool, Vector3<f64>) {
+    pub fn get_front_face(ray: &Ray, outward_normal: Vector) -> (bool, Vector) {
         let front_face = ray.dir.dot(&outward_normal) < 0.0;
         let face_normal = if front_face {
             outward_normal
@@ -43,7 +44,7 @@ impl HitRecord {
         (front_face, face_normal)
     }
 
-    pub fn set_point(&self, new_point: Point3<f64>) -> Self {
+    pub fn set_point(&self, new_point: Point) -> Self {
         Self::new(
             new_point,
             self.normal,
@@ -55,7 +56,7 @@ impl HitRecord {
         )
     }
 
-    pub fn set_normal(&self, new_normal: Vector3<f64>) -> Self {
+    pub fn set_normal(&self, new_normal: Vector) -> Self {
         Self::new(
             self.point,
             new_normal,
