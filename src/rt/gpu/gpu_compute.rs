@@ -4,14 +4,15 @@ use std::{
 };
 
 use bytemuck::{AnyBitPattern, NoUninit};
+use encase::ShaderType;
 
-use crate::rt::gpu::gpu::Gpu;
+use crate::rt::{gpu::gpu::Gpu, renderer::gpu::gpu_types::GpuMeta};
 
 pub struct GpuCompute<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> {
     gpu: Arc<Gpu>,
     pipeline: wgpu::ComputePipeline,
     bind_group: wgpu::BindGroup,
-    dim_buf: wgpu::Buffer,
+    meta_buf: wgpu::Buffer,
     output_buf: wgpu::Buffer,
     temp_buf: wgpu::Buffer,
     _i: PhantomData<I>,
@@ -24,29 +25,35 @@ impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> 
         let output_usages = wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE;
         let temp_usages = wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ;
 
-        let dim_buf = gpu.create_buffer(2 * std::mem::size_of::<u32>() as u64, input_usages);
+        let meta_buf = gpu.create_buffer(
+            <GpuMeta as ShaderType>::METADATA.min_size().get(),
+            input_usages,
+        );
+
         let output_buf = gpu.create_buffer(output_size, output_usages);
         let temp_buf = gpu.create_buffer(output_size, temp_usages);
 
         let pipeline = gpu.create_compute_pipeline(shader);
         let bind_group_layout = pipeline.get_bind_group_layout(0);
-        let bind_group_entries = [
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: dim_buf.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: output_buf.as_entire_binding(),
-            },
-        ];
-        let bind_group = gpu.create_bind_group(&bind_group_layout, &bind_group_entries);
+        let bind_group = gpu.create_bind_group(
+            &bind_group_layout,
+            &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: output_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: meta_buf.as_entire_binding(),
+                },
+            ],
+        );
 
         Self {
             gpu,
             pipeline,
             bind_group,
-            dim_buf,
+            meta_buf,
             output_buf,
             temp_buf,
             _i: PhantomData,
@@ -54,10 +61,12 @@ impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> 
         }
     }
 
-    pub fn set_dims(&self, dims: [u32; 2]) {
+    pub fn set_meta(&self, meta: GpuMeta) {
+        let mut buffer = encase::StorageBuffer::new(Vec::new());
+        buffer.write(&meta).unwrap();
         self.gpu
             .queue()
-            .write_buffer(&self.dim_buf, 0, bytemuck::cast_slice(&dims));
+            .write_buffer(&self.meta_buf, 0, buffer.as_ref());
     }
 
     pub async fn dispatch(&self, workgroup_dims: [u32; 2]) -> anyhow::Result<Vec<O>> {

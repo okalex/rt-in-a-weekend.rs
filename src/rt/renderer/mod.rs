@@ -1,3 +1,4 @@
-pub mod cpu_renderer;
-pub mod gpu_renderer;
+pub mod cpu;
+pub mod gpu;
+pub mod render_options;
 pub mod renderer;

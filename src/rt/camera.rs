@@ -13,7 +13,7 @@ struct Disk {
 }
 
 pub struct Camera {
-    options: CameraOptions,
+    pub options: CameraOptions,
     viewport: Viewport,
     defocus_disk: Disk,
     pub sampler: Sampler,

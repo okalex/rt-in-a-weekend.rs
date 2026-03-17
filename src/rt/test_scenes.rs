@@ -198,8 +198,12 @@ impl Shapes {
         Hittable::ConstantMedium(ConstantMedium::new(boundary, density, mat_idx))
     }
 
+    pub fn ground_sphere(mat_idx: usize) -> Hittable {
+        Shapes::sphere([1.0, -100.0, -1.0], 100.0, mat_idx)
+    }
+
     pub fn checkered_ground(materials: &Materials) -> Hittable {
-        Shapes::sphere([1.0, -100.0, -1.0], 100.0, materials.get("checkered"))
+        Shapes::ground_sphere(materials.get("checkered"))
     }
 }
 
@@ -263,8 +267,8 @@ impl HittableList {
 fn camera_a() -> CameraOptions {
     CameraOptions::new()
         .vfov(50.0)
-        .position([-1.0, 1.0, 1.0])
-        .target([0.0, 0.0, -1.0])
+        .position([0.0, 2.0, 3.0])
+        .target([0.0, 1.0, 0.0])
         .defocus_angle(0.5)
         .focus_dist(3.4)
 }
@@ -273,17 +277,17 @@ fn scene_a() -> Scene {
     let mut scene = HittableList::new();
     let materials = Materials::new();
 
-    let ground = Shapes::checkered_ground(&materials);
-    let sphere2 = Shapes::sphere([0.0, 0.0, -1.2], 0.5, materials.get("blue"));
-    let sphere3 = Shapes::sphere([-1.0, 0.0, -1.0], 0.5, materials.get("glass"));
-    let sphere4 = Shapes::sphere([-1.0, 0.0, -1.0], 0.4, materials.get("air"));
-    let sphere5 = Shapes::sphere([1.0, 0.0, -1.0], 0.5, materials.get("gold"));
+    let ground = Shapes::ground_sphere(materials.get("green"));
+    let sphere2 = Shapes::sphere([0.0, 1.0, 0.0], 0.5, materials.get("blue"));
+    // let sphere3 = Shapes::sphere([-1.0, 1.0, 0.0], 0.5, materials.get("glass"));
+    // let sphere4 = Shapes::sphere([-1.0, 1.0, 0.0], 0.4, materials.get("air"));
+    // let sphere5 = Shapes::sphere([1.0, 1.0, 0.0], 0.5, materials.get("gold"));
 
     scene.add(ground);
     scene.add(sphere2);
-    scene.add(sphere3);
-    scene.add(sphere4);
-    scene.add(sphere5);
+    // scene.add(sphere3);
+    // scene.add(sphere4);
+    // scene.add(sphere5);
 
     Scene::no_lights(scene, materials.materials)
 }

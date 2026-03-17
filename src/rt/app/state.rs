@@ -24,7 +24,8 @@ impl State {
         let texture = GpuTexture::new(&gpu.device(), Arc::clone(&frame_buffer));
         let bind_group_layout = gpu.create_bind_group_layout(&texture.bind_group_layout_entries(0));
         let bind_group = gpu.create_bind_group(&bind_group_layout, &texture.bind_group_entries(0));
-        let display_shader = gpu.create_shader(wgpu::include_wgsl!("display_shader.wgsl"));
+        let display_shader =
+            gpu.create_shader(wgpu::include_wgsl!("../../shaders/display_shader.wgsl"));
         let render_pipeline = gpu.create_render_pipeline(&[&bind_group_layout], &display_shader);
 
         Ok(Self {

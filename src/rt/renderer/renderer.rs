@@ -5,8 +5,9 @@ use crate::rt::{
     frame_buffer::FrameBuffer,
     objects::scene::Scene,
     renderer::{
-        cpu_renderer::{CpuRenderer, LineServer, RenderOptions},
-        gpu_renderer::GpuRenderer,
+        cpu::{cpu_renderer::CpuRenderer, line_server::LineServer},
+        gpu::gpu_renderer::GpuRenderer,
+        render_options::RenderOptions,
     },
 };
 

@@ -4,7 +4,7 @@ use crate::rt::{
 };
 
 pub struct SolidColor {
-    albedo: Color,
+    pub albedo: Color,
 }
 
 impl SolidColor {

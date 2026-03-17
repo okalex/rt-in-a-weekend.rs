@@ -9,7 +9,8 @@ use crate::rt::app::app::App;
 use crate::rt::camera::Camera;
 use crate::rt::frame_buffer::FrameBuffer;
 use crate::rt::ppm_writer::PpmWriter;
-use crate::rt::renderer::cpu_renderer::{LineServer, RenderOptions, RenderOptionsBuilder};
+use crate::rt::renderer::cpu::line_server::LineServer;
+use crate::rt::renderer::render_options::{RenderOptions, RenderOptionsBuilder};
 use crate::rt::renderer::renderer::Renderer;
 use crate::rt::sampler::Sampler;
 use crate::rt::test_scenes::get_camera_and_scene;
@@ -154,10 +155,7 @@ async fn get_renderer(
         .await
     };
 
-    match result {
-        Ok(renderer) => Arc::new(renderer),
-        _ => panic!(),
-    }
+    Arc::new(result.unwrap())
 }
 
 async fn run_headless(

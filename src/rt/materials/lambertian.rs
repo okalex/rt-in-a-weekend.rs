@@ -10,7 +10,7 @@ use crate::rt::textures::texture::Texture;
 use crate::rt::types::{Float, PI, Vector};
 
 pub struct Lambertian {
-    texture: Arc<Texture>,
+    pub texture: Arc<Texture>,
 }
 
 impl Lambertian {

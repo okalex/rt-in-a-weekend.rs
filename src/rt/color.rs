@@ -3,9 +3,9 @@ use crate::rt::types::Float;
 use crate::rt::{interval::Interval, types::Vector};
 use std::ops::{Add, Div, Mul, Sub};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Color {
-    base: Vector,
+    pub base: Vector,
 }
 
 impl Color {

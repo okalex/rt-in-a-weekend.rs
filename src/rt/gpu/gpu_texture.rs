@@ -60,7 +60,7 @@ impl GpuTexture {
         ]
     }
 
-    pub fn bind_group_entries(&self, binding_idx: u32) -> [wgpu::BindGroupEntry; 2] {
+    pub fn bind_group_entries(&self, binding_idx: u32) -> [wgpu::BindGroupEntry<'_>; 2] {
         [
             wgpu::BindGroupEntry {
                 binding: binding_idx,
@@ -73,7 +73,7 @@ impl GpuTexture {
         ]
     }
 
-    pub fn as_image_copy(&self) -> wgpu::TexelCopyTextureInfo {
+    pub fn as_image_copy(&self) -> wgpu::TexelCopyTextureInfo<'_> {
         self.texture.as_image_copy()
     }
 }
