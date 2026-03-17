@@ -5,9 +5,9 @@ use crate::rt::util::degrees_to_radians;
 pub struct Viewport {
     pub delta_u: Vector,
     pub delta_v: Vector,
-    upper_left: Point,
     pub u: Vector,
     pub v: Vector,
+    pub pixel00_loc: Point,
 }
 
 impl Viewport {
@@ -23,27 +23,26 @@ impl Viewport {
 
         let viewport_u = u * (viewport_width as Float);
         let viewport_v = -v * (viewport_height as Float);
+        let delta_u = viewport_u / (img_width as Float);
+        let delta_v = viewport_v / (img_height as Float);
         let upper_left = Point::from(
             camera_options.position
                 - viewport_u / 2.0
                 - viewport_v / 2.0
                 - w * camera_options.focus_dist,
         );
+        let pixel00_loc = upper_left + (delta_u + delta_v) / 2.0;
 
         Viewport {
-            delta_u: viewport_u / (img_width as Float),
-            delta_v: viewport_v / (img_height as Float),
-            upper_left,
+            delta_u,
+            delta_v,
             u,
             v,
+            pixel00_loc,
         }
     }
 
-    pub fn pixel00_loc(&self) -> Point {
-        return self.upper_left + (self.delta_u + self.delta_v) / 2.0;
-    }
-
     pub fn pixel_loc(&self, x_idx: Float, y_idx: Float) -> Point {
-        return self.pixel00_loc() + self.delta_u * x_idx + self.delta_v * y_idx;
+        self.pixel00_loc + self.delta_u * x_idx + self.delta_v * y_idx
     }
 }

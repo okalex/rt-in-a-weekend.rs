@@ -267,7 +267,7 @@ impl HittableList {
 fn camera_a() -> CameraOptions {
     CameraOptions::new()
         .vfov(50.0)
-        .position([0.0, 2.0, 3.0])
+        .position([0.0, 1.5, 3.0])
         .target([0.0, 1.0, 0.0])
         .defocus_angle(0.5)
         .focus_dist(3.4)

@@ -6,32 +6,58 @@ use std::{
 use bytemuck::{AnyBitPattern, NoUninit};
 use encase::ShaderType;
 
-use crate::rt::{gpu::gpu::Gpu, renderer::gpu::gpu_types::GpuMeta};
+use crate::rt::{
+    gpu::gpu::Gpu,
+    renderer::gpu::gpu_types::{GpuMaterials, GpuMeta, GpuObjects},
+};
 
-pub struct GpuCompute<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> {
+pub struct GpuCompute<O: NoUninit + AnyBitPattern> {
     gpu: Arc<Gpu>,
     pipeline: wgpu::ComputePipeline,
     bind_group: wgpu::BindGroup,
     meta_buf: wgpu::Buffer,
+    objects_buf: wgpu::Buffer,
+    materials_buf: wgpu::Buffer,
     output_buf: wgpu::Buffer,
     temp_buf: wgpu::Buffer,
-    _i: PhantomData<I>,
     _o: PhantomData<O>,
 }
 
-impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> {
-    pub fn new(gpu: Arc<Gpu>, shader: &wgpu::ShaderModule, output_size: u64) -> Self {
-        let input_usages = wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::STORAGE;
-        let output_usages = wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::STORAGE;
-        let temp_usages = wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ;
+mod buffer_usages {
+    pub const INPUT: wgpu::BufferUsages = wgpu::BufferUsages::from_bits_retain(
+        wgpu::BufferUsages::COPY_DST.bits() | wgpu::BufferUsages::STORAGE.bits(),
+    );
+    pub const OUTPUT: wgpu::BufferUsages = wgpu::BufferUsages::from_bits_retain(
+        wgpu::BufferUsages::COPY_SRC.bits() | wgpu::BufferUsages::STORAGE.bits(),
+    );
+    pub const TEMP: wgpu::BufferUsages = wgpu::BufferUsages::from_bits_retain(
+        wgpu::BufferUsages::COPY_DST.bits() | wgpu::BufferUsages::MAP_READ.bits(),
+    );
+    pub const UNIFORM: wgpu::BufferUsages = wgpu::BufferUsages::from_bits_retain(
+        wgpu::BufferUsages::UNIFORM.bits() | wgpu::BufferUsages::COPY_DST.bits(),
+    );
+}
 
-        let meta_buf = gpu.create_buffer(
-            <GpuMeta as ShaderType>::METADATA.min_size().get(),
-            input_usages,
-        );
+impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
+    pub fn new(
+        gpu: Arc<Gpu>,
+        shader: &wgpu::ShaderModule,
+        output_size: u64,
+        meta: Arc<GpuMeta>,
+        objects: Arc<GpuObjects>,
+        materials: Arc<GpuMaterials>,
+    ) -> Self {
+        let meta_size = meta.size().get();
+        let meta_buf = gpu.create_buffer(meta_size, buffer_usages::UNIFORM);
 
-        let output_buf = gpu.create_buffer(output_size, output_usages);
-        let temp_buf = gpu.create_buffer(output_size, temp_usages);
+        let objects_size = objects.size().get();
+        let objects_buf = gpu.create_buffer(objects_size, buffer_usages::INPUT);
+
+        let materials_size = materials.size().get();
+        let materials_buf = gpu.create_buffer(objects_size, buffer_usages::INPUT);
+
+        let output_buf = gpu.create_buffer(output_size, buffer_usages::OUTPUT);
+        let temp_buf = gpu.create_buffer(output_size, buffer_usages::TEMP);
 
         let pipeline = gpu.create_compute_pipeline(shader);
         let bind_group_layout = pipeline.get_bind_group_layout(0);
@@ -46,6 +72,14 @@ impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> 
                     binding: 1,
                     resource: meta_buf.as_entire_binding(),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: objects_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: materials_buf.as_entire_binding(),
+                },
             ],
         );
 
@@ -54,19 +88,47 @@ impl<I: NoUninit + AnyBitPattern, O: NoUninit + AnyBitPattern> GpuCompute<I, O> 
             pipeline,
             bind_group,
             meta_buf,
+            objects_buf,
+            materials_buf,
             output_buf,
             temp_buf,
-            _i: PhantomData,
             _o: PhantomData,
         }
     }
 
-    pub fn set_meta(&self, meta: GpuMeta) {
+    pub fn init_bufs(
+        &self,
+        meta: Arc<GpuMeta>,
+        objects: Arc<GpuObjects>,
+        materials: Arc<GpuMaterials>,
+    ) {
+        self.init_meta(meta);
+        self.init_objects(objects);
+        self.init_materials(materials);
+    }
+
+    fn init_meta(&self, meta: Arc<GpuMeta>) {
         let mut buffer = encase::StorageBuffer::new(Vec::new());
         buffer.write(&meta).unwrap();
         self.gpu
             .queue()
             .write_buffer(&self.meta_buf, 0, buffer.as_ref());
+    }
+
+    fn init_objects(&self, objects: Arc<GpuObjects>) {
+        let mut buffer = encase::StorageBuffer::new(Vec::new());
+        buffer.write(&objects).unwrap();
+        self.gpu
+            .queue()
+            .write_buffer(&self.objects_buf, 0, buffer.as_ref());
+    }
+
+    fn init_materials(&self, materials: Arc<GpuMaterials>) {
+        let mut buffer = encase::StorageBuffer::new(Vec::new());
+        buffer.write(&materials).unwrap();
+        self.gpu
+            .queue()
+            .write_buffer(&self.materials_buf, 0, buffer.as_ref());
     }
 
     pub async fn dispatch(&self, workgroup_dims: [u32; 2]) -> anyhow::Result<Vec<O>> {

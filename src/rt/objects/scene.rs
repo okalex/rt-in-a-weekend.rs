@@ -8,8 +8,8 @@ use crate::rt::{
 };
 
 pub struct Scene {
-    objects: Arc<BvhNode>,
-    materials: Vec<Material>,
+    pub objects: Arc<BvhNode>,
+    pub materials: Vec<Material>,
     pub lights: Arc<HittableList>,
 }
 

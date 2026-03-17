@@ -7,46 +7,84 @@ struct GpuCamera {
     lookat: vec3<f32>,
 }
 
+struct GpuViewport {
+    delta_u: vec3<f32>,
+    delta_v: vec3<f32>,
+    pixel00_loc: vec3<f32>,
+}
+
 struct GpuMeta {
     width: u32,
     height: u32,
+    max_depth: u32,
+    background: vec3<f32>,
     camera: GpuCamera,
+    viewport: GpuViewport,
 }
 
-struct GpuTextureSolidColorData {
+struct GpuShape_Sphere {
+    center: vec3<f32>,
+    radius: f32,
+    mat_idx: u32,
+}
+
+const GPUSHAPE_SPHERE: u32 = 0u;
+
+struct GpuShape {
+    _type: u32,
+    data: array<vec4<f32>, 2>,
+}
+
+struct GpuObjects {
+    objects: array<GpuShape>,
+}
+
+struct GpuTexture_SolidColor {
     albedo: vec3<f32>,
 }
 
 const GPUTEXTURE_SOLIDCOLOR: u32 = 0u;
 
 struct GpuTexture {
-    material_type: u32,
+    _type: u32,
     data: array<vec4<f32>, 1>,
 }
 
-struct GpuMaterialLambertianData {
+struct GpuMaterial_Lambertian {
     texture: GpuTexture,
 }
 
 const GPUMATERIAL_LAMBERTIAN: u32 = 0u;
 
 struct GpuMaterial {
-    material_type: u32,
+    _type: u32,
     data: array<vec4<f32>, 2>,
 }
 
-fn unpack_GpuMeta(data: array<vec4<f32>, 3>) -> GpuMeta {
-    return GpuMeta(bitcast<u32>(data[0].x), bitcast<u32>(data[0].y), GpuCamera(data[1].xyz, data[2].xyz));
+struct GpuMaterials {
+    materials: array<GpuMaterial>,
+}
+
+fn unpack_GpuMeta(data: array<vec4<f32>, 7>) -> GpuMeta {
+    return GpuMeta(bitcast<u32>(data[0].x), bitcast<u32>(data[0].y), bitcast<u32>(data[0].z), data[1].xyz, GpuCamera(data[2].xyz, data[3].xyz), GpuViewport(data[4].xyz, data[5].xyz, data[6].xyz));
 }
 
 fn unpack_GpuCamera(data: array<vec4<f32>, 2>) -> GpuCamera {
     return GpuCamera(data[0].xyz, data[1].xyz);
 }
 
-fn unpack_GpuMaterial_Lambertian(v: GpuMaterial) -> GpuMaterialLambertianData {
-    return GpuMaterialLambertianData(GpuTexture(bitcast<u32>(v.data[0].x), array<vec4<f32>, 1>(v.data[1])));
+fn unpack_GpuViewport(data: array<vec4<f32>, 3>) -> GpuViewport {
+    return GpuViewport(data[0].xyz, data[1].xyz, data[2].xyz);
 }
 
-fn unpack_GpuTexture_SolidColor(v: GpuTexture) -> GpuTextureSolidColorData {
-    return GpuTextureSolidColorData(v.data[0].xyz);
+fn unpack_GpuShape_Sphere(v: GpuShape) -> GpuShape_Sphere {
+    return GpuShape_Sphere(v.data[0].xyz, v.data[0].w, bitcast<u32>(v.data[1].x));
+}
+
+fn unpack_GpuMaterial_Lambertian(v: GpuMaterial) -> GpuMaterial_Lambertian {
+    return GpuMaterial_Lambertian(GpuTexture(bitcast<u32>(v.data[0].x), array<vec4<f32>, 1>(v.data[1])));
+}
+
+fn unpack_GpuTexture_SolidColor(v: GpuTexture) -> GpuTexture_SolidColor {
+    return GpuTexture_SolidColor(v.data[0].xyz);
 }
