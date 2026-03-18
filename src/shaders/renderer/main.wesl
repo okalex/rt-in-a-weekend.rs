@@ -38,6 +38,8 @@ fn main(
     output[idx] = to_rgba(color);
 }
 
+const PI = 3.141592653589793;
+
 fn get_ray_color(ray: Ray) -> vec3<f32> {
     var color = vec3<f32>(1, 1, 1);
     var hit_ray = ray;
@@ -48,10 +50,19 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
         if hit_record.is_hit {
             let material = get_material(hit_record.mat_idx);
             let material_color = get_material_color(material);
-            color = color * material_color;
+            // color = color * material_color;
 
-            let new_dir = rand_vector_on_hemisphere(hit_record.normal);
-            hit_ray = Ray(hit_record.point, new_dir);
+            let scattered_dir = rand_vector_on_hemisphere(hit_record.normal);
+            let cos_theta = dot(hit_record.normal, normalize(scattered_dir));
+            var scattering_pdf = 0.0;
+            if cos_theta >= 0.0 {
+                scattering_pdf = cos_theta / PI;
+            }
+            let pdf_value = 1.0 / (2.0 * PI);
+
+            color = color * material_color * scattering_pdf / pdf_value;
+
+            hit_ray = Ray(hit_record.point, scattered_dir);
         } else {
             return color * gpu_meta.background;
         }

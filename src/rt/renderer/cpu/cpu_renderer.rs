@@ -129,6 +129,7 @@ impl CpuRenderWorker {
         match self.scene.hit(ray, Interval::new(0.001, INFINITY)) {
             Some(hit_record) => {
                 let mat = self.scene.get_material(hit_record.mat_idx);
+
                 let emitted = mat.emitted(ray, &hit_record);
 
                 let scattered_color = match mat.scatter(ray, &hit_record) {
@@ -185,7 +186,7 @@ impl CpuRenderWorker {
                 Arc::clone(&scatter_record.pdf)
             }
         } else {
-            // Arc::new(HemispherePdf::new(hit_record.normal))
+            // Arc::new(Pdf::Hemisphere(HemispherePdf::new(hit_record.normal)))
             Arc::new(Pdf::Cosine(CosinePdf::new(&hit_record.normal)))
             // Arc::new(SpherePdf::new())
         }
