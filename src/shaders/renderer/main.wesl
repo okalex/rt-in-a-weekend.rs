@@ -2,15 +2,15 @@ import package::{
     bindings::{output, gpu_meta, objects},
     camera::get_ray,
     color::{Rgba, to_rgba},
-    constants::{PI, ZEROS},
+    constants::{PI},
     hit_record::{HitRecord, no_hit},
     interval::Interval,
-    material::{get_material, get_material_color, scatter},
+    material::{get_material, scatter},
     random::{init_rng, rand_f32, rand_vector_on_hemisphere},
     ray::Ray,
     sphere::hit_sphere,
     types,
-    vector::length_squared,
+    vector::{length_squared, ZEROS},
 };
 
 @compute
@@ -62,7 +62,6 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
                 // TODO
                 return ZEROS;
             }
-
         } else {
             return color * gpu_meta.background;
         }

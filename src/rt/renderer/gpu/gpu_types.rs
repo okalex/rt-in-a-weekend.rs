@@ -95,6 +95,16 @@ impl GpuObjects {
                     radius: 0.5,
                     mat_idx: 11,
                 },
+                GpuShape::Sphere {
+                    center: Vec3::new(-1.0, 0.5, 0.0),
+                    radius: 0.5,
+                    mat_idx: 8,
+                },
+                GpuShape::Sphere {
+                    center: Vec3::new(-1.0, 0.5, 0.0),
+                    radius: 0.3,
+                    mat_idx: 9,
+                },
             ],
             // objects: scene.objects.iter().map(|object| {
             //     GpuShape::from(object)
@@ -144,6 +154,7 @@ impl From<Arc<Hittable>> for GpuShape {
 pub enum GpuMaterial {
     Lambertian { texture: GpuTexture },
     Metal { albedo: Vec3, fuzz: f32 },
+    Dielectric { refraction_idx: f32 },
 }
 
 impl From<&Material> for GpuMaterial {
@@ -156,6 +167,10 @@ impl From<&Material> for GpuMaterial {
             Material::Metal(mat) => Self::Metal {
                 albedo: mat.albedo.base,
                 fuzz: mat.fuzz,
+            },
+
+            Material::Dielectric(mat) => Self::Dielectric {
+                refraction_idx: mat.refraction_idx,
             },
 
             // TODO: Handle other materials properly

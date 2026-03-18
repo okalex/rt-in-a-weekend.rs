@@ -78,6 +78,6 @@ pub fn reflect(vec: Vector, normal: Vector) -> Vector {
 pub fn refract(vec: Vector, n: Vector, etai_over_etat: Float) -> Vector {
     let cos_theta = Float::min(-vec.dot(n), 1.0);
     let r_out_perp = (vec + n * cos_theta) * etai_over_etat;
-    let r_out_parallel = n * (-(1.0 - r_out_perp.length_squared()).abs().sqrt());
+    let r_out_parallel = n * -(1.0 - r_out_perp.length_squared()).abs().sqrt();
     return r_out_perp + r_out_parallel;
 }

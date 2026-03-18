@@ -58,8 +58,13 @@ struct GpuMaterial_Metal {
     fuzz: f32,
 }
 
+struct GpuMaterial_Dielectric {
+    refraction_idx: f32,
+}
+
 const GPUMATERIAL_LAMBERTIAN: u32 = 0u;
 const GPUMATERIAL_METAL: u32 = 1u;
+const GPUMATERIAL_DIELECTRIC: u32 = 2u;
 
 struct GpuMaterial {
     _type: u32,
@@ -92,6 +97,10 @@ fn unpack_GpuMaterial_Lambertian(v: GpuMaterial) -> GpuMaterial_Lambertian {
 
 fn unpack_GpuMaterial_Metal(v: GpuMaterial) -> GpuMaterial_Metal {
     return GpuMaterial_Metal(v.data[0].xyz, v.data[0].w);
+}
+
+fn unpack_GpuMaterial_Dielectric(v: GpuMaterial) -> GpuMaterial_Dielectric {
+    return GpuMaterial_Dielectric(v.data[0].x);
 }
 
 fn unpack_GpuTexture_SolidColor(v: GpuTexture) -> GpuTexture_SolidColor {

@@ -28,12 +28,17 @@ fn hit_sphere(ray: Ray, ray_t: Interval, sphere: types::GpuShape_Sphere) -> HitR
     }
 
     let hit_point = ray_at(ray, root);
-    let normal = (hit_point - sphere.center) / sphere.radius;
+    var normal = (hit_point - sphere.center) / sphere.radius;
+    let is_outward = dot(ray.dir, normal) < 0.0;
+    if !is_outward {
+        normal = -normal;
+    }
 
     return HitRecord(
         true,
         hit_point,
         normal,
+        is_outward,
         root,
         sphere.mat_idx,
     );

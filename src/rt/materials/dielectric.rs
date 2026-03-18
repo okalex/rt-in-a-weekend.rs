@@ -10,7 +10,7 @@ use crate::rt::{color::Color, pdf::SpherePdf};
 use super::material::{ScatterRecord, reflect, reflectance, refract};
 
 pub struct Dielectric {
-    refraction_idx: Float,
+    pub refraction_idx: Float,
 }
 
 impl Dielectric {

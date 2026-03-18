@@ -1,32 +1,18 @@
 import package::{
     bindings::materials,
     color::Rgba,
-    constants::{PI, ZEROS},
+    constants::{PI},
     hit_record::HitRecord,
     pdf::{HemispherePdf, new_hemisphere_pdf, hemisphere_generate, hemisphere_pdf_value},
-    random::rand_unit_vector,
+    random::{rand, rand_unit_vector},
     ray::Ray,
     texture::get_texture_color,
-    vector::reflect,
+    vector::{reflect, refract, ZEROS, ONES},
     types,
 };
 
 fn get_material(mat_idx: u32) -> types::GpuMaterial {
     return materials.materials[mat_idx];
-}
-
-// TODO: uv mapping
-fn get_material_color(material: types::GpuMaterial) -> vec3<f32> {
-    switch material._type {
-        case types::GPUMATERIAL_LAMBERTIAN: {
-            let lambertian = types::unpack_GpuMaterial_Lambertian(material);
-            return get_texture_color(lambertian.texture);
-        }
-
-        default: {
-            return vec3<f32>(0, 0, 0);
-        }
-    }
 }
 
 struct ScatterRecord {
@@ -98,10 +84,44 @@ fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> Scatt
             );
         }
 
+        case types::GPUMATERIAL_DIELECTRIC {
+            let dielectric = types::unpack_GpuMaterial_Dielectric(mat);
+
+            var ri = dielectric.refraction_idx;
+            if hit_record.is_outward {
+                ri = 1.0 / ri;
+            }
+
+            let unit_dir = normalize(ray_in.dir);
+            let cos_theta = min(dot(-unit_dir, hit_record.normal), 1.0);
+            let sin_theta = sqrt(1.0 - cos_theta * cos_theta);
+
+            let cannot_refract = (ri * sin_theta) > 1.0;
+            let reflectance = reflectance(cos_theta, ri);
+
+            var dir: vec3<f32>;
+            if cannot_refract || reflectance > rand() {
+                dir = reflect(unit_dir, hit_record.normal);
+            } else {
+                dir = refract(unit_dir, hit_record.normal, ri);
+            }
+
+            return skip_pdf(
+                ONES,
+                Ray(hit_record.point, dir),
+            );
+        }
+
         default: {
             return no_scatter();
         }
     }
+}
+
+fn reflectance(cosine: f32, refraction_idx: f32) -> f32 {
+    let r0_tmp = (1.0 - refraction_idx) / (1.0 + refraction_idx);
+    let r0 = r0_tmp * r0_tmp;
+    return r0 + (1.0 - r0) * pow(1.0 - cosine, 5.0);
 }
 
 fn lambertian_scattering_pdf(hit_record: HitRecord, scattered: Ray) -> f32 {
