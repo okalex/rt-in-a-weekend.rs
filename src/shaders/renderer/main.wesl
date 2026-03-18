@@ -1,4 +1,4 @@
-#import types;
+import package::types;
 
 struct Rgba {
     r: f32,
@@ -38,7 +38,7 @@ fn main(
     let x = global_id.x;
     let y = global_id.y;
 
-    if (x >= gpu_meta.width || y >= gpu_meta.height) {
+    if x >= gpu_meta.width || y >= gpu_meta.height {
         return;
     }
 
@@ -51,7 +51,7 @@ fn main(
     // let g = f32(y) / f32(gpu_meta.height);
     // let b = sqrt(r * r + g * g);
     // let grad_color = Rgba(r, g, b, 1.0);
-    
+
     output[idx] = ray_color;
 }
 
@@ -68,7 +68,7 @@ fn get_ray(x: u32, y: u32) -> Ray {
 
 fn get_ray_color(ray: Ray) -> Rgba {
     let hit_record = hit(ray, Interval(0.001, 1e30));
-    if (hit_record.is_hit) {
+    if hit_record.is_hit {
         let material = get_material(hit_record.mat_idx);
         return get_material_color(material);
     } else {
@@ -83,7 +83,7 @@ fn get_material(mat_idx: u32) -> types::GpuMaterial {
 // TODO: uv mapping
 fn get_material_color(material: types::GpuMaterial) -> Rgba {
     switch material._type {
-        case types::GPUMATERIAL_LAMBERTIAN: { 
+        case types::GPUMATERIAL_LAMBERTIAN: {
             let lambertian = types::unpack_GpuMaterial_Lambertian(material);
             return get_texture_color(lambertian.texture);
         }
@@ -114,7 +114,7 @@ fn hit(ray: Ray, ray_t: Interval) -> HitRecord {
     for (var i: u32 = 0; i < arrayLength(&objects.objects); i = i + 1) {
         let object = objects.objects[i];
         let temp_record = hit_object(ray, Interval(ray_t.min, closest), object);
-        if (temp_record.is_hit) {
+        if temp_record.is_hit {
             hit_record = temp_record;
             closest = hit_record.t;
         }
@@ -142,7 +142,7 @@ fn hit_sphere(ray: Ray, ray_t: Interval, sphere: types::GpuShape_Sphere) -> HitR
     let c = dot(oc, oc) - sphere.radius * sphere.radius;
     let discriminant = b * b - 4 * a * c;
 
-    if (discriminant < 0) {
+    if discriminant < 0 {
         return no_hit();
     }
 
@@ -150,9 +150,9 @@ fn hit_sphere(ray: Ray, ray_t: Interval, sphere: types::GpuShape_Sphere) -> HitR
 
     // Try the nearer root first, then the farther one
     var root = (-b - sqrtd) / (2.0 * a);
-    if (root < ray_t.min || root > ray_t.max) {
+    if root < ray_t.min || root > ray_t.max {
         root = (-b + sqrtd) / (2.0 * a);
-        if (root < ray_t.min || root > ray_t.max) {
+        if root < ray_t.min || root > ray_t.max {
             return no_hit();
         }
     }
@@ -170,7 +170,7 @@ fn hit_sphere(ray: Ray, ray_t: Interval, sphere: types::GpuShape_Sphere) -> HitR
 }
 
 fn no_hit() -> HitRecord {
-    return HitRecord(false, vec3(0,0,0), vec3(0,0,0), 0, 0);
+    return HitRecord(false, vec3(0, 0, 0), vec3(0, 0, 0), 0, 0);
 }
 
 fn pixel_loc(viewport: types::GpuViewport, x: u32, y: u32) -> vec3<f32> {

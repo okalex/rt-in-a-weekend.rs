@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use naga_oil::compose::{ComposableModuleDescriptor, Composer, NagaModuleDescriptor};
+use wesl::include_wesl;
 
 use crate::rt::{
     camera::Camera,
@@ -92,25 +92,34 @@ impl GpuRenderer {
     }
 
     fn create_shader(&self) -> anyhow::Result<wgpu::ShaderModule> {
-        let mut composer = Composer::default();
+        // let mut composer = Composer::default();
 
-        composer.add_composable_module(ComposableModuleDescriptor {
-            source: include_str!("../../../shaders/types.wgsl"),
-            file_path: "../../../shaders/types.wgsl",
-            ..Default::default()
-        })?;
-        let module = composer.make_naga_module(NagaModuleDescriptor {
-            source: include_str!("../../../shaders/compute.wgsl"),
-            file_path: "../../../shaders/compute.wgsl",
-            ..Default::default()
-        })?;
+        // composer.add_composable_module(ComposableModuleDescriptor {
+        //     source: include_str!("../../../shaders/types.wgsl"),
+        //     file_path: "../../../shaders/types.wgsl",
+        //     ..Default::default()
+        // })?;
+        // let module = composer.make_naga_module(NagaModuleDescriptor {
+        //     source: include_str!("../../../shaders/compute.wgsl"),
+        //     file_path: "../../../shaders/compute.wgsl",
+        //     ..Default::default()
+        // })?;
+        // let shader = self
+        //     .gpu
+        //     .device()
+        //     .create_shader_module(wgpu::ShaderModuleDescriptor {
+        //         label: Some("compute.wgsl"),
+        //         source: wgpu::ShaderSource::Naga(std::borrow::Cow::Owned(module)),
+        //     });
+
         let shader = self
             .gpu
             .device()
             .create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: Some("compute.wgsl"),
-                source: wgpu::ShaderSource::Naga(std::borrow::Cow::Owned(module)),
+                source: wgpu::ShaderSource::Wgsl(include_wesl!("render_shader").into()),
             });
+        // .create_shader_module(include_wesl!("compute_shader"));
 
         Ok(shader)
     }
