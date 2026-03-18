@@ -161,9 +161,10 @@ impl CpuRenderWorker {
 
             None => {
                 let pdf = self.get_pdf(hit_record, scatter_record);
-                let scattered_ray = Ray::new(hit_record.point, pdf.generate(), ray.time);
+                let scattered_dir = pdf.generate();
+                let scattered_ray = Ray::new(hit_record.point, scattered_dir, ray.time);
                 let scattering_pdf = mat.scattering_pdf(ray, hit_record, &scattered_ray);
-                let pdf_value = pdf.value(&scattered_ray.dir);
+                let pdf_value = pdf.value(&scattered_dir);
                 let sample_color = self.ray_color(&scattered_ray, depth + 1);
 
                 scatter_record.attenuation * scattering_pdf * sample_color / pdf_value

@@ -2,9 +2,10 @@ import package::{
     bindings::{output, gpu_meta, objects},
     camera::get_ray,
     color::{Rgba, to_rgba},
+    constants::{PI, ZEROS},
     hit_record::{HitRecord, no_hit},
     interval::Interval,
-    material::{get_material, get_material_color},
+    material::{get_material, get_material_color, scatter},
     random::{init_rng, rand_f32, rand_vector_on_hemisphere},
     ray::Ray,
     sphere::hit_sphere,
@@ -38,8 +39,6 @@ fn main(
     output[idx] = to_rgba(color);
 }
 
-const PI = 3.141592653589793;
-
 fn get_ray_color(ray: Ray) -> vec3<f32> {
     var color = vec3<f32>(1, 1, 1);
     var hit_ray = ray;
@@ -48,26 +47,27 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
     for (var bounces = 0u; bounces < gpu_meta.max_depth; bounces = bounces + 1) {
         let hit_record = hit_objects(hit_ray, ray_t);
         if hit_record.is_hit {
+
             let material = get_material(hit_record.mat_idx);
-            let material_color = get_material_color(material);
-            // color = color * material_color;
-
-            let scattered_dir = rand_vector_on_hemisphere(hit_record.normal);
-            let cos_theta = dot(hit_record.normal, normalize(scattered_dir));
-            var scattering_pdf = 0.0;
-            if cos_theta >= 0.0 {
-                scattering_pdf = cos_theta / PI;
+            let scatter_record = scatter(material, hit_ray, hit_record);
+            if scatter_record.is_scattered {
+                if scatter_record.skip_pdf {
+                    color = color * scatter_record.attenuation;
+                    hit_ray = scatter_record.scattered;
+                } else {
+                    color = color * scatter_record.attenuation * scatter_record.scattering_pdf / scatter_record.pdf_value;
+                    hit_ray = scatter_record.scattered;
+                }
+            } else {
+                // TODO
+                return ZEROS;
             }
-            let pdf_value = 1.0 / (2.0 * PI);
 
-            color = color * material_color * scattering_pdf / pdf_value;
-
-            hit_ray = Ray(hit_record.point, scattered_dir);
         } else {
             return color * gpu_meta.background;
         }
     }
-    return vec3<f32>(0, 0, 0);
+    return ZEROS;
 }
 
 fn hit_objects(ray: Ray, ray_t: Interval) -> HitRecord {

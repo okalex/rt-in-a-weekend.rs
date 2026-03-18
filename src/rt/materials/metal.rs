@@ -9,8 +9,8 @@ use crate::rt::{color::Color, random::rand_unit_vector};
 use super::material::{ScatterRecord, reflect};
 
 pub struct Metal {
-    albedo: Color,
-    fuzz: Float,
+    pub albedo: Color,
+    pub fuzz: Float,
 }
 
 impl Metal {

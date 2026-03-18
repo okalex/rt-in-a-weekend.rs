@@ -53,7 +53,13 @@ struct GpuMaterial_Lambertian {
     texture: GpuTexture,
 }
 
+struct GpuMaterial_Metal {
+    albedo: vec3<f32>,
+    fuzz: f32,
+}
+
 const GPUMATERIAL_LAMBERTIAN: u32 = 0u;
+const GPUMATERIAL_METAL: u32 = 1u;
 
 struct GpuMaterial {
     _type: u32,
@@ -82,6 +88,10 @@ fn unpack_GpuShape_Sphere(v: GpuShape) -> GpuShape_Sphere {
 
 fn unpack_GpuMaterial_Lambertian(v: GpuMaterial) -> GpuMaterial_Lambertian {
     return GpuMaterial_Lambertian(GpuTexture(bitcast<u32>(v.data[0].x), array<vec4<f32>, 1>(v.data[1])));
+}
+
+fn unpack_GpuMaterial_Metal(v: GpuMaterial) -> GpuMaterial_Metal {
+    return GpuMaterial_Metal(v.data[0].xyz, v.data[0].w);
 }
 
 fn unpack_GpuTexture_SolidColor(v: GpuTexture) -> GpuTexture_SolidColor {

@@ -54,7 +54,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
         let objects_buf = gpu.create_buffer(objects_size, buffer_usages::INPUT);
 
         let materials_size = materials.size().get();
-        let materials_buf = gpu.create_buffer(objects_size, buffer_usages::INPUT);
+        let materials_buf = gpu.create_buffer(materials_size, buffer_usages::INPUT);
 
         let output_buf = gpu.create_buffer(output_size, buffer_usages::OUTPUT);
         let temp_buf = gpu.create_buffer(output_size, buffer_usages::TEMP);

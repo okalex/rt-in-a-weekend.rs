@@ -83,12 +83,17 @@ impl GpuObjects {
                 GpuShape::Sphere {
                     center: Vec3::new(1.0, -100.0, -1.0),
                     radius: 100.0,
-                    mat_idx: 0,
+                    mat_idx: 2,
                 },
                 GpuShape::Sphere {
                     center: Vec3::new(0.0, 0.5, 0.0),
                     radius: 0.5,
-                    mat_idx: 1,
+                    mat_idx: 3,
+                },
+                GpuShape::Sphere {
+                    center: Vec3::new(1.0, 0.5, 0.0),
+                    radius: 0.5,
+                    mat_idx: 11,
                 },
             ],
             // objects: scene.objects.iter().map(|object| {
@@ -106,22 +111,9 @@ pub struct GpuMaterials {
 
 impl From<&Vec<Material>> for GpuMaterials {
     fn from(materials: &Vec<Material>) -> Self {
+        let gpu_materials: Vec<GpuMaterial> = materials.iter().map(GpuMaterial::from).collect();
         Self {
-            materials: {
-                vec![
-                    GpuMaterial::Lambertian {
-                        texture: GpuTexture::SolidColor {
-                            albedo: Vec3::new(0.12, 0.45, 0.15),
-                        },
-                    },
-                    GpuMaterial::Lambertian {
-                        texture: GpuTexture::SolidColor {
-                            albedo: Vec3::new(0.1, 0.2, 0.5),
-                        },
-                    },
-                ]
-                // materials.iter().map(GpuMaterial::from).collect()
-            },
+            materials: gpu_materials,
         }
     }
 }
@@ -151,6 +143,7 @@ impl From<Arc<Hittable>> for GpuShape {
 #[derive(ShaderEnum, Debug)]
 pub enum GpuMaterial {
     Lambertian { texture: GpuTexture },
+    Metal { albedo: Vec3, fuzz: f32 },
 }
 
 impl From<&Material> for GpuMaterial {
@@ -159,7 +152,18 @@ impl From<&Material> for GpuMaterial {
             Material::Lambertian(mat) => Self::Lambertian {
                 texture: GpuTexture::from(&mat.texture),
             },
-            _ => panic!(),
+
+            Material::Metal(mat) => Self::Metal {
+                albedo: mat.albedo.base,
+                fuzz: mat.fuzz,
+            },
+
+            // TODO: Handle other materials properly
+            _ => Self::Lambertian {
+                texture: GpuTexture::SolidColor {
+                    albedo: Vec3::new(0.5, 0.5, 0.5),
+                },
+            },
         }
     }
 }
@@ -187,7 +191,11 @@ impl From<&Texture> for GpuTexture {
             Texture::Solid(tex) => Self::SolidColor {
                 albedo: tex.albedo.base,
             },
-            _ => panic!(),
+
+            // TODO: other textures
+            _ => Self::SolidColor {
+                albedo: Vec3::new(0.5, 0.5, 0.5),
+            },
         }
     }
 }

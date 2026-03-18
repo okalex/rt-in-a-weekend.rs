@@ -1,4 +1,7 @@
-import package::vector::length_squared;
+import package::{
+    constants::PI,
+    vector::length_squared,
+};
 
 var<private> rng_state: u32;
 
@@ -51,4 +54,17 @@ fn rand_vector_on_hemisphere(normal: vec3<f32>) -> vec3<f32> {
     } else {
         return -on_unit_sphere;
     }
+}
+
+fn rand_cos_vector() -> vec3<f32> {
+    let r1 = rand();
+    let r2 = rand();
+    let sqrt_r2 = sqrt(r2);
+
+    let phi = 2.0 * PI * r1;
+    let x = cos(phi) * sqrt_r2;
+    let y = sin(phi) * sqrt_r2;
+    let z = sqrt(1.0 - r2);
+
+    return vec3<f32>(x, y, z);
 }
