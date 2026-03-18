@@ -83,7 +83,7 @@ impl GpuObjects {
                 GpuShape::Sphere {
                     center: Vec3::new(1.0, -100.0, -1.0),
                     radius: 100.0,
-                    mat_idx: 2,
+                    mat_idx: 7,
                 },
                 GpuShape::Sphere {
                     center: Vec3::new(0.0, 0.5, 0.0),
@@ -197,7 +197,14 @@ impl From<Arc<Material>> for GpuMaterial {
 
 #[derive(ShaderEnum, Debug)]
 pub enum GpuTexture {
-    SolidColor { albedo: Vec3 },
+    SolidColor {
+        albedo: Vec3,
+    },
+    Checkered {
+        inv_scale: f32,
+        even: Vec3,
+        odd: Vec3,
+    },
 }
 
 impl From<&Texture> for GpuTexture {
@@ -205,6 +212,12 @@ impl From<&Texture> for GpuTexture {
         match texture {
             Texture::Solid(tex) => Self::SolidColor {
                 albedo: tex.albedo.base,
+            },
+
+            Texture::Checkered(tex) => Self::Checkered {
+                inv_scale: tex.inv_scale,
+                even: tex.even.albedo.base,
+                odd: tex.odd.albedo.base,
             },
 
             // TODO: other textures

@@ -42,11 +42,18 @@ struct GpuTexture_SolidColor {
     albedo: vec3<f32>,
 }
 
+struct GpuTexture_Checkered {
+    inv_scale: f32,
+    even: vec3<f32>,
+    odd: vec3<f32>,
+}
+
 const GPUTEXTURE_SOLIDCOLOR: u32 = 0u;
+const GPUTEXTURE_CHECKERED: u32 = 1u;
 
 struct GpuTexture {
     _type: u32,
-    data: array<vec4<f32>, 1>,
+    data: array<vec4<f32>, 3>,
 }
 
 struct GpuMaterial_Lambertian {
@@ -68,7 +75,7 @@ const GPUMATERIAL_DIELECTRIC: u32 = 2u;
 
 struct GpuMaterial {
     _type: u32,
-    data: array<vec4<f32>, 2>,
+    data: array<vec4<f32>, 4>,
 }
 
 struct GpuMaterials {
@@ -92,7 +99,7 @@ fn unpack_GpuShape_Sphere(v: GpuShape) -> GpuShape_Sphere {
 }
 
 fn unpack_GpuMaterial_Lambertian(v: GpuMaterial) -> GpuMaterial_Lambertian {
-    return GpuMaterial_Lambertian(GpuTexture(bitcast<u32>(v.data[0].x), array<vec4<f32>, 1>(v.data[1])));
+    return GpuMaterial_Lambertian(GpuTexture(bitcast<u32>(v.data[0].x), array<vec4<f32>, 3>(v.data[1], v.data[2], v.data[3])));
 }
 
 fn unpack_GpuMaterial_Metal(v: GpuMaterial) -> GpuMaterial_Metal {
@@ -105,4 +112,8 @@ fn unpack_GpuMaterial_Dielectric(v: GpuMaterial) -> GpuMaterial_Dielectric {
 
 fn unpack_GpuTexture_SolidColor(v: GpuTexture) -> GpuTexture_SolidColor {
     return GpuTexture_SolidColor(v.data[0].xyz);
+}
+
+fn unpack_GpuTexture_Checkered(v: GpuTexture) -> GpuTexture_Checkered {
+    return GpuTexture_Checkered(v.data[0].x, v.data[1].xyz, v.data[2].xyz);
 }

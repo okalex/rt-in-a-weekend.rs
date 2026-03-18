@@ -277,7 +277,7 @@ fn scene_a() -> Scene {
     let mut scene = HittableList::new();
     let materials = Materials::new();
 
-    let ground = Shapes::ground_sphere(materials.get("green"));
+    let ground = Shapes::ground_sphere(materials.get("checkered"));
     let sphere2 = Shapes::sphere([0.0, 0.5, 0.0], 0.5, materials.get("blue"));
     let sphere3 = Shapes::sphere([-1.0, 0.5, 0.0], 0.5, materials.get("glass"));
     let sphere4 = Shapes::sphere([-1.0, 0.5, 0.0], 0.3, materials.get("air"));

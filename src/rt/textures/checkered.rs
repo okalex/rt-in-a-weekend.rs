@@ -7,9 +7,9 @@ use crate::rt::{
 };
 
 pub struct Checkered {
-    inv_scale: Float,
-    even: Arc<Texture>,
-    odd: Arc<Texture>,
+    pub inv_scale: Float,
+    pub even: Arc<SolidColor>,
+    pub odd: Arc<SolidColor>,
 }
 
 impl Checkered {
@@ -17,8 +17,8 @@ impl Checkered {
         let inv_scale = 1.0 / scale;
         Self {
             inv_scale,
-            even: Arc::new(Texture::Solid(SolidColor::new(even))),
-            odd: Arc::new(Texture::Solid(SolidColor::new(odd))),
+            even: Arc::new(SolidColor::new(even)),
+            odd: Arc::new(SolidColor::new(odd)),
         }
     }
 

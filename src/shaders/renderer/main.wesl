@@ -88,7 +88,7 @@ fn hit_object(ray: Ray, ray_t: Interval, object: types::GpuShape) -> HitRecord {
     switch object._type {
         case types::GPUSHAPE_SPHERE: {
             let sphere = types::unpack_GpuShape_Sphere(object);
-            return hit_sphere(ray, ray_t, sphere);
+            return hit_sphere(sphere, ray, ray_t);
         }
 
         default: {

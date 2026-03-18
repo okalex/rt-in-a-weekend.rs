@@ -61,7 +61,7 @@ fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> Scatt
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
             let lambertian = types::unpack_GpuMaterial_Lambertian(mat);
-            let color = get_texture_color(lambertian.texture);
+            let color = get_texture_color(lambertian.texture, hit_record.u, hit_record.v, hit_record.point);
 
             let pdf = new_hemisphere_pdf(hit_record.normal);
             let scattered_dir = hemisphere_generate(pdf);

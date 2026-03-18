@@ -1,4 +1,5 @@
 import package::{
+    constants::PI,
     hit_record::{HitRecord, no_hit},
     interval::Interval,
     ray::{Ray, ray_at},
@@ -6,7 +7,7 @@ import package::{
     vector::length_squared,
 };
 
-fn hit_sphere(ray: Ray, ray_t: Interval, sphere: types::GpuShape_Sphere) -> HitRecord {
+fn hit_sphere(sphere: types::GpuShape_Sphere, ray: Ray, ray_t: Interval) -> HitRecord {
     let oc = sphere.center - ray.orig;
     let a = length_squared(ray.dir);
     let h = dot(ray.dir, oc);
@@ -20,9 +21,9 @@ fn hit_sphere(ray: Ray, ray_t: Interval, sphere: types::GpuShape_Sphere) -> HitR
     let sqrtd = sqrt(discriminant);
 
     var root = (h - sqrtd) / a;
-    if (root <= ray_t.min || ray_t.max <= root) {
+    if root <= ray_t.min || ray_t.max <= root {
         root = (h + sqrtd) / a;
-        if (root <= ray_t.min || ray_t.max <= root) {
+        if root <= ray_t.min || ray_t.max <= root {
             return no_hit();
         }
     }
@@ -33,6 +34,7 @@ fn hit_sphere(ray: Ray, ray_t: Interval, sphere: types::GpuShape_Sphere) -> HitR
     if !is_outward {
         normal = -normal;
     }
+    let uv = get_uv(sphere, normal);
 
     return HitRecord(
         true,
@@ -40,6 +42,14 @@ fn hit_sphere(ray: Ray, ray_t: Interval, sphere: types::GpuShape_Sphere) -> HitR
         normal,
         is_outward,
         root,
+        uv[0],
+        uv[1],
         sphere.mat_idx,
     );
+}
+
+fn get_uv(sphere: types::GpuShape_Sphere, normal: vec3<f32>) -> array<f32, 2> {
+    let u = 0.5 + atan2(-normal.z, normal.x) / (2.0 * PI);
+    let v = 0.5 + asin(normal.y) / PI;
+    return array(u, v);
 }
