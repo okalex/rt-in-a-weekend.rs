@@ -7,7 +7,7 @@ use crate::rt::{
     viewport::Viewport,
 };
 
-struct Disk {
+pub struct Disk {
     pub u: Vector,
     pub v: Vector,
 }
@@ -15,7 +15,7 @@ struct Disk {
 pub struct Camera {
     pub options: CameraOptions,
     pub viewport: Viewport,
-    defocus_disk: Disk,
+    pub defocus_disk: Disk,
     pub sampler: Sampler,
 }
 

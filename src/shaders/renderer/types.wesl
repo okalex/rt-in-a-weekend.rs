@@ -3,6 +3,9 @@
 struct GpuCamera {
     position: vec3<f32>,
     lookat: vec3<f32>,
+    defocus_angle: f32,
+    defocus_disk_u: vec3<f32>,
+    defocus_disk_v: vec3<f32>,
 }
 
 struct GpuViewport {
@@ -82,12 +85,12 @@ struct GpuMaterials {
     materials: array<GpuMaterial>,
 }
 
-fn unpack_GpuMeta(data: array<vec4<f32>, 7>) -> GpuMeta {
-    return GpuMeta(bitcast<u32>(data[0].x), bitcast<u32>(data[0].y), bitcast<u32>(data[0].z), bitcast<u32>(data[0].w), data[1].xyz, GpuCamera(data[2].xyz, data[3].xyz), GpuViewport(data[4].xyz, data[5].xyz, data[6].xyz));
+fn unpack_GpuMeta(data: array<vec4<f32>, 9>) -> GpuMeta {
+    return GpuMeta(bitcast<u32>(data[0].x), bitcast<u32>(data[0].y), bitcast<u32>(data[0].z), bitcast<u32>(data[0].w), data[1].xyz, GpuCamera(data[2].xyz, data[3].xyz, data[3].w, data[4].xyz, data[5].xyz), GpuViewport(data[6].xyz, data[7].xyz, data[8].xyz));
 }
 
-fn unpack_GpuCamera(data: array<vec4<f32>, 2>) -> GpuCamera {
-    return GpuCamera(data[0].xyz, data[1].xyz);
+fn unpack_GpuCamera(data: array<vec4<f32>, 4>) -> GpuCamera {
+    return GpuCamera(data[0].xyz, data[1].xyz, data[1].w, data[2].xyz, data[3].xyz);
 }
 
 fn unpack_GpuViewport(data: array<vec4<f32>, 3>) -> GpuViewport {

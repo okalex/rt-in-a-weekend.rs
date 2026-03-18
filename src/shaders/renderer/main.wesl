@@ -32,9 +32,8 @@ fn main(
     var color = vec3<f32>(0, 0, 0);
     for (var i = 0u; i < gpu_meta.num_samples; i = i + 1) {
         let camera_ray = get_ray(x, y);
-        color = color + get_ray_color(camera_ray);
+        color = color + get_ray_color(camera_ray) / f32(gpu_meta.num_samples);
     }
-    color = color / f32(gpu_meta.num_samples);
 
     output[idx] = to_rgba(color);
 }

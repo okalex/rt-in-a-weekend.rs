@@ -42,6 +42,9 @@ impl GpuMeta {
 pub struct GpuCamera {
     position: Vec3,
     lookat: Vec3,
+    defocus_angle: f32,
+    defocus_disk_u: Vec3,
+    defocus_disk_v: Vec3,
 }
 
 impl From<Arc<Camera>> for GpuCamera {
@@ -49,6 +52,9 @@ impl From<Arc<Camera>> for GpuCamera {
         Self {
             position: camera.options.position,
             lookat: camera.options.target,
+            defocus_angle: camera.options.defocus_angle,
+            defocus_disk_u: camera.defocus_disk.u,
+            defocus_disk_v: camera.defocus_disk.v,
         }
     }
 }

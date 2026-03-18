@@ -1,6 +1,6 @@
 import package::{
     constants::PI,
-    vector::length_squared,
+    vector::{length_squared, ZEROS},
 };
 
 var<private> rng_state: u32;
@@ -54,6 +54,16 @@ fn rand_vector_on_hemisphere(normal: vec3<f32>) -> vec3<f32> {
     } else {
         return -on_unit_sphere;
     }
+}
+
+fn rand_in_unit_disk() -> vec3<f32> {
+    loop {
+        let p = vec3<f32>(rand_range(-1.0, 1.0), rand_range(-1.0, 1.0), 0.0);
+        if length_squared(p) < 1.0 {
+            return p;
+        }
+    }
+    return ZEROS;
 }
 
 fn rand_cos_vector() -> vec3<f32> {
