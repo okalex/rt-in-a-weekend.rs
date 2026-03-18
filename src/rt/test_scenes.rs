@@ -267,8 +267,8 @@ impl HittableList {
 fn camera_a() -> CameraOptions {
     CameraOptions::new()
         .vfov(50.0)
-        .position([0.0, 1.5, 3.0])
-        .target([0.0, 1.0, 0.0])
+        .position([0.0, 0.5, 3.0])
+        .target([0.0, 0.5, 0.0])
         .defocus_angle(0.5)
         .focus_dist(3.4)
 }
@@ -278,7 +278,7 @@ fn scene_a() -> Scene {
     let materials = Materials::new();
 
     let ground = Shapes::ground_sphere(materials.get("green"));
-    let sphere2 = Shapes::sphere([0.0, 1.0, 0.0], 0.5, materials.get("blue"));
+    let sphere2 = Shapes::sphere([0.0, 0.5, 0.0], 0.5, materials.get("blue"));
     // let sphere3 = Shapes::sphere([-1.0, 1.0, 0.0], 0.5, materials.get("glass"));
     // let sphere4 = Shapes::sphere([-1.0, 1.0, 0.0], 0.4, materials.get("air"));
     // let sphere5 = Shapes::sphere([1.0, 1.0, 0.0], 0.5, materials.get("gold"));

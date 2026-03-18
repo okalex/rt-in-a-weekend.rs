@@ -14,6 +14,7 @@ struct GpuViewport {
 struct GpuMeta {
     width: u32,
     height: u32,
+    num_samples: u32,
     max_depth: u32,
     background: vec3<f32>,
     camera: GpuCamera,
@@ -64,7 +65,7 @@ struct GpuMaterials {
 }
 
 fn unpack_GpuMeta(data: array<vec4<f32>, 7>) -> GpuMeta {
-    return GpuMeta(bitcast<u32>(data[0].x), bitcast<u32>(data[0].y), bitcast<u32>(data[0].z), data[1].xyz, GpuCamera(data[2].xyz, data[3].xyz), GpuViewport(data[4].xyz, data[5].xyz, data[6].xyz));
+    return GpuMeta(bitcast<u32>(data[0].x), bitcast<u32>(data[0].y), bitcast<u32>(data[0].z), bitcast<u32>(data[0].w), data[1].xyz, GpuCamera(data[2].xyz, data[3].xyz), GpuViewport(data[4].xyz, data[5].xyz, data[6].xyz));
 }
 
 fn unpack_GpuCamera(data: array<vec4<f32>, 2>) -> GpuCamera {

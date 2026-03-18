@@ -17,6 +17,7 @@ use crate::rt::{
 pub struct GpuMeta {
     pub width: u32,
     pub height: u32,
+    pub num_samples: u32,
     pub max_depth: u32,
     pub background: Vec3,
     pub camera: GpuCamera,
@@ -28,6 +29,7 @@ impl GpuMeta {
         Self {
             width: render_options.img_width,
             height: render_options.img_height,
+            num_samples: render_options.samples_per_pixel,
             background: render_options.background.base,
             max_depth: render_options.max_depth,
             camera: GpuCamera::from(Arc::clone(&camera)),
@@ -84,7 +86,7 @@ impl GpuObjects {
                     mat_idx: 0,
                 },
                 GpuShape::Sphere {
-                    center: Vec3::new(0.0, 1.0, 0.0),
+                    center: Vec3::new(0.0, 0.5, 0.0),
                     radius: 0.5,
                     mat_idx: 1,
                 },
@@ -109,12 +111,12 @@ impl From<&Vec<Material>> for GpuMaterials {
                 vec![
                     GpuMaterial::Lambertian {
                         texture: GpuTexture::SolidColor {
-                            albedo: Vec3::new(0.0, 1.0, 0.0),
+                            albedo: Vec3::new(0.12, 0.45, 0.15),
                         },
                     },
                     GpuMaterial::Lambertian {
                         texture: GpuTexture::SolidColor {
-                            albedo: Vec3::new(1.0, 0.0, 0.0),
+                            albedo: Vec3::new(0.1, 0.2, 0.5),
                         },
                     },
                 ]
