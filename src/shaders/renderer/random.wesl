@@ -34,7 +34,14 @@ fn rand_range_vector(min: f32, max: f32) -> vec3<f32> {
 }
 
 fn rand_unit_vector() -> vec3<f32> {
-    return normalize(rand_range_vector(-1, 1));
+    loop {
+        let p = rand_range_vector(-1, 1);
+        let lensq = length_squared(p);
+        if lensq > 1e-10 && lensq <= 1.0 {
+            return p / sqrt(lensq);
+        }
+    }
+    return vec3<f32>(0, 1, 0); // unreachable, satisfies naga validator
 }
 
 fn rand_vector_on_hemisphere(normal: vec3<f32>) -> vec3<f32> {

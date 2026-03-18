@@ -67,7 +67,7 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
             return color * gpu_meta.background;
         }
     }
-    return color;
+    return vec3<f32>(0, 0, 0);
 }
 
 fn hit_objects(ray: Ray, ray_t: Interval) -> HitRecord {
