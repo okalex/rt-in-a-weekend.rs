@@ -3,7 +3,7 @@ import package::{
     color::Rgba,
     constants::{PI},
     hit_record::HitRecord,
-    pdf::{HemispherePdf, new_hemisphere_pdf, hemisphere_generate, hemisphere_pdf_value},
+    pdf,
     random::{rand, rand_unit_vector},
     ray::Ray,
     texture::get_texture_color,
@@ -63,15 +63,15 @@ fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> Scatt
             let lambertian = types::unpack_GpuMaterial_Lambertian(mat);
             let color = get_texture_color(lambertian.texture, hit_record.u, hit_record.v, hit_record.point);
 
-            let pdf = new_hemisphere_pdf(hit_record.normal);
-            let scattered_dir = hemisphere_generate(pdf);
+            let pdf = pdf::new_cosine_pdf(hit_record.normal);
+            let scattered_dir = pdf::cosine_generate(pdf);
             let scattered = Ray(hit_record.point, scattered_dir);
 
             return scatter_with_pdf(
                 color,
                 scattered,
                 lambertian_scattering_pdf(hit_record, scattered),
-                hemisphere_pdf_value(pdf),
+                pdf::cosine_pdf_value(pdf, scattered_dir),
             );
         }
 
