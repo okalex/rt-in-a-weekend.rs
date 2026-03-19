@@ -1,5 +1,4 @@
 pub mod box3d;
-pub mod bvh_node;
 pub mod constant_medium;
 pub mod hit_record;
 pub mod hittable;

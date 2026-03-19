@@ -10,7 +10,6 @@ use crate::rt::{
     },
     objects::{
         box3d::Box3d,
-        bvh_node::BvhNode,
         constant_medium::ConstantMedium,
         hittable::Hittable,
         hittable_list::HittableList,
@@ -697,8 +696,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
             boxes.add(Shapes::box3d([x0, y0, z0], [x1, y1, z1], ground_idx));
         }
     }
-    let boxes_bvh = Hittable::BvhNode(BvhNode::from(boxes));
-    scene.add(boxes_bvh);
+    scene.add(Hittable::HittableList(boxes));
 
     // Light
     let diffuse_idx = materials.add(Materials::emissive([7.0, 7.0, 7.0]));
@@ -765,7 +763,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
         ));
         boxes2.add(sphere);
     }
-    let mut boxes2_hittable = Hittable::BvhNode(BvhNode::from(boxes2));
+    let mut boxes2_hittable = Hittable::HittableList(boxes2);
     boxes2_hittable = rotate_y(boxes2_hittable, 15.0);
     boxes2_hittable = translate(boxes2_hittable, [-100.0, 270.0, 395.0]);
     scene.add(boxes2_hittable);

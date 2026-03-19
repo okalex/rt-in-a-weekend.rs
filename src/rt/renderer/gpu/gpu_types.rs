@@ -86,43 +86,13 @@ pub struct GpuObjects {
 
 impl GpuObjects {
     pub fn new(scene: Arc<Scene>) -> Self {
-        Self {
-            objects: vec![
-                GpuShape::Sphere { // Checkered ground
-                    center: Vec3::new(1.0, -100.0, -1.0),
-                    radius: 100.0,
-                    mat_idx: 7,
-                },
-                GpuShape::Sphere { // Blue lambertian
-                    center: Vec3::new(0.0, 0.5, 0.0),
-                    radius: 0.5,
-                    mat_idx: 3,
-                },
-                GpuShape::Sphere { // Gold metal
-                    center: Vec3::new(1.0, 0.5, 0.0),
-                    radius: 0.5,
-                    mat_idx: 11,
-                },
-                GpuShape::Sphere { // Glass outer
-                    center: Vec3::new(-1.0, 0.5, 0.0),
-                    radius: 0.5,
-                    mat_idx: 8,
-                },
-                GpuShape::Sphere { // Glass inner
-                    center: Vec3::new(-1.0, 0.5, 0.0),
-                    radius: 0.3,
-                    mat_idx: 9,
-                },
-                GpuShape::Sphere { // Light above
-                    center: Vec3::new(0.0, 2.5, 0.0),
-                    radius: 0.3,
-                    mat_idx: 6,
-                },
-            ],
-            // objects: scene.objects.iter().map(|object| {
-            //     GpuShape::from(object)
-            // })
-        }
+        let objects = scene
+            .objects
+            .iter()
+            .map(|object| GpuShape::from(object))
+            .collect();
+
+        Self { objects }
     }
 }
 
@@ -135,8 +105,8 @@ pub enum GpuShape {
     },
 }
 
-impl From<Arc<Hittable>> for GpuShape {
-    fn from(hittable: Arc<Hittable>) -> Self {
+impl From<&Arc<Hittable>> for GpuShape {
+    fn from(hittable: &Arc<Hittable>) -> Self {
         match hittable.as_ref() {
             Hittable::Sphere(obj) => GpuShape::Sphere {
                 center: obj.center.orig, // TODO: support moving later
@@ -145,6 +115,12 @@ impl From<Arc<Hittable>> for GpuShape {
             },
             _ => panic!(),
         }
+    }
+}
+
+impl From<Arc<Hittable>> for GpuShape {
+    fn from(hittable: Arc<Hittable>) -> Self {
+        Self::from(&hittable)
     }
 }
 

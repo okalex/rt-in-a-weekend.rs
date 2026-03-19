@@ -1,7 +1,6 @@
 use parry3d_f64::bounding_volume::Aabb;
 
 use crate::rt::interval::Interval;
-use crate::rt::objects::bvh_node::BvhNode;
 use crate::rt::objects::constant_medium::ConstantMedium;
 use crate::rt::objects::hit_record::HitRecord;
 use crate::rt::objects::hittable_list::HittableList;
@@ -14,7 +13,6 @@ use crate::rt::ray::Ray;
 use crate::rt::types::{Float, Point, Vector};
 
 pub enum Hittable {
-    BvhNode(BvhNode),
     ConstantMedium(ConstantMedium),
     HittableList(HittableList),
     Mesh(Mesh),
@@ -28,7 +26,6 @@ pub enum Hittable {
 impl Hittable {
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
         match self {
-            Self::BvhNode(obj) => obj.hit(ray, ray_t),
             Self::ConstantMedium(obj) => obj.hit(ray, ray_t),
             Self::HittableList(obj) => obj.hit(ray, ray_t),
             Self::Mesh(obj) => obj.hit(ray, ray_t),
@@ -42,7 +39,6 @@ impl Hittable {
 
     pub fn bounding_box(&self) -> &Aabb {
         match self {
-            Self::BvhNode(obj) => obj.bounding_box(),
             Self::ConstantMedium(obj) => obj.bounding_box(),
             Self::HittableList(obj) => obj.bounding_box(),
             Self::Mesh(obj) => obj.bounding_box(),
@@ -57,7 +53,6 @@ impl Hittable {
     pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {
         let default = 0.0;
         match self {
-            Self::BvhNode(_) => default,
             Self::ConstantMedium(_) => default,
             Self::HittableList(obj) => obj.pdf_value(origin, direction),
             Self::Mesh(_) => default,
@@ -72,7 +67,6 @@ impl Hittable {
     pub fn random(&self, origin: &Point) -> Vector {
         let default = Vector::new(1.0, 0.0, 0.0);
         match self {
-            Self::BvhNode(_) => default,
             Self::ConstantMedium(_) => default,
             Self::HittableList(obj) => obj.random(origin),
             Self::Mesh(_) => default,
