@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Instant;
 
 use crate::rt::camera::Camera;
 use crate::rt::color::Color;
@@ -47,6 +48,8 @@ impl CpuRenderer {
     }
 
     pub async fn render(&self) {
+        let now = Instant::now();
+
         let mut thread_handles = vec![];
         for worker in &self.workers {
             let worker_clone = Arc::clone(worker);
@@ -59,6 +62,8 @@ impl CpuRenderer {
         }
 
         futures::future::join_all(thread_handles).await;
+
+        eprintln!("Done rendering: {}ms", now.elapsed().as_millis());
     }
 }
 

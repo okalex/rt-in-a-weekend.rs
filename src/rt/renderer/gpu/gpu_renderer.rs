@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Instant};
 
 use wesl::include_wesl;
 
@@ -44,6 +44,7 @@ impl GpuRenderer {
     }
 
     pub async fn render(&self) {
+        let now = Instant::now();
         let gpu_compute = self.setup_pipeline();
 
         let workgroup_dims = [
@@ -78,7 +79,7 @@ impl GpuRenderer {
             }
         }
 
-        eprintln!("Done rendering!");
+        eprintln!("Done rendering: {} ms", now.elapsed().as_millis());
     }
 
     fn setup_pipeline(&self) -> GpuCompute<[f32; 4]> {
