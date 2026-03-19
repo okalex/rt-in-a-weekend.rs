@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::rt::color::Color;
 use crate::rt::materials::dielectric::Dielectric;
-use crate::rt::materials::diffuse_light::DiffuseLight;
+use crate::rt::materials::emissive::Emissive;
 use crate::rt::materials::isotropic::Isotropic;
 use crate::rt::materials::lambertian::Lambertian;
 use crate::rt::materials::metal::Metal;
@@ -20,7 +20,7 @@ pub struct ScatterRecord {
 
 pub enum Material {
     Dielectric(Dielectric),
-    DiffuseLight(DiffuseLight),
+    Emissive(Emissive),
     Isotropic(Isotropic),
     Lambertian(Lambertian),
     Metal(Metal),
@@ -32,7 +32,7 @@ impl Material {
         let default = None;
         match self {
             Self::Dielectric(mat) => mat.scatter(r_in, rec),
-            Self::DiffuseLight(_) => default,
+            Self::Emissive(_) => default,
             Self::Isotropic(mat) => mat.scatter(r_in, rec),
             Self::Lambertian(mat) => mat.scatter(r_in, rec),
             Self::Metal(mat) => mat.scatter(r_in, rec),
@@ -44,7 +44,7 @@ impl Material {
         let default = 0.0;
         match self {
             Self::Dielectric(_) => default,
-            Self::DiffuseLight(_) => default,
+            Self::Emissive(_) => default,
             Self::Isotropic(mat) => mat.scattering_pdf(r_in, rec, scattered),
             Self::Lambertian(mat) => mat.scattering_pdf(r_in, rec, scattered),
             Self::Metal(_) => default,
@@ -56,7 +56,7 @@ impl Material {
         let default = Color::black();
         match self {
             Self::Dielectric(_) => default,
-            Self::DiffuseLight(mat) => mat.emitted(r_in, hit_record),
+            Self::Emissive(mat) => mat.emitted(r_in, hit_record),
             Self::Isotropic(_) => default,
             Self::Lambertian(_) => default,
             Self::Metal(_) => default,

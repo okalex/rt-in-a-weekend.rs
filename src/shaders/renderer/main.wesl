@@ -5,7 +5,7 @@ import package::{
     constants::{PI},
     hit_record::{HitRecord, no_hit},
     interval::Interval,
-    material::{get_material, scatter},
+    material::{get_material, scatter, emitted},
     random::{init_rng, rand_f32, rand_vector_on_hemisphere},
     ray::Ray,
     sphere::hit_sphere,
@@ -48,27 +48,30 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
         if hit_record.is_hit {
 
             let material = get_material(hit_record.mat_idx);
+            let emitted_color = emitted(material, hit_ray, hit_record);
             let scatter_record = scatter(material, hit_ray, hit_record);
+
             if scatter_record.is_scattered {
                 if scatter_record.skip_pdf {
-                    color = color * scatter_record.attenuation;
+                    color = color * (emitted_color + scatter_record.attenuation);
                     hit_ray = scatter_record.scattered;
                 } else {
                     // Discard NaNs
                     if scatter_record.pdf_value > 1e-8 {
-                        color = color * scatter_record.attenuation * scatter_record.scattering_pdf / scatter_record.pdf_value;
+                        color = color * (emitted_color + scatter_record.attenuation * scatter_record.scattering_pdf / scatter_record.pdf_value);
                     }
 
                     hit_ray = scatter_record.scattered;
                 }
             } else {
-                // TODO
-                return ZEROS;
+                return color * emitted_color;
             }
+
         } else {
             return color * gpu_meta.background;
         }
     }
+
     return ZEROS;
 }
 

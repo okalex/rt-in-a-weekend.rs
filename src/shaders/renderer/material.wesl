@@ -118,6 +118,23 @@ fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> Scatt
     }
 }
 
+fn emitted(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> vec3<f32> {
+    switch mat._type {
+        case types::GPUMATERIAL_EMISSIVE {
+            if hit_record.is_outward {
+                let emissive = types::unpack_GpuMaterial_Emissive(mat);
+                return emissive.color;
+            } else {
+                return ZEROS;
+            }
+        }
+
+        default: {
+            return ZEROS;
+        }
+    }
+}
+
 fn reflectance(cosine: f32, refraction_idx: f32) -> f32 {
     let r0_tmp = (1.0 - refraction_idx) / (1.0 + refraction_idx);
     let r0 = r0_tmp * r0_tmp;

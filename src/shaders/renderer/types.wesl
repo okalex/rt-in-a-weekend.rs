@@ -73,9 +73,14 @@ struct GpuMaterial_Dielectric {
     refraction_idx: f32,
 }
 
+struct GpuMaterial_Emissive {
+    color: vec3<f32>,
+}
+
 const GPUMATERIAL_LAMBERTIAN: u32 = 0u;
 const GPUMATERIAL_METAL: u32 = 1u;
 const GPUMATERIAL_DIELECTRIC: u32 = 2u;
+const GPUMATERIAL_EMISSIVE: u32 = 3u;
 
 struct GpuMaterial {
     _type: u32,
@@ -112,6 +117,10 @@ fn unpack_GpuMaterial_Metal(v: GpuMaterial) -> GpuMaterial_Metal {
 
 fn unpack_GpuMaterial_Dielectric(v: GpuMaterial) -> GpuMaterial_Dielectric {
     return GpuMaterial_Dielectric(v.data[0].x);
+}
+
+fn unpack_GpuMaterial_Emissive(v: GpuMaterial) -> GpuMaterial_Emissive {
+    return GpuMaterial_Emissive(v.data[0].xyz);
 }
 
 fn unpack_GpuTexture_SolidColor(v: GpuTexture) -> GpuTexture_SolidColor {

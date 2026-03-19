@@ -7,11 +7,11 @@ use crate::rt::textures::solid_color::SolidColor;
 use crate::rt::textures::texture::Texture;
 use crate::rt::types::Float;
 
-pub struct DiffuseLight {
-    texture: Arc<Texture>,
+pub struct Emissive {
+    pub texture: Arc<Texture>,
 }
 
-impl DiffuseLight {
+impl Emissive {
     pub fn new(texture: Arc<Texture>) -> Self {
         Self { texture }
     }
@@ -27,21 +27,21 @@ impl DiffuseLight {
     }
 }
 
-impl From<Color> for DiffuseLight {
+impl From<Color> for Emissive {
     fn from(color: Color) -> Self {
         let arc = Arc::new(Texture::Solid(SolidColor::new(color)));
         Self::new(arc)
     }
 }
 
-impl From<[Float; 3]> for DiffuseLight {
+impl From<[Float; 3]> for Emissive {
     fn from(color: [Float; 3]) -> Self {
         let arc = Arc::new(Texture::Solid(SolidColor::from(color)));
         Self::new(arc)
     }
 }
 
-impl Clone for DiffuseLight {
+impl Clone for Emissive {
     fn clone(&self) -> Self {
         Self {
             texture: Arc::clone(&self.texture),

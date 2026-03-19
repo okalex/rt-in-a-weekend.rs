@@ -22,7 +22,7 @@ pub struct GpuMeta {
     pub max_depth: u32,
     pub background: Vec3,
     pub camera: GpuCamera,
-    pub viewport: GpuViewport, 
+    pub viewport: GpuViewport,
 }
 
 impl GpuMeta {
@@ -88,50 +88,40 @@ impl GpuObjects {
     pub fn new(scene: Arc<Scene>) -> Self {
         Self {
             objects: vec![
-                GpuShape::Sphere {
+                GpuShape::Sphere { // Checkered ground
                     center: Vec3::new(1.0, -100.0, -1.0),
                     radius: 100.0,
                     mat_idx: 7,
                 },
-                GpuShape::Sphere {
+                GpuShape::Sphere { // Blue lambertian
                     center: Vec3::new(0.0, 0.5, 0.0),
                     radius: 0.5,
                     mat_idx: 3,
                 },
-                GpuShape::Sphere {
+                GpuShape::Sphere { // Gold metal
                     center: Vec3::new(1.0, 0.5, 0.0),
                     radius: 0.5,
                     mat_idx: 11,
                 },
-                GpuShape::Sphere {
+                GpuShape::Sphere { // Glass outer
                     center: Vec3::new(-1.0, 0.5, 0.0),
                     radius: 0.5,
                     mat_idx: 8,
                 },
-                GpuShape::Sphere {
+                GpuShape::Sphere { // Glass inner
                     center: Vec3::new(-1.0, 0.5, 0.0),
                     radius: 0.3,
                     mat_idx: 9,
+                },
+                GpuShape::Sphere { // Light above
+                    center: Vec3::new(0.0, 2.5, 0.0),
+                    radius: 0.3,
+                    mat_idx: 6,
                 },
             ],
             // objects: scene.objects.iter().map(|object| {
             //     GpuShape::from(object)
             // })
-        }
-    }
-}
-
-#[derive(ShaderType, Debug)]
-pub struct GpuMaterials {
-    #[shader(size(runtime))]
-    materials: Vec<GpuMaterial>,
-}
-
-impl From<&Vec<Material>> for GpuMaterials {
-    fn from(materials: &Vec<Material>) -> Self {
-        let gpu_materials: Vec<GpuMaterial> = materials.iter().map(GpuMaterial::from).collect();
-        Self {
-            materials: gpu_materials,
         }
     }
 }
@@ -158,11 +148,27 @@ impl From<Arc<Hittable>> for GpuShape {
     }
 }
 
+#[derive(ShaderType, Debug)]
+pub struct GpuMaterials {
+    #[shader(size(runtime))]
+    materials: Vec<GpuMaterial>,
+}
+
+impl From<&Vec<Material>> for GpuMaterials {
+    fn from(materials: &Vec<Material>) -> Self {
+        let gpu_materials: Vec<GpuMaterial> = materials.iter().map(GpuMaterial::from).collect();
+        Self {
+            materials: gpu_materials,
+        }
+    }
+}
+
 #[derive(ShaderEnum, Debug)]
 pub enum GpuMaterial {
     Lambertian { texture: GpuTexture },
     Metal { albedo: Vec3, fuzz: f32 },
     Dielectric { refraction_idx: f32 },
+    Emissive { color: Vec3 },
 }
 
 impl From<&Material> for GpuMaterial {
@@ -179,6 +185,13 @@ impl From<&Material> for GpuMaterial {
 
             Material::Dielectric(mat) => Self::Dielectric {
                 refraction_idx: mat.refraction_idx,
+            },
+
+            Material::Emissive(mat) => match mat.texture.as_ref() {
+                Texture::Solid(color) => Self::Emissive {
+                    color: color.albedo.base,
+                },
+                _ => panic!(),
             },
 
             // TODO: Handle other materials properly

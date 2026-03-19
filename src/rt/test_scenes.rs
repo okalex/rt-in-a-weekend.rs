@@ -5,8 +5,8 @@ use crate::rt::{
     color::Color,
     file::load_model_with_mat,
     materials::{
-        dielectric::Dielectric, diffuse_light::DiffuseLight, isotropic::Isotropic,
-        lambertian::Lambertian, material::Material, metal::Metal, pbr_material::PbrMaterial,
+        dielectric::Dielectric, emissive::Emissive, isotropic::Isotropic, lambertian::Lambertian,
+        material::Material, metal::Metal, pbr_material::PbrMaterial,
     },
     objects::{
         box3d::Box3d,
@@ -77,7 +77,7 @@ impl Materials {
                 Self::lambertian([0.1, 0.2, 0.5]),
                 Self::lambertian([1.0, 0.5, 0.0]),
                 Self::lambertian([0.2, 0.8, 0.8]),
-                Self::diffuse_light([15.0, 15.0, 15.0]),
+                Self::emissive([15.0, 15.0, 15.0]),
                 Self::from_texture(Textures::checkers()),
                 Self::dielectric(1.5),
                 Self::dielectric(1.0 / 1.5),
@@ -149,8 +149,8 @@ impl Materials {
         Self::metal(albedo, fuzz)
     }
 
-    fn diffuse_light(color: [Float; 3]) -> Material {
-        Material::DiffuseLight(DiffuseLight::from(color))
+    fn emissive(color: [Float; 3]) -> Material {
+        Material::Emissive(Emissive::from(color))
     }
 
     fn image_map(file_name: &str, scale_factor: Float) -> Material {
@@ -282,12 +282,14 @@ fn scene_a() -> Scene {
     let sphere3 = Shapes::sphere([-1.0, 0.5, 0.0], 0.5, materials.get("glass"));
     let sphere4 = Shapes::sphere([-1.0, 0.5, 0.0], 0.3, materials.get("air"));
     let sphere5 = Shapes::sphere([1.0, 0.5, 0.0], 0.5, materials.get("gold"));
+    let sphere6 = Shapes::sphere([0.0, 2.5, 0.0], 0.3, materials.get("diffuse_light"));
 
     scene.add(ground);
     scene.add(sphere2);
     scene.add(sphere3);
     scene.add(sphere4);
     scene.add(sphere5);
+    scene.add(sphere6);
 
     Scene::no_lights(scene, materials.materials)
 }
@@ -699,7 +701,7 @@ fn scene_book2_final(with_haze: bool) -> Scene {
     scene.add(boxes_bvh);
 
     // Light
-    let diffuse_idx = materials.add(Materials::diffuse_light([7.0, 7.0, 7.0]));
+    let diffuse_idx = materials.add(Materials::emissive([7.0, 7.0, 7.0]));
     let light = Arc::new(Shapes::quad(
         [123.0, 554.0, 147.0],
         [300.0, 0.0, 0.0],

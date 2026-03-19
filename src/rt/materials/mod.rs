@@ -1,5 +1,5 @@
 pub mod dielectric;
-pub mod diffuse_light;
+pub mod emissive;
 pub mod isotropic;
 pub mod lambertian;
 pub mod material;
