@@ -50,19 +50,42 @@ impl GpuRenderer {
             self.options.img_width.div_ceil(Self::WORKGROUP_SIZE),
             self.options.img_height.div_ceil(Self::WORKGROUP_SIZE),
         ];
-        let result = gpu_compute.dispatch(workgroup_dims).await;
 
-        match result {
-            Ok(pixels) => self.write_result_to_frame(pixels),
-            _ => panic!(),
+        let num_pixels = (self.options.img_width * self.options.img_height) as usize;
+        let mut accum = vec![Color::black(); num_pixels];
+
+        // Render progressively in smaller dispatches
+        for samples in 1..=(self.options.samples_per_pixel / self.options.dispatch_size) {
+            let gpu_meta = Arc::new(GpuMeta::new(
+                Arc::clone(&self.options),
+                Arc::clone(&self.camera),
+                samples,
+            ));
+            gpu_compute.init_meta(gpu_meta);
+
+            let result = gpu_compute.dispatch(workgroup_dims).await;
+
+            match result {
+                Ok(pixels) => {
+                    let colors = self.collect_results(pixels);
+                    for idx in 0..num_pixels {
+                        accum[idx] =
+                            (accum[idx] * (samples as f32 - 1.0) + colors[idx]) / (samples as f32);
+                    }
+                    self.write_result_to_frame(&accum)
+                }
+                _ => panic!(),
+            }
         }
+
+        eprintln!("Done rendering!");
     }
 
     fn setup_pipeline(&self) -> GpuCompute<[f32; 4]> {
         let compute_shader = match self.create_shader() {
             Ok(shader) => shader,
             Err(e) => {
-                eprint!("Error creating shader: {}", e);
+                eprintln!("Error creating shader: {}", e);
                 panic!();
             }
         };
@@ -70,6 +93,7 @@ impl GpuRenderer {
         let gpu_meta = Arc::new(GpuMeta::new(
             Arc::clone(&self.options),
             Arc::clone(&self.camera),
+            0,
         ));
         let gpu_objects = Arc::new(GpuObjects::new(Arc::clone(&self.scene)));
         let gpu_materials = Arc::new(GpuMaterials::from(&self.scene.materials));
@@ -92,26 +116,6 @@ impl GpuRenderer {
     }
 
     fn create_shader(&self) -> anyhow::Result<wgpu::ShaderModule> {
-        // let mut composer = Composer::default();
-
-        // composer.add_composable_module(ComposableModuleDescriptor {
-        //     source: include_str!("../../../shaders/types.wgsl"),
-        //     file_path: "../../../shaders/types.wgsl",
-        //     ..Default::default()
-        // })?;
-        // let module = composer.make_naga_module(NagaModuleDescriptor {
-        //     source: include_str!("../../../shaders/compute.wgsl"),
-        //     file_path: "../../../shaders/compute.wgsl",
-        //     ..Default::default()
-        // })?;
-        // let shader = self
-        //     .gpu
-        //     .device()
-        //     .create_shader_module(wgpu::ShaderModuleDescriptor {
-        //         label: Some("compute.wgsl"),
-        //         source: wgpu::ShaderSource::Naga(std::borrow::Cow::Owned(module)),
-        //     });
-
         let shader = self
             .gpu
             .device()
@@ -119,21 +123,23 @@ impl GpuRenderer {
                 label: Some("compute.wgsl"),
                 source: wgpu::ShaderSource::Wgsl(include_wesl!("render_shader").into()),
             });
-        // .create_shader_module(include_wesl!("compute_shader"));
 
         Ok(shader)
     }
 
-    fn write_result_to_frame(&self, pixels: Vec<[f32; 4]>) {
+    fn collect_results(&self, pixels: Vec<[f32; 4]>) -> Vec<Color> {
+        pixels
+            .iter()
+            .map(|values| Color::new(values[0] as Float, values[1] as Float, values[2] as Float))
+            .collect()
+    }
+
+    fn write_result_to_frame(&self, pixels: &Vec<Color>) {
         let colors: Vec<[u8; 3]> = pixels
             .iter()
-            .map(|values| {
-                let color = Color::new(values[0] as Float, values[1] as Float, values[2] as Float);
-                color.to_gamma().to_u8()
-            })
+            .map(|color| color.to_gamma().to_u8())
             .collect();
 
-        eprintln!("Received data: {} pixels", colors.len());
         self.frame_buffer.set_frame(&colors);
     }
 }

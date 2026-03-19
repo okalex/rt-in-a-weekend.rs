@@ -47,6 +47,9 @@ struct Args {
     #[arg(long, default_value_t = false)]
     gpu: bool,
 
+    #[arg(long, default_value_t = 20)]
+    dispatch_size: u32,
+
     #[arg(long, default_value_t = 1)]
     sampler: Uint,
 }
@@ -61,6 +64,7 @@ async fn main() {
         RenderOptionsBuilder::new()
             .width(args.width)
             .samples_per_pixel(args.samples)
+            .dispatch_size(args.dispatch_size)
             .max_depth(args.depth)
             .use_multithreading(args.multithreading)
             .use_importance_sampling(args.importance)

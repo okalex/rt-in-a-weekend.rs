@@ -25,7 +25,7 @@ fn main(
         return;
     }
 
-    init_rng(x, y, 1);
+    init_rng(x, y, gpu_meta.frame_num);
 
     let idx = gpu_meta.width * y + x;
 
@@ -54,7 +54,11 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
                     color = color * scatter_record.attenuation;
                     hit_ray = scatter_record.scattered;
                 } else {
-                    color = color * scatter_record.attenuation * scatter_record.scattering_pdf / scatter_record.pdf_value;
+                    // Discard NaNs
+                    if scatter_record.pdf_value > 1e-8 {
+                        color = color * scatter_record.attenuation * scatter_record.scattering_pdf / scatter_record.pdf_value;
+                    }
+
                     hit_ray = scatter_record.scattered;
                 }
             } else {

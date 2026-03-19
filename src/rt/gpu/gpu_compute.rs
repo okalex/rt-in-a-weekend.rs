@@ -107,7 +107,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
         self.init_materials(materials);
     }
 
-    fn init_meta(&self, meta: Arc<GpuMeta>) {
+    pub fn init_meta(&self, meta: Arc<GpuMeta>) {
         let mut buffer = encase::StorageBuffer::new(Vec::new());
         buffer.write(&meta).unwrap();
         self.gpu
@@ -115,7 +115,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
             .write_buffer(&self.meta_buf, 0, buffer.as_ref());
     }
 
-    fn init_objects(&self, objects: Arc<GpuObjects>) {
+    pub fn init_objects(&self, objects: Arc<GpuObjects>) {
         let mut buffer = encase::StorageBuffer::new(Vec::new());
         buffer.write(&objects).unwrap();
         self.gpu
@@ -123,7 +123,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
             .write_buffer(&self.objects_buf, 0, buffer.as_ref());
     }
 
-    fn init_materials(&self, materials: Arc<GpuMaterials>) {
+    pub fn init_materials(&self, materials: Arc<GpuMaterials>) {
         let mut buffer = encase::StorageBuffer::new(Vec::new());
         buffer.write(&materials).unwrap();
         self.gpu
@@ -165,7 +165,6 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
                 .poll(wgpu::PollType::wait_indefinitely())?;
             rx.recv()??;
 
-            eprintln!("Data processed");
             let output_view = self.temp_buf.get_mapped_range(..);
             bytemuck::cast_slice(&output_view).to_vec()
         };

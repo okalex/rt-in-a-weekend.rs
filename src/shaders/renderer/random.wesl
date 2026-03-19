@@ -1,4 +1,5 @@
 import package::{
+    bindings::gpu_meta,
     constants::PI,
     vector::{length_squared, ZEROS},
 };
@@ -12,7 +13,7 @@ fn pcg(n: u32) -> u32 {
 }
 
 fn init_rng(x: u32, y: u32, frame: u32) {
-    rng_state = pcg(x + y * 1920u + frame * 1920u * 1080u);
+    rng_state = pcg(x + y * gpu_meta.width + frame * gpu_meta.width * gpu_meta.height);
 }
 
 fn rand() -> f32 {

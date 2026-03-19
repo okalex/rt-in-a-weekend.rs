@@ -30,6 +30,7 @@ impl FrameBuffer {
         assert_eq!(line.len(), self.width as usize);
         let mut buffer = self.data.lock().unwrap();
         let start = (y * self.width * PIXEL_SIZE) as usize;
+        
         for (i, color) in line.iter().enumerate() {
             let rgba = Self::to_rgba(color);
             let pixel_idx = start + i * PIXEL_SIZE;
@@ -39,7 +40,7 @@ impl FrameBuffer {
 
     pub fn set_frame(&self, frame: &Vec<[u8; 3]>) {
         let mut buffer = self.data.lock().unwrap();
-        eprintln!("Setting frame with {} pixels", frame.len());
+
         for (idx, color) in frame.iter().enumerate() {
             let rgba = Self::to_rgba(color);
             let pixel_idx = idx * PIXEL_SIZE;

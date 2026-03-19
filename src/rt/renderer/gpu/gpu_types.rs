@@ -18,18 +18,20 @@ pub struct GpuMeta {
     pub width: u32,
     pub height: u32,
     pub num_samples: u32,
+    pub frame_num: u32,
     pub max_depth: u32,
     pub background: Vec3,
     pub camera: GpuCamera,
-    pub viewport: GpuViewport,
+    pub viewport: GpuViewport, 
 }
 
 impl GpuMeta {
-    pub fn new(render_options: Arc<RenderOptions>, camera: Arc<Camera>) -> Self {
+    pub fn new(render_options: Arc<RenderOptions>, camera: Arc<Camera>, frame_num: u32) -> Self {
         Self {
             width: render_options.img_width,
             height: render_options.img_height,
-            num_samples: render_options.samples_per_pixel,
+            num_samples: render_options.dispatch_size,
+            frame_num,
             background: render_options.background.base,
             max_depth: render_options.max_depth,
             camera: GpuCamera::from(Arc::clone(&camera)),
