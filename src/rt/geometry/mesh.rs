@@ -9,7 +9,7 @@ use parry3d_f64::{
 
 use crate::rt::{
     interval::Interval,
-    objects::{hit_record::HitRecord, triangle::Triangle},
+    geometry::{hit_record::HitRecord, triangle::Triangle},
     ray::Ray,
     types::{Float, Point, Uint, from_parry_vec, to_parry_vec},
 };

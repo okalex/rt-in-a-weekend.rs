@@ -7,7 +7,7 @@ pub mod gpu;
 pub mod image;
 pub mod interval;
 pub mod materials;
-pub mod objects;
+pub mod geometry;
 pub mod onb;
 pub mod pdf;
 pub mod perlin;

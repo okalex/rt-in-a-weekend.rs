@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::rt::objects::hit_record::HitRecord;
+use crate::rt::geometry::hit_record::HitRecord;
 use crate::rt::pdf::{Pdf, SpherePdf};
 use crate::rt::ray::Ray;
 use crate::rt::types::Float;

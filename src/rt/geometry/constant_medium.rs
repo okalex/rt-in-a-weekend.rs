@@ -4,7 +4,7 @@ use parry3d_f64::bounding_volume::Aabb;
 
 use super::hittable::Hittable;
 use crate::rt::interval::Interval;
-use crate::rt::objects::hit_record::HitRecord;
+use crate::rt::geometry::hit_record::HitRecord;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;
 use crate::rt::types::{Float, INFINITY, Vector};

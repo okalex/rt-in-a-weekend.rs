@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::rt::{
     color::Color,
     materials::material::{ScatterRecord, reflect},
-    objects::hit_record::HitRecord,
+    geometry::hit_record::HitRecord,
     pdf::{Pdf, SpherePdf},
     random::rand_on_hemisphere,
     ray::Ray,

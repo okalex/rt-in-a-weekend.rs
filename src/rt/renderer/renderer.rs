@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::rt::{
     camera::Camera,
     frame_buffer::FrameBuffer,
-    objects::scene::Scene,
+    geometry::scene::Scene,
     renderer::{
         cpu::{cpu_renderer::CpuRenderer, line_server::LineServer},
         gpu::gpu_renderer::GpuRenderer,

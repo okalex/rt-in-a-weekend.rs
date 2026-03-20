@@ -4,7 +4,7 @@ use parry3d_f64::query::RayCast;
 use parry3d_f64::shape::Triangle as Parry3dTriangle;
 
 use crate::rt::interval::Interval;
-use crate::rt::objects::hit_record::HitRecord;
+use crate::rt::geometry::hit_record::HitRecord;
 use crate::rt::ray::Ray;
 use crate::rt::types::{Float, from_parry_vec, new_parry_vec};
 

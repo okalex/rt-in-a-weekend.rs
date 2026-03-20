@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::rt::color::Color;
 use crate::rt::materials::material::ScatterRecord;
-use crate::rt::objects::hit_record::HitRecord;
+use crate::rt::geometry::hit_record::HitRecord;
 use crate::rt::pdf::{CosinePdf, Pdf};
 use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;

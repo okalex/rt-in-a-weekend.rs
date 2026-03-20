@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::rt::color::Color;
-use crate::rt::objects::hit_record::HitRecord;
+use crate::rt::geometry::hit_record::HitRecord;
 use crate::rt::ray::Ray;
 use crate::rt::textures::solid_color::SolidColor;
 use crate::rt::textures::texture::Texture;

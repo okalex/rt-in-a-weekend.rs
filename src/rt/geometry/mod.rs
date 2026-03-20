@@ -3,6 +3,7 @@ pub mod constant_medium;
 pub mod hit_record;
 pub mod hittable;
 pub mod hittable_list;
+pub mod instance;
 pub mod mesh;
 pub mod quad;
 pub mod scene;

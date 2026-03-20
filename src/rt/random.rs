@@ -47,7 +47,7 @@ pub fn rand_unit_vector() -> Vector {
     loop {
         let p = rand_range_vector(-1.0, 1.0);
         let lensq = p.length_squared();
-        if 1e-160 < lensq && lensq <= 1.0 {
+        if 1e-38 < lensq && lensq <= 1.0 {
             return p / lensq.sqrt();
         }
     }

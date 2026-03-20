@@ -7,7 +7,7 @@ use crate::rt::{
     color::Color,
     frame_buffer::FrameBuffer,
     gpu::{gpu::Gpu, gpu_compute::GpuCompute},
-    objects::scene::Scene,
+    geometry::scene::Scene,
     renderer::{
         gpu::gpu_types::{GpuBvh, GpuMaterials, GpuMeta, GpuObjects},
         render_options::RenderOptions,

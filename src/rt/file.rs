@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-use crate::rt::objects::{hittable::Hittable, mesh::Mesh};
+use crate::rt::geometry::{hittable::Hittable, mesh::Mesh};
 
 pub fn load_string_path(path: &Path) -> anyhow::Result<String> {
     let path = Path::new(env!("OUT_DIR")).join("assets").join(path);

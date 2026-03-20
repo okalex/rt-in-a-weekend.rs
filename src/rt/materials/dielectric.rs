@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::rt::objects::hit_record::HitRecord;
+use crate::rt::geometry::hit_record::HitRecord;
 use crate::rt::pdf::Pdf;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;

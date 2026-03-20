@@ -1,5 +1,5 @@
 use crate::rt::{
-    objects::{hittable::Hittable, hittable_list::HittableList, quad::Quad},
+    geometry::{hittable::Hittable, hittable_list::HittableList, quad::Quad},
     types::{Point, Vector},
 };
 

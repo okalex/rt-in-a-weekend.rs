@@ -1,7 +1,7 @@
 use parry3d_f64::bounding_volume::{Aabb, BoundingVolume};
 
 use crate::rt::interval::Interval;
-use crate::rt::objects::hit_record::HitRecord;
+use crate::rt::geometry::hit_record::HitRecord;
 use crate::rt::onb::Onb;
 use crate::rt::random::rand;
 use crate::rt::ray::Ray;

@@ -2,14 +2,14 @@ use glam::Vec3A;
 use obvhs::Boundable;
 
 use crate::rt::interval::Interval;
-use crate::rt::objects::constant_medium::ConstantMedium;
-use crate::rt::objects::hit_record::HitRecord;
-use crate::rt::objects::hittable_list::HittableList;
-use crate::rt::objects::mesh::Mesh;
-use crate::rt::objects::quad::Quad;
-use crate::rt::objects::sphere::Sphere;
-use crate::rt::objects::transformations::{RotateY, Translate};
-use crate::rt::objects::triangle::Triangle;
+use crate::rt::geometry::constant_medium::ConstantMedium;
+use crate::rt::geometry::hit_record::HitRecord;
+use crate::rt::geometry::hittable_list::HittableList;
+use crate::rt::geometry::mesh::Mesh;
+use crate::rt::geometry::quad::Quad;
+use crate::rt::geometry::sphere::Sphere;
+use crate::rt::geometry::transformations::{RotateY, Translate};
+use crate::rt::geometry::triangle::Triangle;
 use crate::rt::ray::Ray;
 use crate::rt::types::{Float, Point, Vector};
 

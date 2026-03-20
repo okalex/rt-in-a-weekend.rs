@@ -7,7 +7,7 @@ use crate::rt::materials::isotropic::Isotropic;
 use crate::rt::materials::lambertian::Lambertian;
 use crate::rt::materials::metal::Metal;
 use crate::rt::materials::pbr_material::PbrMaterial;
-use crate::rt::objects::hit_record::HitRecord;
+use crate::rt::geometry::hit_record::HitRecord;
 use crate::rt::pdf::Pdf;
 use crate::rt::ray::Ray;
 use crate::rt::types::{Float, Vector};

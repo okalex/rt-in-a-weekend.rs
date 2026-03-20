@@ -8,7 +8,7 @@ use obvhs::bvh2::Bvh2;
 use crate::rt::{
     camera::Camera,
     materials::material::Material,
-    objects::{hittable::Hittable, scene::Scene},
+    geometry::{hittable::Hittable, scene::Scene},
     renderer::render_options::RenderOptions,
     textures::texture::Texture,
     viewport::Viewport,

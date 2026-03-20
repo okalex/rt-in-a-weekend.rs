@@ -2,7 +2,7 @@ use parry3d_f64::{bounding_volume::Aabb, math::Pose};
 
 use crate::rt::{
     interval::Interval,
-    objects::{hit_record::HitRecord, hittable::Hittable},
+    geometry::{hit_record::HitRecord, hittable::Hittable},
     ray::Ray,
     types::{Float, Point, Vector, new_parry_vec, to_parry_vec},
     util::degrees_to_radians,

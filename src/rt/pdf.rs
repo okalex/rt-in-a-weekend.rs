@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::rt::{
-    objects::hittable_list::HittableList,
+    geometry::hittable_list::HittableList,
     onb::Onb,
     random::{rand, rand_cos_dir, rand_on_hemisphere, rand_unit_vector},
     types::{Float, PI, Point, Vector},

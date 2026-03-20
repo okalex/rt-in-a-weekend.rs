@@ -25,7 +25,7 @@ fn copy_assets() -> Result<()> {
 }
 
 fn build_shaders() -> Result<()> {
-    println!("cargo:rerun-if-changed=src/");
+    println!("cargo:rerun-if-changed=src/shaders");
 
     let input = vec![PathBuf::from("src/")];
     let output = PathBuf::from("src/shaders/renderer/types.wesl");

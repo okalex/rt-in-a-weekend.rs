@@ -10,7 +10,7 @@ use obvhs::{
 use crate::rt::{
     interval::Interval,
     materials::material::Material,
-    objects::{hit_record::HitRecord, hittable::Hittable, hittable_list::HittableList},
+    geometry::{hit_record::HitRecord, hittable::Hittable, hittable_list::HittableList},
     ray::Ray,
     types::INFINITY,
 };

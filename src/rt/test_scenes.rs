@@ -8,7 +8,7 @@ use crate::rt::{
         dielectric::Dielectric, emissive::Emissive, isotropic::Isotropic, lambertian::Lambertian,
         material::Material, metal::Metal, pbr_material::PbrMaterial,
     },
-    objects::{
+    geometry::{
         box3d::Box3d,
         constant_medium::ConstantMedium,
         hittable::Hittable,
@@ -592,14 +592,14 @@ fn scene_cornell() -> Scene {
     let mut lights = HittableList::new();
     let materials = Materials::new();
 
-    // let mut box_right = Shapes::box3d(
-    //     [0.0, 0.0, 0.0],
-    //     [165.0, 165.0, 165.0],
-    //     materials.get("white"),
-    // );
-    // box_right = rotate_y(box_right, -18.0);
-    // box_right = translate(box_right, [130.0, 0.0, 65.0]);
-    let sphere_right = Shapes::sphere([190.0, 90.0, 190.0], 90.0, materials.get("glass"));
+    let mut box_right = Shapes::box3d(
+        [0.0, 0.0, 0.0],
+        [165.0, 165.0, 165.0],
+        materials.get("white"),
+    );
+    box_right = rotate_y(box_right, -18.0);
+    box_right = translate(box_right, [130.0, 0.0, 65.0]);
+    // let sphere_right = Shapes::sphere([190.0, 90.0, 190.0], 90.0, materials.get("glass"));
 
     let mut box_left = Shapes::box3d(
         [0.0, 0.0, 0.0],
@@ -613,7 +613,8 @@ fn scene_cornell() -> Scene {
     scene.add(room);
     lights.add(room_lights);
 
-    scene.add(sphere_right);
+    // scene.add(sphere_right);
+    scene.add(box_right);
     scene.add(box_left);
 
     Scene::new(scene, materials.materials, lights)

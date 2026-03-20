@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::rt::{
     color::Color,
-    textures::{solid_color::SolidColor, texture::Texture},
+    textures::solid_color::SolidColor,
     types::{Float, Int, Point},
 };
 
