@@ -25,6 +25,17 @@ struct GpuMeta {
     viewport: GpuViewport,
 }
 
+struct GpuBvhNode {
+    aabb_min: vec3<f32>,
+    aabb_max: vec3<f32>,
+    left_or_prim: u32,
+    count: u32,
+}
+
+struct GpuBvh {
+    nodes: array<GpuBvhNode>,
+}
+
 struct GpuShape_Sphere {
     center: vec3<f32>,
     radius: f32,
@@ -101,6 +112,10 @@ fn unpack_GpuCamera(data: array<vec4<f32>, 4>) -> GpuCamera {
 
 fn unpack_GpuViewport(data: array<vec4<f32>, 3>) -> GpuViewport {
     return GpuViewport(data[0].xyz, data[1].xyz, data[2].xyz);
+}
+
+fn unpack_GpuBvhNode(data: array<vec4<f32>, 3>) -> GpuBvhNode {
+    return GpuBvhNode(data[0].xyz, data[1].xyz, bitcast<u32>(data[1].w), bitcast<u32>(data[2].x));
 }
 
 fn unpack_GpuShape_Sphere(v: GpuShape) -> GpuShape_Sphere {

@@ -1,3 +1,7 @@
+import package::{
+    constants::INF,
+};
+
 struct HitRecord {
     is_hit: bool,
     point: vec3<f32>,
@@ -10,5 +14,5 @@ struct HitRecord {
 };
 
 fn no_hit() -> HitRecord {
-    return HitRecord(false, vec3(0, 0, 0), vec3(0, 0, 0), true, 0, 0, 0, 0);
+    return HitRecord(false, vec3(0, 0, 0), vec3(0, 0, 0), true, INF, 0, 0, 0);
 }

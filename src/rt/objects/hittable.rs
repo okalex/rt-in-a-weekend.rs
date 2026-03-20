@@ -1,4 +1,5 @@
-use parry3d_f64::bounding_volume::Aabb;
+use glam::Vec3A;
+use obvhs::Boundable;
 
 use crate::rt::interval::Interval;
 use crate::rt::objects::constant_medium::ConstantMedium;
@@ -37,7 +38,7 @@ impl Hittable {
         }
     }
 
-    pub fn bounding_box(&self) -> &Aabb {
+    pub fn bounding_box(&self) -> &parry3d_f64::bounding_volume::Aabb {
         match self {
             Self::ConstantMedium(obj) => obj.bounding_box(),
             Self::HittableList(obj) => obj.bounding_box(),
@@ -77,4 +78,21 @@ impl Hittable {
             Self::Triangle(_) => default,
         }
     }
+}
+
+impl Boundable for Hittable {
+    fn aabb(&self) -> obvhs::aabb::Aabb {
+        let parry_aabb = self.bounding_box();
+        obvhs_aabb_from(parry_aabb)
+    }
+}
+
+pub fn obvhs_aabb_from(parry_aabb: &parry3d_f64::bounding_volume::Aabb) -> obvhs::aabb::Aabb {
+    let min = vec3a_from(parry_aabb.mins);
+    let max = vec3a_from(parry_aabb.maxs);
+    obvhs::aabb::Aabb::new(min, max)
+}
+
+fn vec3a_from(dvec3: parry3d_f64::glamx::DVec3) -> Vec3A {
+    Vec3A::new(dvec3.x as f32, dvec3.y as f32, dvec3.z as f32)
 }

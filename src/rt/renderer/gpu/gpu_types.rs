@@ -3,6 +3,7 @@ use std::sync::Arc;
 use encase::ShaderType;
 use encase_enum::ShaderEnum;
 use glam::Vec3;
+use obvhs::bvh2::Bvh2;
 
 use crate::rt::{
     camera::Camera,
@@ -76,6 +77,45 @@ impl From<&Viewport> for GpuViewport {
             pixel00_loc: viewport.pixel00_loc,
         }
     }
+}
+
+#[derive(ShaderType, Debug)]
+pub struct GpuBvh {
+    #[shader(size(runtime))]
+    nodes: Vec<GpuBvhNode>,
+}
+
+impl From<&Arc<Bvh2>> for GpuBvh {
+    fn from(bvh: &Arc<Bvh2>) -> Self {
+        Self {
+            nodes: bvh
+                .nodes
+                .iter()
+                .map(|node| {
+                    let aabb = node.aabb;
+                    let left_or_prim = if node.is_leaf() {
+                        bvh.primitive_indices[node.first_index as usize]
+                    } else {
+                        node.first_index
+                    };
+                    GpuBvhNode {
+                        aabb_min: Vec3::from(aabb.min),
+                        aabb_max: Vec3::from(aabb.max),
+                        left_or_prim,
+                        count: node.prim_count,
+                    }
+                })
+                .collect(),
+        }
+    }
+}
+
+#[derive(ShaderType, Debug)]
+pub struct GpuBvhNode {
+    aabb_min: Vec3,
+    aabb_max: Vec3,
+    left_or_prim: u32,
+    count: u32,
 }
 
 #[derive(ShaderType, Debug)]

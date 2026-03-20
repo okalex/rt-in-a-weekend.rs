@@ -1,8 +1,10 @@
-use std::{cell::Cell, sync::Arc};
+use std::{sync::Arc, time::Duration};
 
-use parry3d_f64::{
-    bounding_volume::Aabb,
-    partitioning::{Bvh, BvhBuildStrategy},
+use glam::Vec3A;
+use obvhs::{
+    Boundable, BvhBuildParams,
+    bvh2::{Bvh2, builder::build_bvh2},
+    ray::RayHit,
 };
 
 use crate::rt::{
@@ -10,12 +12,12 @@ use crate::rt::{
     materials::material::Material,
     objects::{hit_record::HitRecord, hittable::Hittable, hittable_list::HittableList},
     ray::Ray,
-    types::{Float},
+    types::INFINITY,
 };
 
 pub struct Scene {
     pub objects: Arc<Vec<Arc<Hittable>>>,
-    pub bvh: Arc<Bvh>,
+    pub bvh: Arc<Bvh2>,
     pub materials: Vec<Material>,
     pub lights: Arc<HittableList>,
 }
@@ -36,43 +38,38 @@ impl Scene {
         Self::new(objects, materials, HittableList::new())
     }
 
-    fn build_bvh(objects: Arc<Vec<Arc<Hittable>>>) -> Bvh {
+    fn build_bvh(objects: Arc<Vec<Arc<Hittable>>>) -> Bvh2 {
         // TODO: This needs to recurse into container objects (HittableList, RotateY, Translate, Mesh)
-        let aabbs: Vec<Aabb> = objects.iter().map(|obj| *obj.bounding_box()).collect();
-        Bvh::from_leaves(BvhBuildStrategy::Ploc, &aabbs)
+        let mut build_time = Duration::default();
+        let aabbs: Vec<obvhs::aabb::Aabb> = objects.iter().map(|o| o.aabb()).collect();
+        build_bvh2(&aabbs, BvhBuildParams::fastest_build(), &mut build_time)
     }
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        let parry_ray = ray.to_parry3d();
-
-        let current_hit: Cell<Option<HitRecord>> = Cell::new(None);
-
-        #[rustfmt::skip]
-        self.bvh.cast_ray(
-            &parry_ray,
-            ray_t.max as f64,
-            |leaf_id, best_hit| {
-                match self.objects.get(leaf_id as usize) {
-                    Some(object) => {
-                        match object.hit(ray, ray_t.update_max(best_hit as Float)) {
-                            Some(hit_record) => {
-                                if hit_record.t < best_hit as Float {
-                                    let toi = hit_record.t;
-                                    current_hit.set(Some(hit_record));
-                                    Some(toi as f64)
-                                } else {
-                                    None
-                                }
-                            },
-                            None => None,
-                        }
-                    }
-                    None => None,
-                }
-            }
+        let obvhs_ray = obvhs::ray::Ray::new(
+            Vec3A::from(ray.orig),
+            Vec3A::from(ray.dir),
+            ray_t.min,
+            ray_t.max,
         );
+        let mut rec = RayHit::none();
+        let mut hit_record: Option<HitRecord> = None;
+        let mut closest_t = ray_t.max;
 
-        current_hit.into_inner()
+        self.bvh.ray_traverse(obvhs_ray, &mut rec, |_r, prim_idx| {
+            let obj_idx = self.bvh.primitive_indices[prim_idx] as usize;
+            let object = &self.objects[obj_idx];
+            match object.hit(ray, ray_t.update_max(closest_t)) {
+                Some(hit) => {
+                    closest_t = hit.t;
+                    hit_record = Some(hit);
+                    closest_t
+                }
+                None => INFINITY,
+            }
+        });
+
+        hit_record
     }
 
     pub fn get_material(&self, mat_idx: usize) -> &Material {

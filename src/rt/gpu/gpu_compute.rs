@@ -4,20 +4,21 @@ use std::{
 };
 
 use bytemuck::{AnyBitPattern, NoUninit};
-use encase::ShaderType;
+use encase::{ShaderType, internal::WriteInto};
 
 use crate::rt::{
     gpu::gpu::Gpu,
-    renderer::gpu::gpu_types::{GpuMaterials, GpuMeta, GpuObjects},
+    renderer::gpu::gpu_types::{GpuBvh, GpuMaterials, GpuMeta, GpuObjects},
 };
 
 pub struct GpuCompute<O: NoUninit + AnyBitPattern> {
     gpu: Arc<Gpu>,
     pipeline: wgpu::ComputePipeline,
     bind_group: wgpu::BindGroup,
-    meta_buf: wgpu::Buffer,
-    objects_buf: wgpu::Buffer,
-    materials_buf: wgpu::Buffer,
+    pub meta_buf: wgpu::Buffer,
+    pub objects_buf: wgpu::Buffer,
+    pub materials_buf: wgpu::Buffer,
+    pub bvh_buf: wgpu::Buffer,
     output_buf: wgpu::Buffer,
     temp_buf: wgpu::Buffer,
     _o: PhantomData<O>,
@@ -46,6 +47,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
         meta: Arc<GpuMeta>,
         objects: Arc<GpuObjects>,
         materials: Arc<GpuMaterials>,
+        bvh: Arc<GpuBvh>,
     ) -> Self {
         let meta_size = meta.size().get();
         let meta_buf = gpu.create_buffer(meta_size, buffer_usages::UNIFORM);
@@ -55,6 +57,9 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
 
         let materials_size = materials.size().get();
         let materials_buf = gpu.create_buffer(materials_size, buffer_usages::INPUT);
+
+        let bvh_size = bvh.size().get();
+        let bvh_buf = gpu.create_buffer(bvh_size, buffer_usages::INPUT);
 
         let output_buf = gpu.create_buffer(output_size, buffer_usages::OUTPUT);
         let temp_buf = gpu.create_buffer(output_size, buffer_usages::TEMP);
@@ -80,6 +85,10 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
                     binding: 3,
                     resource: materials_buf.as_entire_binding(),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: bvh_buf.as_entire_binding(),
+                },
             ],
         );
 
@@ -90,6 +99,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
             meta_buf,
             objects_buf,
             materials_buf,
+            bvh_buf,
             output_buf,
             temp_buf,
             _o: PhantomData,
@@ -101,34 +111,18 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
         meta: Arc<GpuMeta>,
         objects: Arc<GpuObjects>,
         materials: Arc<GpuMaterials>,
+        bvh: Arc<GpuBvh>,
     ) {
-        self.init_meta(meta);
-        self.init_objects(objects);
-        self.init_materials(materials);
+        self.init_buf(&meta, &self.meta_buf);
+        self.init_buf(&objects, &self.objects_buf);
+        self.init_buf(&materials, &self.materials_buf);
+        self.init_buf(&bvh, &self.bvh_buf);
     }
 
-    pub fn init_meta(&self, meta: Arc<GpuMeta>) {
+    pub fn init_buf<T: ShaderType + WriteInto>(&self, data: &Arc<T>, buf: &wgpu::Buffer) {
         let mut buffer = encase::StorageBuffer::new(Vec::new());
-        buffer.write(&meta).unwrap();
-        self.gpu
-            .queue()
-            .write_buffer(&self.meta_buf, 0, buffer.as_ref());
-    }
-
-    pub fn init_objects(&self, objects: Arc<GpuObjects>) {
-        let mut buffer = encase::StorageBuffer::new(Vec::new());
-        buffer.write(&objects).unwrap();
-        self.gpu
-            .queue()
-            .write_buffer(&self.objects_buf, 0, buffer.as_ref());
-    }
-
-    pub fn init_materials(&self, materials: Arc<GpuMaterials>) {
-        let mut buffer = encase::StorageBuffer::new(Vec::new());
-        buffer.write(&materials).unwrap();
-        self.gpu
-            .queue()
-            .write_buffer(&self.materials_buf, 0, buffer.as_ref());
+        buffer.write(data).unwrap();
+        self.gpu.queue().write_buffer(buf, 0, buffer.as_ref());
     }
 
     pub async fn dispatch(&self, workgroup_dims: [u32; 2]) -> anyhow::Result<Vec<O>> {

@@ -9,7 +9,7 @@ use crate::rt::{
     gpu::{gpu::Gpu, gpu_compute::GpuCompute},
     objects::scene::Scene,
     renderer::{
-        gpu::gpu_types::{GpuMaterials, GpuMeta, GpuObjects},
+        gpu::gpu_types::{GpuBvh, GpuMaterials, GpuMeta, GpuObjects},
         render_options::RenderOptions,
     },
     types::Float,
@@ -62,7 +62,7 @@ impl GpuRenderer {
                 Arc::clone(&self.camera),
                 samples,
             ));
-            gpu_compute.init_meta(gpu_meta);
+            gpu_compute.init_buf(&gpu_meta, &gpu_compute.meta_buf);
 
             let result = gpu_compute.dispatch(workgroup_dims).await;
 
@@ -98,6 +98,7 @@ impl GpuRenderer {
         ));
         let gpu_objects = Arc::new(GpuObjects::new(Arc::clone(&self.scene)));
         let gpu_materials = Arc::new(GpuMaterials::from(&self.scene.materials));
+        let gpu_bvh = Arc::new(GpuBvh::from(&self.scene.bvh));
 
         let num_pixels = (self.options.img_height * self.options.img_width) as u32;
         let output_buf_size = (num_pixels * std::mem::size_of::<[f32; 4]>() as u32) as u64;
@@ -109,9 +110,10 @@ impl GpuRenderer {
             Arc::clone(&gpu_meta),
             Arc::clone(&gpu_objects),
             Arc::clone(&gpu_materials),
+            Arc::clone(&gpu_bvh),
         );
 
-        gpu_compute.init_bufs(gpu_meta, gpu_objects, gpu_materials);
+        gpu_compute.init_bufs(gpu_meta, gpu_objects, gpu_materials, gpu_bvh);
 
         gpu_compute
     }

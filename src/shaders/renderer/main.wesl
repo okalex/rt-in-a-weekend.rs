@@ -1,16 +1,9 @@
 import package::{
-    bindings::{output, gpu_meta, objects},
+    bindings::{output, gpu_meta},
     camera::get_ray,
-    color::{Rgba, to_rgba},
-    constants::{PI},
-    hit_record::{HitRecord, no_hit},
-    interval::Interval,
-    material::{get_material, scatter, emitted},
-    random::{init_rng, rand_f32, rand_vector_on_hemisphere},
-    ray::Ray,
-    sphere::hit_sphere,
-    types,
-    vector::{length_squared, ZEROS},
+    color::{to_rgba},
+    random::{init_rng},
+    renderer::get_ray_color,
 };
 
 @compute
@@ -37,70 +30,4 @@ fn main(
 
     output[idx] = to_rgba(color);
 }
-
-fn get_ray_color(ray: Ray) -> vec3<f32> {
-    var color = vec3<f32>(1, 1, 1);
-    var hit_ray = ray;
-    let ray_t = Interval(0.001, 1000000000000);
-
-    for (var bounces = 0u; bounces < gpu_meta.max_depth; bounces = bounces + 1) {
-        let hit_record = hit_objects(hit_ray, ray_t);
-        if hit_record.is_hit {
-
-            let material = get_material(hit_record.mat_idx);
-            let emitted_color = emitted(material, hit_ray, hit_record);
-            let scatter_record = scatter(material, hit_ray, hit_record);
-
-            if scatter_record.is_scattered {
-                if scatter_record.skip_pdf {
-                    color = color * (emitted_color + scatter_record.attenuation);
-                    hit_ray = scatter_record.scattered;
-                } else {
-                    // Discard NaNs
-                    if scatter_record.pdf_value > 1e-8 {
-                        color = color * (emitted_color + scatter_record.attenuation * scatter_record.scattering_pdf / scatter_record.pdf_value);
-                    }
-
-                    hit_ray = scatter_record.scattered;
-                }
-            } else {
-                return color * emitted_color;
-            }
-
-        } else {
-            return color * gpu_meta.background;
-        }
-    }
-
-    return ZEROS;
-}
-
-fn hit_objects(ray: Ray, ray_t: Interval) -> HitRecord {
-    var hit_record = no_hit();
-    var closest = ray_t.max;
-
-    for (var i: u32 = 0; i < arrayLength(&objects.objects); i = i + 1) {
-        let object = objects.objects[i];
-        let temp_record = hit_object(ray, Interval(ray_t.min, closest), object);
-        if temp_record.is_hit {
-            hit_record = temp_record;
-            closest = hit_record.t;
-        }
-    }
-    return hit_record;
-}
-
-fn hit_object(ray: Ray, ray_t: Interval, object: types::GpuShape) -> HitRecord {
-    switch object._type {
-        case types::GPUSHAPE_SPHERE: {
-            let sphere = types::unpack_GpuShape_Sphere(object);
-            return hit_sphere(sphere, ray, ray_t);
-        }
-
-        default: {
-            return no_hit();
-        }
-    }
-}
-
 
