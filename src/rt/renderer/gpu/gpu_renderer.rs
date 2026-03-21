@@ -86,7 +86,8 @@ impl GpuRenderer {
             }
         }
 
-        eprintln!("Done rendering: {} ms", now.elapsed().as_millis());
+        let elapsed = now.elapsed().as_millis();
+        eprintln!("Done rendering: {}.{} s", elapsed / 1000, elapsed % 1000);
     }
 
     fn setup_pipeline(&self) -> GpuCompute<[f32; 4]> {

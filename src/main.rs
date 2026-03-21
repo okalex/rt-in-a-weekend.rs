@@ -7,8 +7,6 @@ use winit::event_loop::EventLoop;
 
 #[allow(unused)]
 use crate::rt::color::Color;
-// use crate::rt::test_scenes::get_camera_and_scene;
-use crate::rt::test_scenes2;
 use crate::rt::{
     app::app::App,
     camera::Camera,
@@ -23,6 +21,7 @@ use crate::rt::{
         renderer::Renderer,
     },
     sampler::Sampler,
+    test_scenes2::get_scene,
     types::{
         Float,
         Uint,
@@ -118,7 +117,7 @@ fn print_config(args: Arc<Args>, render_options: Arc<RenderOptions>) {
 }
 
 async fn get_renderer(args: Arc<Args>, render_options: Arc<RenderOptions>, frame_buffer: Arc<FrameBuffer>) -> Arc<Renderer> {
-    let (camera_options, scene) = test_scenes2::scene1(); //get_camera_and_scene(args.scene);
+    let (camera_options, scene) = get_scene(args.scene); //get_camera_and_scene(args.scene);
 
     let viewport = Viewport::new(render_options.img_width, render_options.img_height, &camera_options);
 
