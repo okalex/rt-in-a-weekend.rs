@@ -1,7 +1,8 @@
-use parry3d_f64::bounding_volume::Aabb;
-
 use crate::rt::{
-    geometry::hit_record::HitRecord,
+    geometry::{
+        aabb::Aabb,
+        hit_record::HitRecord,
+    },
     interval::Interval,
     random::rand,
     ray::Ray,
@@ -15,26 +16,21 @@ use crate::rt::{
 };
 
 pub struct Quad {
-    q: Point,
-    u: Vector,
-    v: Vector,
+    pub q: Point,
+    pub u: Vector,
+    pub v: Vector,
     w: Vector,
-    pub mat_idx: usize,
-    bbox: Aabb,
+    pub aabb: Aabb,
+    parry_aabb: parry3d_f64::bounding_volume::Aabb, // TODO: delete
     normal: Vector,
     d: Float,
     area: Float,
 }
 
 impl Quad {
-    pub fn new(q: Point, u: Vector, v: Vector, mat_idx: usize) -> Self {
-        let points = vec![
-            to_parry_vec(q),
-            to_parry_vec(q + u),
-            to_parry_vec(q + v),
-            to_parry_vec(q + u + v),
-        ];
-        let bbox = Aabb::from_points(points);
+    pub fn new(q: Point, u: Vector, v: Vector) -> Self {
+        let aabb = Aabb::new(q, q + u + v);
+        let parry_aabb = aabb.to_parry3d();
 
         let n = u.cross(v);
         let normal = n.normalize();
@@ -47,16 +43,16 @@ impl Quad {
             u,
             v,
             w,
-            mat_idx,
-            bbox,
+            aabb,
+            parry_aabb,
             normal,
             d,
             area,
         }
     }
 
-    pub fn from_arr(q: [Float; 3], u: [Float; 3], v: [Float; 3], mat_idx: usize) -> Self {
-        Self::new(Point::from(q), Vector::from(u), Vector::from(v), mat_idx)
+    pub fn from_arr(q: [Float; 3], u: [Float; 3], v: [Float; 3]) -> Self {
+        Self::new(Point::from(q), Vector::from(u), Vector::from(v))
     }
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
@@ -90,8 +86,8 @@ impl Quad {
         Some(HitRecord::new(intersection, face_normal, front_face, t, alpha, beta))
     }
 
-    pub fn bounding_box(&self) -> &Aabb {
-        &self.bbox
+    pub fn bounding_box(&self) -> &parry3d_f64::bounding_volume::Aabb {
+        &self.parry_aabb
     }
 
     pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {

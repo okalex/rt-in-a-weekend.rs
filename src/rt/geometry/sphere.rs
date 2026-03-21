@@ -10,7 +10,6 @@ use crate::rt::{
     random::rand,
     ray::Ray,
     types::{
-        to_parry_vec,
         Float,
         Point,
         Vector,
@@ -28,11 +27,13 @@ pub struct Sphere {
 
 impl Sphere {
     pub fn new(center: Ray, radius: Float, aabb: Aabb) -> Sphere {
-        let parry_aabb = parry3d_f64::bounding_volume::Aabb::new(
-            DVec3::from(aabb.min), 
-            DVec3::from(aabb.max)
-        );
-        Sphere { center, radius, aabb, parry_aabb }
+        let parry_aabb = aabb.to_parry3d();
+        Sphere {
+            center,
+            radius,
+            aabb,
+            parry_aabb,
+        }
     }
 
     pub fn stationary(center: Point, radius: Float) -> Sphere {

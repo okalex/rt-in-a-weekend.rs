@@ -26,67 +26,6 @@
 //     types::{Float, Point, Uint, Vector},
 // };
 
-
-
-// impl HittableList {
-//     fn cornell_room(materials: &Materials, width: Float) -> (Hittable, Hittable) {
-//         let mut objects = HittableList::new();
-//         let mut lights = HittableList::new();
-
-//         let light = Arc::new(Shapes::quad(
-//             [0.6 * width, width - 0.1, 0.6 * width],
-//             [-0.2 * width, 0.0, 0.0],
-//             [0.0, 0.0, -0.2 * width],
-//             materials.get("diffuse_light"),
-//         ));
-//         let left = Shapes::quad(
-//             [width, 0.0, 0.0],
-//             [0.0, width, 0.0],
-//             [0.0, 0.0, width],
-//             materials.get("green"),
-//         );
-//         let right = Shapes::quad(
-//             [0.0, 0.0, 0.0],
-//             [0.0, width, 0.0],
-//             [0.0, 0.0, width],
-//             materials.get("red"),
-//         );
-//         let floor = Shapes::quad(
-//             [0.0, 0.0, 0.0],
-//             [width, 0.0, 0.0],
-//             [0.0, 0.0, width],
-//             materials.get("white"),
-//         );
-//         let ceiling = Shapes::quad(
-//             [width, width, width],
-//             [-width, 0.0, 0.0],
-//             [0.0, 0.0, -width],
-//             materials.get("white"),
-//         );
-//         let back = Shapes::quad(
-//             [0.0, 0.0, width],
-//             [width, 0.0, 0.0],
-//             [0.0, width, 0.0],
-//             materials.get("white"),
-//         );
-
-//         objects.add(left);
-//         objects.add(right);
-//         objects.add(floor);
-//         objects.add(ceiling);
-//         objects.add(back);
-//         objects.add_arc(light.clone());
-//         lights.add_arc(light.clone());
-
-//         (
-//             Hittable::HittableList(objects),
-//             Hittable::HittableList(lights),
-//         )
-//     }
-// }
-
-
-
 // fn camera_triangle() -> CameraOptions {
 //     CameraOptions::new()
 //         .vfov(50.0)
@@ -177,8 +116,6 @@
 
 //     Scene::new(scene, materials.materials, lights)
 // }
-
-
 
 // fn camera_c() -> CameraOptions {
 //     CameraOptions::new()
@@ -315,13 +252,6 @@
 //     scene.add(sphere_light);
 
 //     Scene::no_lights(scene, materials.materials)
-// }
-
-// fn camera_cornell(room_width: Float) -> CameraOptions {
-//     CameraOptions::new()
-//         .vfov(40.0)
-//         .position([room_width / 2.0, room_width / 2.0, -1.44 * room_width])
-//         .target([room_width / 2.0, room_width / 2.0, 0.0])
 // }
 
 // fn scene_cornell() -> Scene {

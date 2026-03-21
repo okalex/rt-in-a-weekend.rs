@@ -41,11 +41,18 @@ struct GpuPrimitive_Sphere {
     radius: f32,
 }
 
+struct GpuPrimitive_Quad {
+    q: vec3<f32>,
+    u: vec3<f32>,
+    v: vec3<f32>,
+}
+
 const GPUPRIMITIVE_SPHERE: u32 = 0u;
+const GPUPRIMITIVE_QUAD: u32 = 1u;
 
 struct GpuPrimitive {
     _type: u32,
-    data: array<vec4<f32>, 1>,
+    data: array<vec4<f32>, 3>,
 }
 
 struct GpuPrimitives {
@@ -134,6 +141,10 @@ fn unpack_GpuInstance(data: array<vec4<f32>, 9>) -> GpuInstance {
 
 fn unpack_GpuPrimitive_Sphere(v: GpuPrimitive) -> GpuPrimitive_Sphere {
     return GpuPrimitive_Sphere(v.data[0].xyz, v.data[0].w);
+}
+
+fn unpack_GpuPrimitive_Quad(v: GpuPrimitive) -> GpuPrimitive_Quad {
+    return GpuPrimitive_Quad(v.data[0].xyz, v.data[1].xyz, v.data[2].xyz);
 }
 
 fn unpack_GpuMaterial_Lambertian(v: GpuMaterial) -> GpuMaterial_Lambertian {

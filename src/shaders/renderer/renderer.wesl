@@ -5,6 +5,7 @@ import package::{
     hit_record::{HitRecord, no_hit},
     interval::Interval,
     material::{get_material, scatter, emitted},
+    quad::hit_quad,
     ray::Ray,
     sphere::hit_sphere,
     stack::{new_stack, push, pop, is_empty},
@@ -83,15 +84,19 @@ fn hit_instances(ray: Ray, ray_t: Interval) -> HitRecord {
 fn hit_instance(ray: Ray, ray_t: Interval, instance_id: u32) -> HitRecord {
     let instance = instances.instances[instance_id];
     let primitive = primitives.primitives[instance.primitive_id];
+    let transformed_ray = transform_ray(ray, instance.inv_transform);
+    
     switch primitive._type {
         case types::GPUPRIMITIVE_SPHERE: {
             let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
-            let transformed_ray = transform_ray(ray, instance.inv_transform);
             var hit_record = hit_sphere(sphere, transformed_ray, ray_t);
-            hit_record.instance_id = instance_id;
-            hit_record.point = transform_point(hit_record.point, instance.transform);
-            hit_record.normal = transform_normal(hit_record.normal, instance.inv_transform);
-            return hit_record;
+            return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
+        }
+
+        case types::GPUPRIMITIVE_QUAD: {
+            let quad = types::unpack_GpuPrimitive_Quad(primitive);
+            var hit_record = hit_quad(quad, transformed_ray, ray_t);
+            return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
         }
 
         default: {
@@ -104,6 +109,21 @@ fn transform_ray(ray: Ray, transform: mat4x4<f32>) -> Ray {
     let orig = transform_point(ray.orig, transform);
     let dir = transform_direction(ray.dir, transform);
     return Ray(orig, dir);
+}
+
+fn transform_hit_record(
+    hit_record: HitRecord,
+    instance_id: u32,
+    transform: mat4x4<f32>,
+    inv_transform: mat4x4<f32>
+) -> HitRecord {
+    var new_record = hit_record;
+
+    new_record.instance_id = instance_id;
+    new_record.point = transform_point(hit_record.point, transform);
+    new_record.normal = transform_normal(hit_record.normal, inv_transform);
+
+    return new_record;
 }
 
 fn transform_point(point: vec3<f32>, transform: mat4x4<f32>) -> vec3<f32> {
