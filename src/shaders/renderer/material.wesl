@@ -1,5 +1,5 @@
 import package::{
-    bindings::materials,
+    bindings::{instances, materials},
     color::Rgba,
     constants::{PI},
     hit_record::HitRecord,
@@ -11,8 +11,9 @@ import package::{
     types,
 };
 
-fn get_material(mat_idx: u32) -> types::GpuMaterial {
-    return materials.materials[mat_idx];
+fn get_material(instance_id: u32) -> types::GpuMaterial {
+    let instance = instances.instances[instance_id];
+    return materials.materials[instance.material_id];
 }
 
 struct ScatterRecord {

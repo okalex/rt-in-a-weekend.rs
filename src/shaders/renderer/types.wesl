@@ -36,21 +36,31 @@ struct GpuBvh {
     nodes: array<GpuBvhNode>,
 }
 
-struct GpuShape_Sphere {
+struct GpuPrimitive_Sphere {
     center: vec3<f32>,
     radius: f32,
-    mat_idx: u32,
 }
 
-const GPUSHAPE_SPHERE: u32 = 0u;
+const GPUPRIMITIVE_SPHERE: u32 = 0u;
 
-struct GpuShape {
+struct GpuPrimitive {
     _type: u32,
-    data: array<vec4<f32>, 2>,
+    data: array<vec4<f32>, 1>,
 }
 
-struct GpuObjects {
-    objects: array<GpuShape>,
+struct GpuPrimitives {
+    primitives: array<GpuPrimitive>,
+}
+
+struct GpuInstance {
+    primitive_id: u32,
+    material_id: u32,
+    transform: mat4x4<f32>,
+    inv_transform: mat4x4<f32>,
+}
+
+struct GpuInstances {
+    instances: array<GpuInstance>,
 }
 
 struct GpuTexture_SolidColor {
@@ -118,8 +128,12 @@ fn unpack_GpuBvhNode(data: array<vec4<f32>, 3>) -> GpuBvhNode {
     return GpuBvhNode(data[0].xyz, data[1].xyz, bitcast<u32>(data[1].w), bitcast<u32>(data[2].x));
 }
 
-fn unpack_GpuShape_Sphere(v: GpuShape) -> GpuShape_Sphere {
-    return GpuShape_Sphere(v.data[0].xyz, v.data[0].w, bitcast<u32>(v.data[1].x));
+fn unpack_GpuInstance(data: array<vec4<f32>, 9>) -> GpuInstance {
+    return GpuInstance(bitcast<u32>(data[0].x), bitcast<u32>(data[0].y), mat4x4<f32>(data[1], data[2], data[3], data[4]), mat4x4<f32>(data[5], data[6], data[7], data[8]));
+}
+
+fn unpack_GpuPrimitive_Sphere(v: GpuPrimitive) -> GpuPrimitive_Sphere {
+    return GpuPrimitive_Sphere(v.data[0].xyz, v.data[0].w);
 }
 
 fn unpack_GpuMaterial_Lambertian(v: GpuMaterial) -> GpuMaterial_Lambertian {

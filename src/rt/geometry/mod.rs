@@ -1,12 +1,12 @@
+pub mod aabb;
 pub mod box3d;
 pub mod constant_medium;
 pub mod hit_record;
 pub mod hittable;
 pub mod hittable_list;
-pub mod instance;
 pub mod mesh;
+pub mod primitive;
 pub mod quad;
 pub mod scene;
 pub mod sphere;
-pub mod transformations;
 pub mod triangle;

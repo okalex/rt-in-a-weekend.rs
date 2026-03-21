@@ -2,13 +2,22 @@ use std::sync::Arc;
 
 use encase::ShaderType;
 use encase_enum::ShaderEnum;
-use glam::Vec3;
+use glam::{
+    Mat4,
+    Vec3,
+};
 use obvhs::bvh2::Bvh2;
 
 use crate::rt::{
     camera::Camera,
+    geometry::{
+        primitive::Primitive,
+        scene::{
+            Instance,
+            Scene,
+        },
+    },
     materials::material::Material,
-    geometry::{hittable::Hittable, scene::Scene},
     renderer::render_options::RenderOptions,
     textures::texture::Texture,
     viewport::Viewport,
@@ -85,8 +94,8 @@ pub struct GpuBvh {
     nodes: Vec<GpuBvhNode>,
 }
 
-impl From<&Arc<Bvh2>> for GpuBvh {
-    fn from(bvh: &Arc<Bvh2>) -> Self {
+impl From<&Bvh2> for GpuBvh {
+    fn from(bvh: &Bvh2) -> Self {
         Self {
             nodes: bvh
                 .nodes
@@ -119,48 +128,65 @@ pub struct GpuBvhNode {
 }
 
 #[derive(ShaderType, Debug)]
-pub struct GpuObjects {
+pub struct GpuPrimitives {
     #[shader(size(runtime))]
-    objects: Vec<GpuShape>,
+    primitives: Vec<GpuPrimitive>,
 }
 
-impl GpuObjects {
+impl GpuPrimitives {
     pub fn new(scene: Arc<Scene>) -> Self {
-        let objects = scene
-            .objects
-            .iter()
-            .map(|object| GpuShape::from(object))
-            .collect();
+        let primitives = scene.primitives.iter().map(|prim| GpuPrimitive::from(prim)).collect();
 
-        Self { objects }
+        Self { primitives }
     }
 }
 
 #[derive(ShaderEnum, Debug)]
-pub enum GpuShape {
-    Sphere {
-        center: Vec3,
-        radius: f32,
-        mat_idx: u32,
-    },
+pub enum GpuPrimitive {
+    Sphere { center: Vec3, radius: f32 },
 }
 
-impl From<&Arc<Hittable>> for GpuShape {
-    fn from(hittable: &Arc<Hittable>) -> Self {
-        match hittable.as_ref() {
-            Hittable::Sphere(obj) => GpuShape::Sphere {
+impl From<&Primitive> for GpuPrimitive {
+    fn from(hittable: &Primitive) -> Self {
+        match hittable {
+            Primitive::Sphere(obj) => GpuPrimitive::Sphere {
                 center: obj.center.orig, // TODO: support moving later
                 radius: obj.radius,
-                mat_idx: obj.mat_idx as u32,
             },
-            _ => panic!(),
         }
     }
 }
 
-impl From<Arc<Hittable>> for GpuShape {
-    fn from(hittable: Arc<Hittable>) -> Self {
-        Self::from(&hittable)
+#[derive(ShaderType, Debug)]
+pub struct GpuInstances {
+    #[shader(size(runtime))]
+    instances: Vec<GpuInstance>,
+}
+
+impl GpuInstances {
+    pub fn new(scene: Arc<Scene>) -> Self {
+        let instances = scene.instances.iter().map(|instance| GpuInstance::from(instance)).collect();
+
+        Self { instances }
+    }
+}
+
+#[derive(ShaderType, Debug)]
+pub struct GpuInstance {
+    primitive_id: u32,
+    material_id: u32,
+    transform: Mat4,
+    inv_transform: Mat4,
+}
+
+impl From<&Instance> for GpuInstance {
+    fn from(instance: &Instance) -> Self {
+        Self {
+            primitive_id: instance.primitive_id.id as u32,
+            material_id: instance.material_id.id as u32,
+            transform: instance.transform,
+            inv_transform: instance.inv_transform,
+        }
     }
 }
 
@@ -173,9 +199,7 @@ pub struct GpuMaterials {
 impl From<&Vec<Material>> for GpuMaterials {
     fn from(materials: &Vec<Material>) -> Self {
         let gpu_materials: Vec<GpuMaterial> = materials.iter().map(GpuMaterial::from).collect();
-        Self {
-            materials: gpu_materials,
-        }
+        Self { materials: gpu_materials }
     }
 }
 
@@ -204,9 +228,7 @@ impl From<&Material> for GpuMaterial {
             },
 
             Material::Emissive(mat) => match mat.texture.as_ref() {
-                Texture::Solid(color) => Self::Emissive {
-                    color: color.albedo.base,
-                },
+                Texture::Solid(color) => Self::Emissive { color: color.albedo.base },
                 _ => panic!(),
             },
 
@@ -234,22 +256,14 @@ impl From<Arc<Material>> for GpuMaterial {
 
 #[derive(ShaderEnum, Debug)]
 pub enum GpuTexture {
-    SolidColor {
-        albedo: Vec3,
-    },
-    Checkered {
-        inv_scale: f32,
-        even: Vec3,
-        odd: Vec3,
-    },
+    SolidColor { albedo: Vec3 },
+    Checkered { inv_scale: f32, even: Vec3, odd: Vec3 },
 }
 
 impl From<&Texture> for GpuTexture {
     fn from(texture: &Texture) -> Self {
         match texture {
-            Texture::Solid(tex) => Self::SolidColor {
-                albedo: tex.albedo.base,
-            },
+            Texture::Solid(tex) => Self::SolidColor { albedo: tex.albedo.base },
 
             Texture::Checkered(tex) => Self::Checkered {
                 inv_scale: tex.inv_scale,

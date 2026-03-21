@@ -1,6 +1,10 @@
 use crate::rt::{
     ray::Ray,
-    types::{Float, Point, Vector},
+    types::{
+        Float,
+        Point,
+        Vector,
+    },
 };
 
 pub struct HitRecord {
@@ -10,19 +14,10 @@ pub struct HitRecord {
     pub u: Float,
     pub v: Float,
     pub front_face: bool,
-    pub mat_idx: usize,
 }
 
 impl HitRecord {
-    pub fn new(
-        point: Point,
-        normal: Vector,
-        front_face: bool,
-        t: Float,
-        u: Float,
-        v: Float,
-        mat_idx: usize,
-    ) -> Self {
+    pub fn new(point: Point, normal: Vector, front_face: bool, t: Float, u: Float, v: Float) -> Self {
         Self {
             point,
             normal,
@@ -30,41 +25,20 @@ impl HitRecord {
             u,
             v,
             front_face,
-            mat_idx,
         }
     }
 
     pub fn get_front_face(ray: &Ray, outward_normal: Vector) -> (bool, Vector) {
         let front_face = ray.dir.dot(outward_normal) < 0.0;
-        let face_normal = if front_face {
-            outward_normal
-        } else {
-            -outward_normal
-        };
+        let face_normal = if front_face { outward_normal } else { -outward_normal };
         (front_face, face_normal)
     }
 
     pub fn set_point(&self, new_point: Point) -> Self {
-        Self::new(
-            new_point,
-            self.normal,
-            self.front_face,
-            self.t,
-            self.u,
-            self.v,
-            self.mat_idx,
-        )
+        Self::new(new_point, self.normal, self.front_face, self.t, self.u, self.v)
     }
 
     pub fn set_normal(&self, new_normal: Vector) -> Self {
-        Self::new(
-            self.point,
-            new_normal,
-            self.front_face,
-            self.t,
-            self.u,
-            self.v,
-            self.mat_idx,
-        )
+        Self::new(self.point, new_normal, self.front_face, self.t, self.u, self.v)
     }
 }

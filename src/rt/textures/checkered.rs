@@ -3,7 +3,11 @@ use std::sync::Arc;
 use crate::rt::{
     color::Color,
     textures::solid_color::SolidColor,
-    types::{Float, Int, Point},
+    types::{
+        Float,
+        Int,
+        Point,
+    },
 };
 
 pub struct Checkered {

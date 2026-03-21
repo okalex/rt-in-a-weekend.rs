@@ -1,6 +1,9 @@
 use std::ops::Add;
 
-use crate::rt::types::{Float, INFINITY};
+use crate::rt::types::{
+    Float,
+    INFINITY,
+};
 
 #[derive(Clone, Copy)]
 pub struct Interval {
@@ -22,6 +25,7 @@ impl Interval {
         Self::new(0.0, 0.0)
     }
 
+    #[allow(dead_code)]
     pub fn universe() -> Interval {
         Self::new(-INFINITY, INFINITY)
     }

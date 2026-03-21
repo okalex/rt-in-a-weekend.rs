@@ -1,11 +1,18 @@
 use std::{
     fs,
-    io::{BufReader, Cursor},
+    io::{
+        BufReader,
+        Cursor,
+    },
     path::Path,
 };
 
-use crate::rt::geometry::{hittable::Hittable, mesh::Mesh};
+use crate::rt::geometry::{
+    hittable::Hittable,
+    mesh::Mesh,
+};
 
+#[allow(dead_code)]
 pub fn load_string_path(path: &Path) -> anyhow::Result<String> {
     let path = Path::new(env!("OUT_DIR")).join("assets").join(path);
     eprintln!("Loading text from {}", path.file_name().unwrap().display());
@@ -13,11 +20,13 @@ pub fn load_string_path(path: &Path) -> anyhow::Result<String> {
     Ok(txt)
 }
 
+#[allow(dead_code)]
 pub fn load_string(file_name: &str) -> anyhow::Result<String> {
     let path = Path::new(env!("OUT_DIR")).join("assets").join(file_name);
     load_string_path(path.as_path())
 }
 
+#[allow(dead_code)]
 pub fn load_model_with_mat(file_name: &str, mat_idx: usize) -> anyhow::Result<Vec<Hittable>> {
     eprintln!("Loading model from {}", file_name);
 

@@ -1,12 +1,20 @@
-use parry3d_f64::bounding_volume::Aabb;
-use parry3d_f64::math::Vec3;
-use parry3d_f64::query::RayCast;
-use parry3d_f64::shape::Triangle as Parry3dTriangle;
+use parry3d_f64::{
+    bounding_volume::Aabb,
+    math::Vec3,
+    query::RayCast,
+    shape::Triangle as Parry3dTriangle,
+};
 
-use crate::rt::interval::Interval;
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::ray::Ray;
-use crate::rt::types::{Float, from_parry_vec, new_parry_vec};
+use crate::rt::{
+    geometry::hit_record::HitRecord,
+    interval::Interval,
+    ray::Ray,
+    types::{
+        from_parry_vec,
+        new_parry_vec,
+        Float,
+    },
+};
 
 pub struct Triangle {
     underlying: Parry3dTriangle,
@@ -56,7 +64,6 @@ impl Triangle {
                     intersection.time_of_impact as Float,
                     0.0, // TODO
                     0.0, // TODO
-                    self.mat_idx,
                 ))
             }
 

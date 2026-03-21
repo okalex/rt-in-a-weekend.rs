@@ -1,57 +1,67 @@
-use parry3d_f64::bounding_volume::{Aabb, BoundingVolume};
+use glam::DVec3;
 
-use crate::rt::interval::Interval;
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::onb::Onb;
-use crate::rt::random::rand;
-use crate::rt::ray::Ray;
-use crate::rt::types::{Float, INFINITY, PI, Point, Vector, to_parry_vec};
+use crate::rt::{
+    geometry::{
+        aabb::Aabb,
+        hit_record::HitRecord,
+    },
+    interval::Interval,
+    onb::Onb,
+    random::rand,
+    ray::Ray,
+    types::{
+        to_parry_vec,
+        Float,
+        Point,
+        Vector,
+        INFINITY,
+        PI,
+    },
+};
 
 pub struct Sphere {
     pub center: Ray,
     pub radius: Float,
-    pub mat_idx: usize,
-    bbox: Aabb,
+    pub aabb: Aabb,
+    parry_aabb: parry3d_f64::bounding_volume::Aabb, // TODO: delete
 }
 
 impl Sphere {
-    pub fn new(center: Ray, radius: Float, mat_idx: usize, bbox: Aabb) -> Sphere {
-        Sphere {
-            center,
-            radius,
-            mat_idx,
-            bbox,
-        }
+    pub fn new(center: Ray, radius: Float, aabb: Aabb) -> Sphere {
+        let parry_aabb = parry3d_f64::bounding_volume::Aabb::new(
+            DVec3::from(aabb.min), 
+            DVec3::from(aabb.max)
+        );
+        Sphere { center, radius, aabb, parry_aabb }
     }
 
-    pub fn stationary(center: Point, radius: Float, mat_idx: usize) -> Sphere {
+    pub fn stationary(center: Point, radius: Float) -> Sphere {
         let ray = Ray::new(center, Vector::ZERO, 0.0);
         let rvec = Vector::splat(radius);
-        let points = vec![to_parry_vec(center - rvec), to_parry_vec(center + rvec)];
-        let bbox = Aabb::from_points(points);
-        Self::new(ray, radius, mat_idx, bbox)
+        let aabb = Aabb::new(center - rvec, center + rvec);
+        Self::new(ray, radius, aabb)
     }
 
-    pub fn moving(center1: Point, center2: Point, radius: Float, mat_idx: usize) -> Sphere {
-        let ray = Ray::new(center1, center2 - center1, 0.0);
-        let rvec = Vector::splat(radius);
-        let box1 = {
-            let points = vec![
-                to_parry_vec(ray.at(0.0) - rvec),
-                to_parry_vec(ray.at(0.0) + rvec),
-            ];
-            Aabb::from_points(points)
-        };
-        let box2 = {
-            let points = vec![
-                to_parry_vec(ray.at(1.0) - rvec),
-                to_parry_vec(ray.at(1.0) + rvec),
-            ];
-            Aabb::from_points(points)
-        };
-        let bbox = box1.merged(&box2);
-        Self::new(ray, radius, mat_idx, bbox)
-    }
+    // pub fn moving(center1: Point, center2: Point, radius: Float) -> Sphere {
+    //     let ray = Ray::new(center1, center2 - center1, 0.0);
+    //     let rvec = Vector::splat(radius);
+    //     let box1 = {
+    //         let points = vec![
+    //             to_parry_vec(ray.at(0.0) - rvec),
+    //             to_parry_vec(ray.at(0.0) + rvec),
+    //         ];
+    //         Aabb::from_points(points)
+    //     };
+    //     let box2 = {
+    //         let points = vec![
+    //             to_parry_vec(ray.at(1.0) - rvec),
+    //             to_parry_vec(ray.at(1.0) + rvec),
+    //         ];
+    //         Aabb::from_points(points)
+    //     };
+    //     let bbox = box1.merged(&box2);
+    //     Self::new(ray, radius, bbox)
+    // }
 
     pub fn get_uv(normal: &Vector) -> (Float, Float) {
         let u = 0.5 + (-normal.z).atan2(normal.x) / (2.0 * PI);
@@ -99,19 +109,11 @@ impl Sphere {
         let (front_face, face_normal) = HitRecord::get_front_face(ray, outward_normal);
         let (u, v) = Sphere::get_uv(&face_normal); // Why is this not &point?
 
-        Some(HitRecord::new(
-            point,
-            face_normal,
-            front_face,
-            root,
-            u,
-            v,
-            self.mat_idx,
-        ))
+        Some(HitRecord::new(point, face_normal, front_face, root, u, v))
     }
 
-    pub fn bounding_box(&self) -> &Aabb {
-        &self.bbox
+    pub fn bounding_box(&self) -> &parry3d_f64::bounding_volume::Aabb {
+        &self.parry_aabb
     }
 
     pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {

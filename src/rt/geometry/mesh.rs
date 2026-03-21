@@ -119,7 +119,6 @@ impl Mesh {
                     intersection.time_of_impact as Float,
                     u,
                     v,
-                    self.mat_idx,
                 ))
             }
 

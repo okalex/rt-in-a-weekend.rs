@@ -1,18 +1,35 @@
-use std::sync::Arc;
-use std::time::Instant;
+use std::{
+    sync::Arc,
+    time::Instant,
+};
 
-use crate::rt::camera::Camera;
-use crate::rt::color::Color;
-use crate::rt::frame_buffer::FrameBuffer;
-use crate::rt::interval::Interval;
-use crate::rt::materials::material::{Material, ScatterRecord};
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::geometry::scene::Scene;
-use crate::rt::pdf::{CosinePdf, HittablePdf, MixturePdf, Pdf};
-use crate::rt::ray::Ray;
-use crate::rt::renderer::cpu::line_server::LineServer;
-use crate::rt::renderer::render_options::RenderOptions;
-use crate::rt::types::{INFINITY, Uint};
+use crate::rt::{
+    camera::Camera,
+    color::Color,
+    frame_buffer::FrameBuffer,
+    geometry::{
+        hit_record::HitRecord,
+        scene::Scene,
+    },
+    interval::Interval,
+    materials::material::{
+        Material,
+        ScatterRecord,
+    },
+    pdf::{
+        CosinePdf,
+        Pdf,
+    },
+    ray::Ray,
+    renderer::{
+        cpu::line_server::LineServer,
+        render_options::RenderOptions,
+    },
+    types::{
+        Uint,
+        INFINITY,
+    },
+};
 
 pub struct CpuRenderer {
     workers: Vec<Arc<CpuRenderWorker>>,
@@ -132,37 +149,28 @@ impl CpuRenderWorker {
         }
 
         match self.scene.hit(ray, Interval::new(0.001, INFINITY)) {
-            Some(hit_record) => {
-                let mat = self.scene.get_material(hit_record.mat_idx);
+            Some((instance_id, hit_record)) => match self.scene.get_material_for(&instance_id) {
+                None => Color::black(),
 
-                let emitted = mat.emitted(ray, &hit_record);
+                Some(mat) => {
+                    let emitted = mat.emitted(ray, &hit_record);
 
-                let scattered_color = match mat.scatter(ray, &hit_record) {
-                    Some(scatter_record) => {
-                        self.scatter_color(ray, depth, &hit_record, &scatter_record, mat)
-                    }
-                    None => Color::black(),
-                };
+                    let scattered_color = match mat.scatter(ray, &hit_record) {
+                        Some(scatter_record) => self.scatter_color(ray, depth, &hit_record, &scatter_record, mat),
+                        None => Color::black(),
+                    };
 
-                emitted + scattered_color
-            }
+                    emitted + scattered_color
+                }
+            },
 
             None => self.options.background,
         }
     }
 
-    fn scatter_color(
-        &self,
-        ray: &Ray,
-        depth: Uint,
-        hit_record: &HitRecord,
-        scatter_record: &ScatterRecord,
-        mat: &Material,
-    ) -> Color {
+    fn scatter_color(&self, ray: &Ray, depth: Uint, hit_record: &HitRecord, scatter_record: &ScatterRecord, mat: &Material) -> Color {
         match &scatter_record.skip_pdf_ray {
-            Some(skip_pdf_ray) => {
-                scatter_record.attenuation * self.ray_color(&skip_pdf_ray, depth + 1)
-            }
+            Some(skip_pdf_ray) => scatter_record.attenuation * self.ray_color(&skip_pdf_ray, depth + 1),
 
             None => {
                 let pdf = self.get_pdf(hit_record, scatter_record);
@@ -179,18 +187,18 @@ impl CpuRenderWorker {
 
     fn get_pdf(&self, hit_record: &HitRecord, scatter_record: &ScatterRecord) -> Arc<Pdf> {
         if self.options.use_importance_sampling {
-            if self.scene.lights.len() > 0 {
-                let light_pdf = Arc::new(Pdf::Hittable(HittablePdf::new(
-                    Arc::clone(&self.scene.lights),
-                    hit_record.point,
-                )));
-                Arc::new(Pdf::Mixture(MixturePdf::new(
-                    light_pdf,
-                    Arc::clone(&scatter_record.pdf),
-                )))
-            } else {
-                Arc::clone(&scatter_record.pdf)
-            }
+            // if self.scene.lights.len() > 0 {
+            //     let light_pdf = Arc::new(Pdf::Hittable(HittablePdf::new(
+            //         Arc::clone(&self.scene.lights),
+            //         hit_record.point,
+            //     )));
+            //     Arc::new(Pdf::Mixture(MixturePdf::new(
+            //         light_pdf,
+            //         Arc::clone(&scatter_record.pdf),
+            //     )))
+            // } else {
+            Arc::clone(&scatter_record.pdf)
+            // }
         } else {
             // Arc::new(Pdf::Hemisphere(HemispherePdf::new(hit_record.normal)))
             Arc::new(Pdf::Cosine(CosinePdf::new(&hit_record.normal)))

@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Instant};
+use std::{
+    sync::Arc,
+    time::Instant,
+};
 
 use wesl::include_wesl;
 
@@ -6,10 +9,19 @@ use crate::rt::{
     camera::Camera,
     color::Color,
     frame_buffer::FrameBuffer,
-    gpu::{gpu::Gpu, gpu_compute::GpuCompute},
     geometry::scene::Scene,
+    gpu::{
+        gpu::Gpu,
+        gpu_compute::GpuCompute,
+    },
     renderer::{
-        gpu::gpu_types::{GpuBvh, GpuMaterials, GpuMeta, GpuObjects},
+        gpu::gpu_types::{
+            GpuBvh,
+            GpuInstances,
+            GpuMaterials,
+            GpuMeta,
+            GpuPrimitives,
+        },
         render_options::RenderOptions,
     },
     types::Float,
@@ -57,11 +69,7 @@ impl GpuRenderer {
 
         // Render progressively in smaller dispatches
         for samples in 1..=(self.options.samples_per_pixel / self.options.dispatch_size) {
-            let gpu_meta = Arc::new(GpuMeta::new(
-                Arc::clone(&self.options),
-                Arc::clone(&self.camera),
-                samples,
-            ));
+            let gpu_meta = Arc::new(GpuMeta::new(Arc::clone(&self.options), Arc::clone(&self.camera), samples));
             gpu_compute.init_buf(&gpu_meta, &gpu_compute.meta_buf);
 
             let result = gpu_compute.dispatch(workgroup_dims).await;
@@ -70,8 +78,7 @@ impl GpuRenderer {
                 Ok(pixels) => {
                     let colors = self.collect_results(pixels);
                     for idx in 0..num_pixels {
-                        accum[idx] =
-                            (accum[idx] * (samples as f32 - 1.0) + colors[idx]) / (samples as f32);
+                        accum[idx] = (accum[idx] * (samples as f32 - 1.0) + colors[idx]) / (samples as f32);
                     }
                     self.write_result_to_frame(&accum)
                 }
@@ -91,12 +98,9 @@ impl GpuRenderer {
             }
         };
 
-        let gpu_meta = Arc::new(GpuMeta::new(
-            Arc::clone(&self.options),
-            Arc::clone(&self.camera),
-            0,
-        ));
-        let gpu_objects = Arc::new(GpuObjects::new(Arc::clone(&self.scene)));
+        let gpu_meta = Arc::new(GpuMeta::new(Arc::clone(&self.options), Arc::clone(&self.camera), 0));
+        let gpu_primitives = Arc::new(GpuPrimitives::new(Arc::clone(&self.scene)));
+        let gpu_instances = Arc::new(GpuInstances::new(Arc::clone(&self.scene)));
         let gpu_materials = Arc::new(GpuMaterials::from(&self.scene.materials));
         let gpu_bvh = Arc::new(GpuBvh::from(&self.scene.bvh));
 
@@ -108,24 +112,22 @@ impl GpuRenderer {
             &compute_shader,
             output_buf_size,
             Arc::clone(&gpu_meta),
-            Arc::clone(&gpu_objects),
+            Arc::clone(&gpu_primitives),
+            Arc::clone(&gpu_instances),
             Arc::clone(&gpu_materials),
             Arc::clone(&gpu_bvh),
         );
 
-        gpu_compute.init_bufs(gpu_meta, gpu_objects, gpu_materials, gpu_bvh);
+        gpu_compute.init_bufs(gpu_meta, gpu_primitives, gpu_instances, gpu_materials, gpu_bvh);
 
         gpu_compute
     }
 
     fn create_shader(&self) -> anyhow::Result<wgpu::ShaderModule> {
-        let shader = self
-            .gpu
-            .device()
-            .create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Some("compute.wgsl"),
-                source: wgpu::ShaderSource::Wgsl(include_wesl!("render_shader").into()),
-            });
+        let shader = self.gpu.device().create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("compute.wgsl"),
+            source: wgpu::ShaderSource::Wgsl(include_wesl!("render_shader").into()),
+        });
 
         Ok(shader)
     }
@@ -138,10 +140,7 @@ impl GpuRenderer {
     }
 
     fn write_result_to_frame(&self, pixels: &Vec<Color>) {
-        let colors: Vec<[u8; 3]> = pixels
-            .iter()
-            .map(|color| color.to_gamma().to_u8())
-            .collect();
+        let colors: Vec<[u8; 3]> = pixels.iter().map(|color| color.to_gamma().to_u8()).collect();
 
         self.frame_buffer.set_frame(&colors);
     }

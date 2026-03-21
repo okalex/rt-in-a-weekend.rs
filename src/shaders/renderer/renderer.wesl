@@ -1,5 +1,5 @@
 import package::{
-    bindings::{gpu_meta, bvh, objects},
+    bindings::{gpu_meta, bvh, primitives, instances},
     bvh::{intersects_bvh_node, is_leaf},
     constants::INF,
     hit_record::{HitRecord, no_hit},
@@ -18,10 +18,9 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
     let ray_t = Interval(0.001, INF);
 
     for (var bounces = 0u; bounces < gpu_meta.max_depth; bounces = bounces + 1) {
-        let hit_record = hit_objects(hit_ray, ray_t);
+        let hit_record = hit_instances(hit_ray, ray_t);
         if hit_record.is_hit {
-
-            let material = get_material(hit_record.mat_idx);
+            let material = get_material(hit_record.instance_id);
             let emitted_color = emitted(material, hit_ray, hit_record);
             let scatter_record = scatter(material, hit_ray, hit_record);
 
@@ -48,7 +47,7 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
     return ZEROS;
 }
 
-fn hit_objects(ray: Ray, ray_t: Interval) -> HitRecord {
+fn hit_instances(ray: Ray, ray_t: Interval) -> HitRecord {
     var curr_ray_t = ray_t;
     var curr_hit = no_hit();
     var stack = new_stack();
@@ -60,8 +59,8 @@ fn hit_objects(ray: Ray, ray_t: Interval) -> HitRecord {
         let node = bvh.nodes[node_idx];
 
         if is_leaf(node) {
-            let object = objects.objects[node.left_or_prim];
-            let test_hit = hit_object(ray, curr_ray_t, object);
+            let instance_id = node.left_or_prim;
+            let test_hit = hit_instance(ray, curr_ray_t, instance_id);
             if test_hit.is_hit && test_hit.t < curr_hit.t {
                 curr_hit = test_hit;
                 curr_ray_t = Interval(ray_t.min, curr_hit.t);
@@ -81,15 +80,41 @@ fn hit_objects(ray: Ray, ray_t: Interval) -> HitRecord {
     return curr_hit;
 }
 
-fn hit_object(ray: Ray, ray_t: Interval, object: types::GpuShape) -> HitRecord {
-    switch object._type {
-        case types::GPUSHAPE_SPHERE: {
-            let sphere = types::unpack_GpuShape_Sphere(object);
-            return hit_sphere(sphere, ray, ray_t);
+fn hit_instance(ray: Ray, ray_t: Interval, instance_id: u32) -> HitRecord {
+    let instance = instances.instances[instance_id];
+    let primitive = primitives.primitives[instance.primitive_id];
+    switch primitive._type {
+        case types::GPUPRIMITIVE_SPHERE: {
+            let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
+            let transformed_ray = transform_ray(ray, instance.inv_transform);
+            var hit_record = hit_sphere(sphere, transformed_ray, ray_t);
+            hit_record.instance_id = instance_id;
+            hit_record.point = transform_point(hit_record.point, instance.transform);
+            hit_record.normal = transform_normal(hit_record.normal, instance.inv_transform);
+            return hit_record;
         }
 
         default: {
             return no_hit();
         }
     }
+}
+
+fn transform_ray(ray: Ray, transform: mat4x4<f32>) -> Ray {
+    let orig = transform_point(ray.orig, transform);
+    let dir = transform_direction(ray.dir, transform);
+    return Ray(orig, dir);
+}
+
+fn transform_point(point: vec3<f32>, transform: mat4x4<f32>) -> vec3<f32> {
+    let p4 = transform * vec4<f32>(point, 1.0);
+    return p4.xyz / p4.w;
+}
+
+fn transform_direction(direction: vec3<f32>, transform: mat4x4<f32>) -> vec3<f32> {
+    return (transform * vec4<f32>(direction, 0.0)).xyz;
+}
+
+fn transform_normal(normal: vec3<f32>, inv_transform: mat4x4<f32>) -> vec3<f32> {
+    return normalize((transpose(inv_transform) * vec4<f32>(normal, 0.0)).xyz);
 }

@@ -7,7 +7,7 @@ import package::{
     vector::length_squared,
 };
 
-fn hit_sphere(sphere: types::GpuShape_Sphere, ray: Ray, ray_t: Interval) -> HitRecord {
+fn hit_sphere(sphere: types::GpuPrimitive_Sphere, ray: Ray, ray_t: Interval) -> HitRecord {
     let oc = sphere.center - ray.orig;
     let a = length_squared(ray.dir);
     let h = dot(ray.dir, oc);
@@ -38,17 +38,17 @@ fn hit_sphere(sphere: types::GpuShape_Sphere, ray: Ray, ray_t: Interval) -> HitR
 
     return HitRecord(
         true,
+        0,
         hit_point,
         normal,
         is_outward,
         root,
         uv[0],
         uv[1],
-        sphere.mat_idx,
     );
 }
 
-fn get_uv(sphere: types::GpuShape_Sphere, normal: vec3<f32>) -> array<f32, 2> {
+fn get_uv(sphere: types::GpuPrimitive_Sphere, normal: vec3<f32>) -> array<f32, 2> {
     let u = 0.5 + atan2(-normal.z, normal.x) / (2.0 * PI);
     let v = 0.5 + asin(normal.y) / PI;
     return array(u, v);

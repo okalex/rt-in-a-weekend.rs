@@ -5,19 +5,30 @@ use std::sync::Arc;
 use clap::Parser;
 use winit::event_loop::EventLoop;
 
-use crate::rt::app::app::App;
-use crate::rt::camera::Camera;
 #[allow(unused)]
 use crate::rt::color::Color;
-use crate::rt::frame_buffer::FrameBuffer;
-use crate::rt::ppm_writer::PpmWriter;
-use crate::rt::renderer::cpu::line_server::LineServer;
-use crate::rt::renderer::render_options::{RenderOptions, RenderOptionsBuilder};
-use crate::rt::renderer::renderer::Renderer;
-use crate::rt::sampler::Sampler;
-use crate::rt::test_scenes::get_camera_and_scene;
-use crate::rt::types::{Float, Uint};
-use crate::rt::viewport::Viewport;
+// use crate::rt::test_scenes::get_camera_and_scene;
+use crate::rt::test_scenes2;
+use crate::rt::{
+    app::app::App,
+    camera::Camera,
+    frame_buffer::FrameBuffer,
+    ppm_writer::PpmWriter,
+    renderer::{
+        cpu::line_server::LineServer,
+        render_options::{
+            RenderOptions,
+            RenderOptionsBuilder,
+        },
+        renderer::Renderer,
+    },
+    sampler::Sampler,
+    types::{
+        Float,
+        Uint,
+    },
+    viewport::Viewport,
+};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -80,20 +91,10 @@ async fn main() {
         render_options.img_width as usize,
         render_options.img_height as usize,
     ));
-    let renderer = get_renderer(
-        Arc::clone(&args),
-        Arc::clone(&render_options),
-        Arc::clone(&frame_buffer),
-    )
-    .await;
+    let renderer = get_renderer(Arc::clone(&args), Arc::clone(&render_options), Arc::clone(&frame_buffer)).await;
 
     if args.interactive {
-        let _ = run_windowed(
-            render_options.img_width,
-            render_options.img_height,
-            renderer,
-            frame_buffer,
-        );
+        let _ = run_windowed(render_options.img_width, render_options.img_height, renderer, frame_buffer);
     } else {
         let _ = run_headless(renderer, frame_buffer).await;
     }
@@ -112,26 +113,14 @@ fn print_config(args: Arc<Args>, render_options: Arc<RenderOptions>) {
     eprintln!("  GPU rendering       = {}", args.gpu);
     eprintln!(
         "  sampler             = {}",
-        if args.sampler == 2 {
-            "stratified"
-        } else {
-            "random"
-        }
+        if args.sampler == 2 { "stratified" } else { "random" }
     );
 }
 
-async fn get_renderer(
-    args: Arc<Args>,
-    render_options: Arc<RenderOptions>,
-    frame_buffer: Arc<FrameBuffer>,
-) -> Arc<Renderer> {
-    let (camera_options, scene) = get_camera_and_scene(args.scene);
+async fn get_renderer(args: Arc<Args>, render_options: Arc<RenderOptions>, frame_buffer: Arc<FrameBuffer>) -> Arc<Renderer> {
+    let (camera_options, scene) = test_scenes2::scene1(); //get_camera_and_scene(args.scene);
 
-    let viewport = Viewport::new(
-        render_options.img_width,
-        render_options.img_height,
-        &camera_options,
-    );
+    let viewport = Viewport::new(render_options.img_width, render_options.img_height, &camera_options);
 
     let sampler = match args.sampler {
         2 => Sampler::stratified(render_options.samples_per_pixel),
@@ -164,10 +153,7 @@ async fn get_renderer(
     Arc::new(result.unwrap())
 }
 
-async fn run_headless(
-    renderer: Arc<Renderer>,
-    frame_buffer: Arc<FrameBuffer>,
-) -> anyhow::Result<()> {
+async fn run_headless(renderer: Arc<Renderer>, frame_buffer: Arc<FrameBuffer>) -> anyhow::Result<()> {
     let writer = PpmWriter::new(frame_buffer, 255);
     renderer.render().await;
     writer.write();
@@ -175,12 +161,7 @@ async fn run_headless(
     Ok(())
 }
 
-fn run_windowed(
-    width: Uint,
-    height: Uint,
-    renderer: Arc<Renderer>,
-    frame_buffer: Arc<FrameBuffer>,
-) -> anyhow::Result<()> {
+fn run_windowed(width: Uint, height: Uint, renderer: Arc<Renderer>, frame_buffer: Arc<FrameBuffer>) -> anyhow::Result<()> {
     let event_loop = EventLoop::with_user_event().build()?;
     let mut app = App::new(width, height, renderer, frame_buffer);
     event_loop.run_app(&mut app)?;

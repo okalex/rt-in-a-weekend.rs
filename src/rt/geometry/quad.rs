@@ -1,10 +1,18 @@
 use parry3d_f64::bounding_volume::Aabb;
 
-use crate::rt::interval::Interval;
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::random::rand;
-use crate::rt::ray::Ray;
-use crate::rt::types::{Float, INFINITY, Point, Vector, to_parry_vec};
+use crate::rt::{
+    geometry::hit_record::HitRecord,
+    interval::Interval,
+    random::rand,
+    ray::Ray,
+    types::{
+        to_parry_vec,
+        Float,
+        Point,
+        Vector,
+        INFINITY,
+    },
+};
 
 pub struct Quad {
     q: Point,
@@ -79,15 +87,7 @@ impl Quad {
 
         let (front_face, face_normal) = HitRecord::get_front_face(ray, self.normal);
 
-        Some(HitRecord::new(
-            intersection,
-            face_normal,
-            front_face,
-            t,
-            alpha,
-            beta,
-            self.mat_idx,
-        ))
+        Some(HitRecord::new(intersection, face_normal, front_face, t, alpha, beta))
     }
 
     pub fn bounding_box(&self) -> &Aabb {

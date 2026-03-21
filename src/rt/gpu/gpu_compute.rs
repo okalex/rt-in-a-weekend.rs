@@ -1,14 +1,29 @@
 use std::{
     marker::PhantomData,
-    sync::{Arc, mpsc::channel},
+    sync::{
+        mpsc::channel,
+        Arc,
+    },
 };
 
-use bytemuck::{AnyBitPattern, NoUninit};
-use encase::{ShaderType, internal::WriteInto};
+use bytemuck::{
+    AnyBitPattern,
+    NoUninit,
+};
+use encase::{
+    internal::WriteInto,
+    ShaderType,
+};
 
 use crate::rt::{
     gpu::gpu::Gpu,
-    renderer::gpu::gpu_types::{GpuBvh, GpuMaterials, GpuMeta, GpuObjects},
+    renderer::gpu::gpu_types::{
+        GpuBvh,
+        GpuInstances,
+        GpuMaterials,
+        GpuMeta,
+        GpuPrimitives,
+    },
 };
 
 pub struct GpuCompute<O: NoUninit + AnyBitPattern> {
@@ -16,7 +31,8 @@ pub struct GpuCompute<O: NoUninit + AnyBitPattern> {
     pipeline: wgpu::ComputePipeline,
     bind_group: wgpu::BindGroup,
     pub meta_buf: wgpu::Buffer,
-    pub objects_buf: wgpu::Buffer,
+    pub primitives_buf: wgpu::Buffer,
+    pub instances_buf: wgpu::Buffer,
     pub materials_buf: wgpu::Buffer,
     pub bvh_buf: wgpu::Buffer,
     output_buf: wgpu::Buffer,
@@ -25,18 +41,14 @@ pub struct GpuCompute<O: NoUninit + AnyBitPattern> {
 }
 
 mod buffer_usages {
-    pub const INPUT: wgpu::BufferUsages = wgpu::BufferUsages::from_bits_retain(
-        wgpu::BufferUsages::COPY_DST.bits() | wgpu::BufferUsages::STORAGE.bits(),
-    );
-    pub const OUTPUT: wgpu::BufferUsages = wgpu::BufferUsages::from_bits_retain(
-        wgpu::BufferUsages::COPY_SRC.bits() | wgpu::BufferUsages::STORAGE.bits(),
-    );
-    pub const TEMP: wgpu::BufferUsages = wgpu::BufferUsages::from_bits_retain(
-        wgpu::BufferUsages::COPY_DST.bits() | wgpu::BufferUsages::MAP_READ.bits(),
-    );
-    pub const UNIFORM: wgpu::BufferUsages = wgpu::BufferUsages::from_bits_retain(
-        wgpu::BufferUsages::UNIFORM.bits() | wgpu::BufferUsages::COPY_DST.bits(),
-    );
+    pub const INPUT: wgpu::BufferUsages =
+        wgpu::BufferUsages::from_bits_retain(wgpu::BufferUsages::COPY_DST.bits() | wgpu::BufferUsages::STORAGE.bits());
+    pub const OUTPUT: wgpu::BufferUsages =
+        wgpu::BufferUsages::from_bits_retain(wgpu::BufferUsages::COPY_SRC.bits() | wgpu::BufferUsages::STORAGE.bits());
+    pub const TEMP: wgpu::BufferUsages =
+        wgpu::BufferUsages::from_bits_retain(wgpu::BufferUsages::COPY_DST.bits() | wgpu::BufferUsages::MAP_READ.bits());
+    pub const UNIFORM: wgpu::BufferUsages =
+        wgpu::BufferUsages::from_bits_retain(wgpu::BufferUsages::UNIFORM.bits() | wgpu::BufferUsages::COPY_DST.bits());
 }
 
 impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
@@ -45,15 +57,19 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
         shader: &wgpu::ShaderModule,
         output_size: u64,
         meta: Arc<GpuMeta>,
-        objects: Arc<GpuObjects>,
+        primitives: Arc<GpuPrimitives>,
+        instances: Arc<GpuInstances>,
         materials: Arc<GpuMaterials>,
         bvh: Arc<GpuBvh>,
     ) -> Self {
         let meta_size = meta.size().get();
         let meta_buf = gpu.create_buffer(meta_size, buffer_usages::UNIFORM);
 
-        let objects_size = objects.size().get();
-        let objects_buf = gpu.create_buffer(objects_size, buffer_usages::INPUT);
+        let primitives_size = primitives.size().get();
+        let primitives_buf = gpu.create_buffer(primitives_size, buffer_usages::INPUT);
+
+        let instances_size = instances.size().get();
+        let instances_buf = gpu.create_buffer(instances_size, buffer_usages::INPUT);
 
         let materials_size = materials.size().get();
         let materials_buf = gpu.create_buffer(materials_size, buffer_usages::INPUT);
@@ -79,14 +95,18 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: objects_buf.as_entire_binding(),
+                    resource: primitives_buf.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
-                    resource: materials_buf.as_entire_binding(),
+                    resource: instances_buf.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 4,
+                    resource: materials_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
                     resource: bvh_buf.as_entire_binding(),
                 },
             ],
@@ -97,7 +117,8 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
             pipeline,
             bind_group,
             meta_buf,
-            objects_buf,
+            primitives_buf,
+            instances_buf,
             materials_buf,
             bvh_buf,
             output_buf,
@@ -109,12 +130,14 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
     pub fn init_bufs(
         &self,
         meta: Arc<GpuMeta>,
-        objects: Arc<GpuObjects>,
+        primitives: Arc<GpuPrimitives>,
+        instances: Arc<GpuInstances>,
         materials: Arc<GpuMaterials>,
         bvh: Arc<GpuBvh>,
     ) {
         self.init_buf(&meta, &self.meta_buf);
-        self.init_buf(&objects, &self.objects_buf);
+        self.init_buf(&primitives, &self.primitives_buf);
+        self.init_buf(&instances, &self.instances_buf);
         self.init_buf(&materials, &self.materials_buf);
         self.init_buf(&bvh, &self.bvh_buf);
     }
@@ -126,10 +149,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
     }
 
     pub async fn dispatch(&self, workgroup_dims: [u32; 2]) -> anyhow::Result<Vec<O>> {
-        let mut encoder = self
-            .gpu
-            .device()
-            .create_command_encoder(&Default::default());
+        let mut encoder = self.gpu.device().create_command_encoder(&Default::default());
 
         {
             let mut pass = encoder.begin_compute_pass(&Default::default());
@@ -138,25 +158,15 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
             pass.dispatch_workgroups(workgroup_dims[0], workgroup_dims[1], 1);
         }
 
-        encoder.copy_buffer_to_buffer(
-            &self.output_buf,
-            0,
-            &self.temp_buf,
-            0,
-            self.output_buf.size(),
-        );
+        encoder.copy_buffer_to_buffer(&self.output_buf, 0, &self.temp_buf, 0, self.output_buf.size());
         self.gpu.queue().submit([encoder.finish()]);
 
         let output_data: Vec<O> = {
             let (tx, rx) = channel();
 
             self.temp_buf
-                .map_async(wgpu::MapMode::Read, .., move |result| {
-                    tx.send(result).unwrap()
-                });
-            self.gpu
-                .device()
-                .poll(wgpu::PollType::wait_indefinitely())?;
+                .map_async(wgpu::MapMode::Read, .., move |result| tx.send(result).unwrap());
+            self.gpu.device().poll(wgpu::PollType::wait_indefinitely())?;
             rx.recv()??;
 
             let output_view = self.temp_buf.get_mapped_range(..);

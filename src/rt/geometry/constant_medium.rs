@@ -3,11 +3,17 @@ use std::sync::Arc;
 use parry3d_f64::bounding_volume::Aabb;
 
 use super::hittable::Hittable;
-use crate::rt::interval::Interval;
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::random::rand;
-use crate::rt::ray::Ray;
-use crate::rt::types::{Float, INFINITY, Vector};
+use crate::rt::{
+    geometry::hit_record::HitRecord,
+    interval::Interval,
+    random::rand,
+    ray::Ray,
+    types::{
+        Float,
+        Vector,
+        INFINITY,
+    },
+};
 
 pub struct ConstantMedium {
     boundary: Arc<Hittable>,
@@ -25,16 +31,13 @@ impl ConstantMedium {
     }
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        let result = self
-            .boundary
-            .hit(ray, Interval::universe())
-            .and_then(|rec1| {
-                let exit_interval = Interval::new(rec1.t + 0.001, INFINITY);
-                match self.boundary.hit(ray, exit_interval) {
-                    None => None,
-                    Some(rec2) => Some((rec1, rec2)),
-                }
-            });
+        let result = self.boundary.hit(ray, Interval::universe()).and_then(|rec1| {
+            let exit_interval = Interval::new(rec1.t + 0.001, INFINITY);
+            match self.boundary.hit(ray, exit_interval) {
+                None => None,
+                Some(rec2) => Some((rec1, rec2)),
+            }
+        });
 
         if result.is_none() {
             return None;
@@ -64,13 +67,8 @@ impl ConstantMedium {
         let point = ray.at(t);
         let normal = Vector::new(1.0, 0.0, 0.0); // arbitrary
         Some(HitRecord::new(
-            point,
-            normal,
-            true,
-            t,
-            0.0,
-            0.0,
-            self.phase_fn_mat_idx,
+            point, normal, true, t, 0.0, 0.0,
+            // self.phase_fn_mat_idx,
         ))
     }
 

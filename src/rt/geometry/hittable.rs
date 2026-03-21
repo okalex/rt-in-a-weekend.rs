@@ -1,26 +1,31 @@
 use glam::Vec3A;
 use obvhs::Boundable;
 
-use crate::rt::interval::Interval;
-use crate::rt::geometry::constant_medium::ConstantMedium;
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::geometry::hittable_list::HittableList;
-use crate::rt::geometry::mesh::Mesh;
-use crate::rt::geometry::quad::Quad;
-use crate::rt::geometry::sphere::Sphere;
-use crate::rt::geometry::transformations::{RotateY, Translate};
-use crate::rt::geometry::triangle::Triangle;
-use crate::rt::ray::Ray;
-use crate::rt::types::{Float, Point, Vector};
+use crate::rt::{
+    geometry::{
+        constant_medium::ConstantMedium,
+        hit_record::HitRecord,
+        hittable_list::HittableList,
+        mesh::Mesh,
+        quad::Quad,
+        sphere::Sphere,
+        triangle::Triangle,
+    },
+    interval::Interval,
+    ray::Ray,
+    types::{
+        Float,
+        Point,
+        Vector,
+    },
+};
 
 pub enum Hittable {
     ConstantMedium(ConstantMedium),
     HittableList(HittableList),
     Mesh(Mesh),
     Quad(Quad),
-    RotateY(RotateY),
     Sphere(Sphere),
-    Translate(Translate),
     Triangle(Triangle),
 }
 
@@ -31,9 +36,7 @@ impl Hittable {
             Self::HittableList(obj) => obj.hit(ray, ray_t),
             Self::Mesh(obj) => obj.hit(ray, ray_t),
             Self::Quad(obj) => obj.hit(ray, ray_t),
-            Self::RotateY(obj) => obj.hit(ray, ray_t),
             Self::Sphere(obj) => obj.hit(ray, ray_t),
-            Self::Translate(obj) => obj.hit(ray, ray_t),
             Self::Triangle(obj) => obj.hit(ray, ray_t),
         }
     }
@@ -44,9 +47,7 @@ impl Hittable {
             Self::HittableList(obj) => obj.bounding_box(),
             Self::Mesh(obj) => obj.bounding_box(),
             Self::Quad(obj) => obj.bounding_box(),
-            Self::RotateY(obj) => obj.bounding_box(),
             Self::Sphere(obj) => obj.bounding_box(),
-            Self::Translate(obj) => obj.bounding_box(),
             Self::Triangle(obj) => obj.bounding_box(),
         }
     }
@@ -58,9 +59,7 @@ impl Hittable {
             Self::HittableList(obj) => obj.pdf_value(origin, direction),
             Self::Mesh(_) => default,
             Self::Quad(obj) => obj.pdf_value(origin, direction),
-            Self::RotateY(_) => default,
             Self::Sphere(obj) => obj.pdf_value(origin, direction),
-            Self::Translate(_) => default,
             Self::Triangle(_) => default,
         }
     }
@@ -72,9 +71,7 @@ impl Hittable {
             Self::HittableList(obj) => obj.random(origin),
             Self::Mesh(_) => default,
             Self::Quad(obj) => obj.random(origin),
-            Self::RotateY(_) => default,
             Self::Sphere(obj) => obj.random(origin),
-            Self::Translate(_) => default,
             Self::Triangle(_) => default,
         }
     }
