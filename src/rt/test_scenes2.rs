@@ -7,11 +7,11 @@ use crate::rt::{
     },
     random::{
         rand,
-        rand_range, rand_range_vector,
+        rand_range,
+        rand_range_vector,
     },
     test_helpers::{
-        materials,
-        primitives,
+        cornell_room, materials, primitives
     },
     types::{
         Float,
@@ -24,6 +24,7 @@ pub fn get_scene(scene_idx: u32) -> (CameraOptions, Scene) {
     match scene_idx {
         1 => scene1(),
         2 => scene2(),
+        3 => scene3(),
         _ => panic!(),
     }
 }
@@ -76,10 +77,7 @@ pub fn scene1() -> (CameraOptions, Scene) {
     scene_builder.add_instance(sphere_gold);
     scene_builder.add_instance(sphere_light);
 
-    // Build scene
-    let scene = scene_builder.build();
-
-    (camera_options, scene)
+    (camera_options, scene_builder.build())
 }
 
 fn scene2() -> (CameraOptions, Scene) {
@@ -93,7 +91,7 @@ fn scene2() -> (CameraOptions, Scene) {
         .position([camera_scale * 13.0, camera_scale * 2.0, camera_scale * 3.0])
         .target([0.0, 0.0, 0.0])
         .defocus_angle(0.6)
-        .focus_dist(camera_scale* 10.0);
+        .focus_dist(camera_scale * 10.0);
 
     // Add materials
     let checkered_id = scene_builder.add_material(materials.checkered);
@@ -161,8 +159,16 @@ fn scene2() -> (CameraOptions, Scene) {
         }
     }
 
-    // Build scene
-    let scene = scene_builder.build();
+    (camera_options, scene_builder.build())
+}
 
-    (camera_options, scene)
+fn scene3() -> (CameraOptions, Scene) {
+    let mut scene_builder = SceneBuilder::new();
+    let materials = materials::defaults();
+    let primitives = primitives::defaults();
+    let camera_options = cornell_room::camera();
+
+    cornell_room::add_to_scene(&mut scene_builder);
+
+    (camera_options, scene_builder.build())
 }

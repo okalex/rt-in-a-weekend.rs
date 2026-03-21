@@ -150,6 +150,7 @@ pub mod primitives {
     use crate::rt::{
         geometry::{
             primitive::Primitive,
+            quad::Quad,
         },
         types::{
             Float,
@@ -171,9 +172,9 @@ pub mod primitives {
         Primitive::sphere(Point::from(center), radius)
     }
 
-    // pub fn quad(q: [Float; 3], u: [Float; 3], v: [Float; 3], mat_idx: usize) -> Primitive {
-    //     Hittable::Quad(Quad::from_arr(q, u, v, mat_idx))
-    // }
+    pub fn quad(q: [Float; 3], u: [Float; 3], v: [Float; 3]) -> Primitive {
+        Primitive::Quad(Quad::from_arr(q, u, v))
+    }
 
     // pub fn triangle(a: [Float; 3], b: [Float; 3], c: [Float; 3], mat_idx: usize) -> Primitive {
     //     Hittable::Triangle(Triangle::new(a, b, c, mat_idx))
@@ -193,8 +194,69 @@ pub mod primitives {
     //     let mat_idx = materials.add(mat);
     //     Hittable::ConstantMedium(ConstantMedium::new(boundary, density, mat_idx))
     // }
+}
 
-    // pub fn checkered_ground(materials: &Materials) -> Hittable {
-    //     ground_sphere(materials.get("checkered"))
-    // }
+pub mod cornell_room {
+    use crate::rt::{
+        camera::CameraOptions,
+        geometry::scene::{
+            Instance,
+            SceneBuilder,
+        },
+        test_helpers::{
+            materials,
+            primitives,
+        },
+        util::degrees_to_radians,
+    };
+
+    pub fn camera() -> CameraOptions {
+        CameraOptions::new()
+            .vfov(40.0)
+            .position([500.0, 500.0, -1440.0])
+            .target([500.0, 500.0, 0.0])
+    }
+
+    pub fn add_to_scene(scene_builder: &mut SceneBuilder) {
+        let materials = materials::defaults();
+
+        // Add materials
+        let red_id = scene_builder.add_material(materials.red);
+        let green_id = scene_builder.add_material(materials.green);
+        let white_id = scene_builder.add_material(materials.white);
+        let diffuse_light_id = scene_builder.add_material(materials.diffuse_light);
+
+        // Make primitives
+        let floor_prim = primitives::quad([0.0, 0.0, 0.0], [1000.0, 0.0, 0.0], [0.0, 0.0, 1000.0]);
+        let floor_aabb = floor_prim.aabb();
+        let wall_prim = primitives::quad([0.0, 0.0, 0.0], [1000.0, 0.0, 0.0], [0.0, 1000.0, 0.0]);
+        let wall_aabb = wall_prim.aabb();
+        let light_prim = primitives::quad([400.0, 999.9, 400.0], [200.0, 0.0, 0.0], [0.0, 0.0, 200.0]);
+        let light_aabb = light_prim.aabb();
+
+        // Add primitives
+        let floor_id = scene_builder.add_primitive(floor_prim);
+        let wall_id = scene_builder.add_primitive(wall_prim);
+        let light_id = scene_builder.add_primitive(light_prim);
+
+        // Make instances
+        let floor = Instance::new(floor_id, white_id, floor_aabb).translate([0.0, 0.0, 0.0]);
+        let ceiling = Instance::new(floor_id, white_id, floor_aabb).translate([0.0, 1000.0, 0.0]);
+        let back_wall = Instance::new(wall_id, white_id, wall_aabb).translate([0.0, 0.0, 1000.0]);
+        let left_wall = Instance::new(wall_id, green_id, wall_aabb)
+            .rotate_y(degrees_to_radians(90.0))
+            .translate([1000.0, 0.0, 1000.0]);
+        let right_wall = Instance::new(wall_id, red_id, wall_aabb)
+            .rotate_y(degrees_to_radians(90.0))
+            .translate([0.0, 0.0, 1000.0]);
+        let light = Instance::new(light_id, diffuse_light_id, light_aabb);
+
+        // Add instances
+        scene_builder.add_instance(floor);
+        scene_builder.add_instance(ceiling);
+        scene_builder.add_instance(back_wall);
+        scene_builder.add_instance(left_wall);
+        scene_builder.add_instance(right_wall);
+        scene_builder.add_instance(light);
+    }
 }

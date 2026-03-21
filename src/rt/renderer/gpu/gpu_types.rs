@@ -144,14 +144,21 @@ impl GpuPrimitives {
 #[derive(ShaderEnum, Debug)]
 pub enum GpuPrimitive {
     Sphere { center: Vec3, radius: f32 },
+    Quad { q: Vec3, u: Vec3, v: Vec3 },
 }
 
 impl From<&Primitive> for GpuPrimitive {
     fn from(hittable: &Primitive) -> Self {
         match hittable {
-            Primitive::Sphere(obj) => GpuPrimitive::Sphere {
-                center: obj.center.orig, // TODO: support moving later
-                radius: obj.radius,
+            Primitive::Sphere(sphere) => GpuPrimitive::Sphere {
+                center: sphere.center.orig, // TODO: support moving later
+                radius: sphere.radius,
+            },
+
+            Primitive::Quad(quad) => GpuPrimitive::Quad {
+                q: quad.q,
+                u: quad.u,
+                v: quad.v,
             },
         }
     }
