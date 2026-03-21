@@ -58,6 +58,7 @@ impl GpuRenderer {
     pub async fn render(&self) {
         let now = Instant::now();
         let gpu_compute = self.setup_pipeline();
+        let _ = gpu_compute.warmup().await; // Warm up to try to fix dispatch timeouts (doesn't seem to work)
 
         let workgroup_dims = [
             self.options.img_width.div_ceil(Self::WORKGROUP_SIZE),

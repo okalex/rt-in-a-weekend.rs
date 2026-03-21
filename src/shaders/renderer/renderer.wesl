@@ -5,9 +5,9 @@ import package::{
     hit_record::{HitRecord, no_hit},
     interval::Interval,
     material::{get_material, scatter, emitted},
-    quad::hit_quad,
+    quad::{hit_quad},
     ray::Ray,
-    sphere::hit_sphere,
+    sphere::{hit_sphere},
     stack::{new_stack, push, pop, is_empty},
     types,
     vector::ZEROS,
@@ -85,7 +85,7 @@ fn hit_instance(ray: Ray, ray_t: Interval, instance_id: u32) -> HitRecord {
     let instance = instances.instances[instance_id];
     let primitive = primitives.primitives[instance.primitive_id];
     let transformed_ray = transform_ray(ray, instance.inv_transform);
-    
+
     switch primitive._type {
         case types::GPUPRIMITIVE_SPHERE: {
             let sphere = types::unpack_GpuPrimitive_Sphere(primitive);

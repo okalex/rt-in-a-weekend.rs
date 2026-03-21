@@ -1,5 +1,3 @@
-use glam::DVec3;
-
 use crate::rt::{
     geometry::{
         aabb::Aabb,

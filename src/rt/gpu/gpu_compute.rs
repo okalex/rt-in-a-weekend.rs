@@ -148,6 +148,20 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
         self.gpu.queue().write_buffer(buf, 0, buffer.as_ref());
     }
 
+    pub async fn warmup(&self) -> anyhow::Result<()> {
+        let mut encoder = self.gpu.device().create_command_encoder(&Default::default());
+        {
+            let mut pass = encoder.begin_compute_pass(&Default::default());
+            pass.set_pipeline(&self.pipeline);
+            pass.set_bind_group(0, &self.bind_group, &[]);
+            pass.dispatch_workgroups(1, 1, 1);
+        }
+        self.gpu.queue().submit([encoder.finish()]);
+        let _ = self.gpu.device().poll(wgpu::PollType::wait_indefinitely()); // block until done
+
+        Ok(())
+    }
+
     pub async fn dispatch(&self, workgroup_dims: [u32; 2]) -> anyhow::Result<Vec<O>> {
         let mut encoder = self.gpu.device().create_command_encoder(&Default::default());
 

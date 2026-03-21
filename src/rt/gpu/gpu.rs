@@ -2,9 +2,16 @@ use std::sync::Arc;
 
 use bytemuck::NoUninit;
 use wgpu::util::DeviceExt;
-use winit::{dpi::PhysicalSize, window::Window};
+use winit::{
+    dpi::PhysicalSize,
+    window::Window,
+};
 
-use crate::rt::{frame_buffer::FrameBuffer, gpu::gpu_texture::GpuTexture, types::Uint};
+use crate::rt::{
+    frame_buffer::FrameBuffer,
+    gpu::gpu_texture::GpuTexture,
+    types::Uint,
+};
 
 pub enum Gpu {
     Windowed(GpuWindowed),
@@ -49,12 +56,11 @@ impl Gpu {
 
     #[allow(unused)]
     pub fn create_vertex_buffer<T: NoUninit>(&self, buffer: &[T]) -> wgpu::Buffer {
-        self.device()
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(buffer),
-                usage: wgpu::BufferUsages::VERTEX,
-            })
+        self.device().create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(buffer),
+            usage: wgpu::BufferUsages::VERTEX,
+        })
     }
 
     pub fn create_buffer(&self, size: u64, usages: wgpu::BufferUsages) -> wgpu::Buffer {
@@ -66,22 +72,14 @@ impl Gpu {
         })
     }
 
-    pub fn create_bind_group_layout(
-        &self,
-        entries: &[wgpu::BindGroupLayoutEntry],
-    ) -> wgpu::BindGroupLayout {
-        self.device()
-            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Bind group layout"),
-                entries: entries,
-            })
+    pub fn create_bind_group_layout(&self, entries: &[wgpu::BindGroupLayoutEntry]) -> wgpu::BindGroupLayout {
+        self.device().create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("Bind group layout"),
+            entries: entries,
+        })
     }
 
-    pub fn create_bind_group(
-        &self,
-        layout: &wgpu::BindGroupLayout,
-        entries: &[wgpu::BindGroupEntry],
-    ) -> wgpu::BindGroup {
+    pub fn create_bind_group(&self, layout: &wgpu::BindGroupLayout, entries: &[wgpu::BindGroupEntry]) -> wgpu::BindGroup {
         self.device().create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Bind group"),
             layout: layout,
@@ -120,15 +118,14 @@ impl Gpu {
     }
 
     pub fn create_compute_pipeline(&self, shader: &wgpu::ShaderModule) -> wgpu::ComputePipeline {
-        self.device()
-            .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                label: Some("Compute Pipeline"),
-                layout: None,
-                module: shader,
-                entry_point: None,
-                compilation_options: Default::default(),
-                cache: Default::default(),
-            })
+        self.device().create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("Compute Pipeline"),
+            layout: None,
+            module: shader,
+            entry_point: None,
+            compilation_options: Default::default(),
+            cache: Default::default(),
+        })
     }
 
     pub fn render(&self, render_pipeline: &wgpu::RenderPipeline, bind_group: &wgpu::BindGroup) {
@@ -204,14 +201,12 @@ impl GpuWindowed {
     fn new_instance() -> wgpu::Instance {
         wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
+            flags: wgpu::InstanceFlags::VALIDATION,
             ..Default::default()
         })
     }
 
-    async fn get_adapter(
-        instance: &wgpu::Instance,
-        surface: &wgpu::Surface<'static>,
-    ) -> anyhow::Result<wgpu::Adapter> {
+    async fn get_adapter(instance: &wgpu::Instance, surface: &wgpu::Surface<'static>) -> anyhow::Result<wgpu::Adapter> {
         Ok(instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(), // Set to HighPerformance
@@ -221,9 +216,7 @@ impl GpuWindowed {
             .await?)
     }
 
-    async fn get_device_queue(
-        adapter: &wgpu::Adapter,
-    ) -> anyhow::Result<(wgpu::Device, wgpu::Queue)> {
+    async fn get_device_queue(adapter: &wgpu::Adapter) -> anyhow::Result<(wgpu::Device, wgpu::Queue)> {
         Ok(adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: None,
@@ -236,11 +229,7 @@ impl GpuWindowed {
             .await?)
     }
 
-    fn get_surface_config(
-        size: &PhysicalSize<u32>,
-        surface: &wgpu::Surface,
-        adapter: &wgpu::Adapter,
-    ) -> wgpu::SurfaceConfiguration {
+    fn get_surface_config(size: &PhysicalSize<u32>, surface: &wgpu::Surface, adapter: &wgpu::Adapter) -> wgpu::SurfaceConfiguration {
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
             .formats
@@ -266,40 +255,37 @@ impl GpuWindowed {
         bind_group_layouts: &[&wgpu::BindGroupLayout],
         shader: &wgpu::ShaderModule,
     ) -> wgpu::RenderPipeline {
-        let pipeline_layout = self
-            .device
-            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Pipeline layout"),
-                bind_group_layouts: bind_group_layouts,
-                immediate_size: 0,
-            });
+        let pipeline_layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Pipeline layout"),
+            bind_group_layouts: bind_group_layouts,
+            immediate_size: 0,
+        });
 
-        self.device
-            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("Render pipeline"),
-                layout: Some(&pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: shader,
-                    entry_point: Some("vs_main"),
-                    buffers: &[],
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: shader,
-                    entry_point: Some("fs_main"),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: self.config.format,
-                        blend: Some(wgpu::BlendState::REPLACE),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                    compilation_options: wgpu::PipelineCompilationOptions::default(),
-                }),
-                primitive: wgpu::PrimitiveState::default(),
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState::default(),
-                multiview_mask: None,
-                cache: None,
-            })
+        self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Render pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: shader,
+                entry_point: Some("vs_main"),
+                buffers: &[],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: self.config.format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview_mask: None,
+            cache: None,
+        })
     }
 
     pub fn resize(&mut self, width: Uint, height: Uint) {

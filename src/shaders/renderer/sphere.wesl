@@ -11,7 +11,7 @@ fn hit_sphere(sphere: types::GpuPrimitive_Sphere, ray: Ray, ray_t: Interval) -> 
     let oc = sphere.center - ray.orig;
     let a = length_squared(ray.dir);
     let h = dot(ray.dir, oc);
-    let c = length_squared(oc) - sphere.radius * sphere.radius;
+    let c = length_squared(oc) - sphere.radius_sqrd;
 
     let discriminant = h * h - a * c;
     if discriminant < 0 {

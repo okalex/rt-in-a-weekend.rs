@@ -143,8 +143,20 @@ impl GpuPrimitives {
 
 #[derive(ShaderEnum, Debug)]
 pub enum GpuPrimitive {
-    Sphere { center: Vec3, radius: f32 },
-    Quad { q: Vec3, u: Vec3, v: Vec3 },
+    Sphere {
+        center: Vec3,
+        radius: f32,
+        radius_sqrd: f32,
+    },
+    Quad {
+        q: Vec3,
+        u: Vec3,
+        v: Vec3,
+        w: Vec3,
+        normal: Vec3,
+        d: f32,
+        area: f32,
+    },
 }
 
 impl From<&Primitive> for GpuPrimitive {
@@ -153,12 +165,17 @@ impl From<&Primitive> for GpuPrimitive {
             Primitive::Sphere(sphere) => GpuPrimitive::Sphere {
                 center: sphere.center.orig, // TODO: support moving later
                 radius: sphere.radius,
+                radius_sqrd: sphere.radius * sphere.radius,
             },
 
             Primitive::Quad(quad) => GpuPrimitive::Quad {
                 q: quad.q,
                 u: quad.u,
                 v: quad.v,
+                w: quad.w,
+                normal: quad.normal,
+                d: quad.d,
+                area: quad.area,
             },
         }
     }

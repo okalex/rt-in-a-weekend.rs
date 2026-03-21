@@ -155,6 +155,7 @@ pub mod primitives {
         types::{
             Float,
             Point,
+            Vector,
         },
     };
 
@@ -173,7 +174,7 @@ pub mod primitives {
     }
 
     pub fn quad(q: [Float; 3], u: [Float; 3], v: [Float; 3]) -> Primitive {
-        Primitive::Quad(Quad::from_arr(q, u, v))
+        Primitive::quad(Point::from(q), Vector::from(u), Vector::from(v))
     }
 
     // pub fn triangle(a: [Float; 3], b: [Float; 3], c: [Float; 3], mat_idx: usize) -> Primitive {

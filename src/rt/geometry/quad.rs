@@ -7,7 +7,6 @@ use crate::rt::{
     random::rand,
     ray::Ray,
     types::{
-        to_parry_vec,
         Float,
         Point,
         Vector,
@@ -19,12 +18,12 @@ pub struct Quad {
     pub q: Point,
     pub u: Vector,
     pub v: Vector,
-    w: Vector,
+    pub w: Vector,
     pub aabb: Aabb,
     parry_aabb: parry3d_f64::bounding_volume::Aabb, // TODO: delete
-    normal: Vector,
-    d: Float,
-    area: Float,
+    pub normal: Vector,
+    pub d: Float,
+    pub area: Float,
 }
 
 impl Quad {
@@ -49,10 +48,6 @@ impl Quad {
             d,
             area,
         }
-    }
-
-    pub fn from_arr(q: [Float; 3], u: [Float; 3], v: [Float; 3]) -> Self {
-        Self::new(Point::from(q), Vector::from(u), Vector::from(v))
     }
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
