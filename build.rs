@@ -1,8 +1,13 @@
+use std::{
+    env,
+    path::PathBuf,
+};
+
 use anyhow::*;
-use fs_extra::copy_items;
-use fs_extra::dir::CopyOptions;
-use std::env;
-use std::path::PathBuf;
+use fs_extra::{
+    copy_items,
+    dir::CopyOptions,
+};
 
 fn main() -> Result<()> {
     let _ = copy_assets();
@@ -34,12 +39,10 @@ fn build_shaders() -> Result<()> {
         std::fs::create_dir_all(parent).ok();
     }
 
-    let wgsl =
-        wgsl_autogen::generate_wgsl_from_files(&input, false).expect("failed to generate WGSL");
+    let wgsl = wgsl_autogen::generate_wgsl_from_files(&input, false).expect("failed to generate WGSL");
     std::fs::write(&output, wgsl).expect("failed to write WGSL file");
 
-    wesl::Wesl::new("src/shaders/renderer")
-        .build_artifact(&"package::main".parse().unwrap(), "render_shader");
+    wesl::Wesl::new("src/shaders/renderer").build_artifact(&"package::main".parse().unwrap(), "render_shader");
 
     Ok(())
 }

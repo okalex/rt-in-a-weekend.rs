@@ -206,7 +206,6 @@ impl Scene {
     }
 
     fn build_bvh(&mut self) {
-        // aabb: self.aabb.transform(transform),
         let mut build_time = Duration::default();
         let aabbs: Vec<_> = self
             .instances

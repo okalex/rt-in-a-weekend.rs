@@ -25,17 +25,6 @@ struct GpuMeta {
     viewport: GpuViewport,
 }
 
-struct GpuBvhNode {
-    aabb_min: vec3<f32>,
-    aabb_max: vec3<f32>,
-    left_or_prim: u32,
-    count: u32,
-}
-
-struct GpuBvh {
-    nodes: array<GpuBvhNode>,
-}
-
 struct GpuPrimitive_Sphere {
     center: vec3<f32>,
     radius: f32,
@@ -65,8 +54,7 @@ struct GpuPrimitive_Quad {
 }
 
 struct GpuPrimitive_Mesh {
-    id: u32,
-    triangle_count: u32,
+    mesh_bvh_id: u32,
 }
 
 const GPUPRIMITIVE_SPHERE: u32 = 0u;
@@ -77,6 +65,21 @@ const GPUPRIMITIVE_MESH: u32 = 3u;
 struct GpuPrimitive {
     _type: u32,
     data: array<vec4<f32>, 8>,
+}
+
+struct GpuMeshes {
+    triangles: array<GpuPrimitive>,
+}
+
+struct GpuBvhNode {
+    aabb_min: vec3<f32>,
+    aabb_max: vec3<f32>,
+    left_or_prim: u32,
+    count: u32,
+}
+
+struct GpuBvh {
+    nodes: array<GpuBvhNode>,
 }
 
 struct GpuPrimitives {
@@ -176,7 +179,7 @@ fn unpack_GpuPrimitive_Quad(v: GpuPrimitive) -> GpuPrimitive_Quad {
 }
 
 fn unpack_GpuPrimitive_Mesh(v: GpuPrimitive) -> GpuPrimitive_Mesh {
-    return GpuPrimitive_Mesh(bitcast<u32>(v.data[0].x), bitcast<u32>(v.data[0].y));
+    return GpuPrimitive_Mesh(bitcast<u32>(v.data[0].x));
 }
 
 fn unpack_GpuMaterial_Lambertian(v: GpuMaterial) -> GpuMaterial_Lambertian {

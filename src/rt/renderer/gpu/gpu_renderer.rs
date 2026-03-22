@@ -15,12 +15,9 @@ use crate::rt::{
         gpu_compute::GpuCompute,
     },
     renderer::{
-        gpu::gpu_types::{
-            GpuBvh,
-            GpuInstances,
-            GpuMaterials,
-            GpuMeta,
-            GpuPrimitives,
+        gpu::{
+            gpu_meta::GpuMeta,
+            gpu_types::GpuScene,
         },
         render_options::RenderOptions,
     },
@@ -101,28 +98,18 @@ impl GpuRenderer {
         };
 
         let gpu_meta = Arc::new(GpuMeta::new(Arc::clone(&self.options), Arc::clone(&self.camera), 0));
-        let gpu_primitives = Arc::new(GpuPrimitives::new(Arc::clone(&self.scene)));
-        let gpu_instances = Arc::new(GpuInstances::new(Arc::clone(&self.scene)));
-        let gpu_materials = Arc::new(GpuMaterials::from(&self.scene.materials));
-        let gpu_bvh = Arc::new(GpuBvh::from(&self.scene.bvh));
+        let gpu_scene = Arc::new(GpuScene::from(&self.scene));
 
         let num_pixels = (self.options.img_height * self.options.img_width) as u32;
         let output_buf_size = (num_pixels * std::mem::size_of::<[f32; 4]>() as u32) as u64;
 
-        let gpu_compute = GpuCompute::<[f32; 4]>::new(
+        GpuCompute::<[f32; 4]>::new(
             Arc::clone(&self.gpu),
             &compute_shader,
             output_buf_size,
             Arc::clone(&gpu_meta),
-            Arc::clone(&gpu_primitives),
-            Arc::clone(&gpu_instances),
-            Arc::clone(&gpu_materials),
-            Arc::clone(&gpu_bvh),
-        );
-
-        gpu_compute.init_bufs(gpu_meta, gpu_primitives, gpu_instances, gpu_materials, gpu_bvh);
-
-        gpu_compute
+            Arc::clone(&gpu_scene),
+        )
     }
 
     fn create_shader(&self) -> anyhow::Result<wgpu::ShaderModule> {

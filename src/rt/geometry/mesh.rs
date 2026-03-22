@@ -34,7 +34,7 @@ pub struct Mesh {
     pub triangles: Vec<Triangle>,
     pub aabb: Aabb,
     parry_aabb: parry3d_f64::bounding_volume::Aabb,
-    bvh: Bvh2,
+    pub bvh: Bvh2,
 }
 
 impl Mesh {

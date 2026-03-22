@@ -1,10 +1,11 @@
 import package::{
-    bindings::{gpu_meta, bvh, primitives, instances},
+    bindings::{gpu_meta, instance_bvh, primitives, instances},
     bvh::{intersects_bvh_node, is_leaf},
     constants::INF,
     hit_record::{HitRecord, no_hit},
     interval::Interval,
     material::{get_material, scatter, emitted},
+    mesh::hit_mesh,
     quad::hit_quad,
     ray::Ray,
     sphere::hit_sphere,
@@ -58,7 +59,7 @@ fn hit_instances(ray: Ray, ray_t: Interval) -> HitRecord {
 
     while !is_empty(&stack) {
         let node_idx = pop(&stack);
-        let node = bvh.nodes[node_idx];
+        let node = instance_bvh.nodes[node_idx];
 
         if is_leaf(node) {
             let instance_id = node.left_or_prim;
@@ -68,8 +69,8 @@ fn hit_instances(ray: Ray, ray_t: Interval) -> HitRecord {
                 curr_ray_t = Interval(ray_t.min, curr_hit.t);
             }
         } else {
-            let left = bvh.nodes[node.left_or_prim];
-            let right = bvh.nodes[node.left_or_prim + 1];
+            let left = instance_bvh.nodes[node.left_or_prim];
+            let right = instance_bvh.nodes[node.left_or_prim + 1];
             if intersects_bvh_node(ray, inv_dir, curr_ray_t, right) {
                 push(&stack, node.left_or_prim + 1);
             }
@@ -103,6 +104,12 @@ fn hit_instance(ray: Ray, ray_t: Interval, instance_id: u32) -> HitRecord {
         case types::GPUPRIMITIVE_QUAD: {
             let quad = types::unpack_GpuPrimitive_Quad(primitive);
             var hit_record = hit_quad(quad, transformed_ray, ray_t);
+            return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
+        }
+
+        case types::GPUPRIMITIVE_MESH: {
+            let mesh = types::unpack_GpuPrimitive_Mesh(primitive);
+            var hit_record = hit_mesh(mesh, transformed_ray, ray_t);
             return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
         }
 

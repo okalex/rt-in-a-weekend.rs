@@ -10,81 +10,82 @@ use glam::{
 use obvhs::bvh2::Bvh2;
 
 use crate::rt::{
-    camera::Camera,
     geometry::{
         primitive::Primitive,
         scene::{
             Instance,
             Scene,
         },
+        triangle::Triangle,
     },
     materials::material::Material,
-    renderer::render_options::RenderOptions,
     textures::texture::Texture,
-    viewport::Viewport,
 };
 
-#[derive(ShaderType, Debug)]
-pub struct GpuMeta {
-    pub width: u32,
-    pub height: u32,
-    pub num_samples: u32,
-    pub frame_num: u32,
-    pub max_depth: u32,
-    pub background: Vec3,
-    pub camera: GpuCamera,
-    pub viewport: GpuViewport,
+pub struct GpuScene {
+    pub primitives: GpuPrimitives,
+    pub instances: GpuInstances,
+    pub instance_bvh: GpuBvh,
+    pub meshes: GpuMeshes,
+    pub mesh_bvhs: GpuBvh,
+    pub materials: GpuMaterials,
 }
 
-impl GpuMeta {
-    pub fn new(render_options: Arc<RenderOptions>, camera: Arc<Camera>, frame_num: u32) -> Self {
-        Self {
-            width: render_options.img_width,
-            height: render_options.img_height,
-            num_samples: render_options.dispatch_size,
-            frame_num,
-            background: render_options.background.base,
-            max_depth: render_options.max_depth,
-            camera: GpuCamera::from(Arc::clone(&camera)),
-            viewport: GpuViewport::from(&Arc::clone(&camera).viewport),
-        }
+#[derive(ShaderType, Debug)]
+pub struct GpuMeshes {
+    #[shader(size(runtime))]
+    pub triangles: Vec<GpuPrimitive>,
+}
+
+impl GpuMeshes {
+    pub fn new(triangles: Vec<GpuPrimitive>) -> Self {
+        Self { triangles }
     }
 }
 
-#[derive(ShaderType, Debug)]
-pub struct GpuCamera {
-    position: Vec3,
-    lookat: Vec3,
-    defocus_angle: f32,
-    defocus_disk_u: Vec3,
-    defocus_disk_v: Vec3,
-}
+impl From<&Arc<Scene>> for GpuScene {
+    fn from(scene: &Arc<Scene>) -> Self {
+        let mut mesh_bvhs: Vec<GpuBvhNode> = vec![];
+        let mut mesh_triangles: Vec<GpuPrimitive> = vec![];
 
-impl From<Arc<Camera>> for GpuCamera {
-    fn from(camera: Arc<Camera>) -> Self {
+        let primitives: Vec<_> = scene
+            .primitives
+            .iter()
+            .map(|primitive| match primitive {
+                Primitive::Mesh(m) => {
+                    let mesh = scene.get_mesh(&m.id).unwrap();
+
+                    let first_triangle_id = mesh_triangles.len() as u32;
+                    for triangle in &mesh.triangles {
+                        let gpu_primitive = GpuPrimitive::triangle(triangle);
+                        mesh_triangles.push(gpu_primitive);
+                    }
+
+                    let bvh_id = mesh_bvhs.len() as u32;
+                    let bvh = GpuBvh::from_bvh(&mesh.bvh, bvh_id, first_triangle_id);
+                    for node in bvh.nodes {
+                        mesh_bvhs.push(node);
+                    }
+
+                    GpuPrimitive::Mesh { mesh_bvh_id: bvh_id }
+                }
+
+                _ => GpuPrimitive::from(primitive),
+            })
+            .collect();
+
+        // let primitives = GpuPrimitives::new(&scene.primitives);
+        let instances = GpuInstances::new(&scene.instances);
+        let materials = GpuMaterials::new(&scene.materials);
+        let bvh = GpuBvh::from_bvh(&scene.bvh, 0, 0);
+
         Self {
-            position: camera.options.position,
-            lookat: camera.options.target,
-            defocus_angle: camera.options.defocus_angle,
-            defocus_disk_u: camera.defocus_disk.u,
-            defocus_disk_v: camera.defocus_disk.v,
-        }
-    }
-}
-
-#[derive(ShaderType, Debug)]
-pub struct GpuViewport {
-    delta_u: Vec3,
-    delta_v: Vec3,
-    pixel00_loc: Vec3,
-}
-
-impl From<&Viewport> for GpuViewport {
-    fn from(viewport: &Viewport) -> Self {
-        Self {
-            delta_u: viewport.delta_u,
-            delta_v: viewport.delta_v,
-            pixel00_loc: viewport.pixel00_loc,
+            primitives: GpuPrimitives::new(primitives),
+            instances,
+            instance_bvh: bvh,
+            meshes: GpuMeshes::new(mesh_triangles),
+            mesh_bvhs: GpuBvh::new(mesh_bvhs),
+            materials,
         }
     }
 }
@@ -95,8 +96,12 @@ pub struct GpuBvh {
     nodes: Vec<GpuBvhNode>,
 }
 
-impl From<&Bvh2> for GpuBvh {
-    fn from(bvh: &Bvh2) -> Self {
+impl GpuBvh {
+    fn new(nodes: Vec<GpuBvhNode>) -> Self {
+        Self { nodes }
+    }
+
+    fn from_bvh(bvh: &Bvh2, bvh_offset: u32, leaf_offset: u32) -> Self {
         Self {
             nodes: bvh
                 .nodes
@@ -104,9 +109,9 @@ impl From<&Bvh2> for GpuBvh {
                 .map(|node| {
                     let aabb = node.aabb;
                     let left_or_prim = if node.is_leaf() {
-                        bvh.primitive_indices[node.first_index as usize]
+                        leaf_offset + bvh.primitive_indices[node.first_index as usize]
                     } else {
-                        node.first_index
+                        bvh_offset + node.first_index
                     };
                     GpuBvhNode {
                         aabb_min: Vec3::from(aabb.min),
@@ -135,9 +140,7 @@ pub struct GpuPrimitives {
 }
 
 impl GpuPrimitives {
-    pub fn new(scene: Arc<Scene>) -> Self {
-        let primitives = scene.primitives.iter().map(|prim| GpuPrimitive::from(prim)).collect();
-
+    pub fn new(primitives: Vec<GpuPrimitive>) -> Self {
         Self { primitives }
     }
 }
@@ -173,9 +176,24 @@ pub enum GpuPrimitive {
     },
 
     Mesh {
-        id: u32,
-        triangle_count: u32,
+        mesh_bvh_id: u32,
     },
+}
+
+impl GpuPrimitive {
+    fn triangle(tri: &Triangle) -> Self {
+        GpuPrimitive::Triangle {
+            v0: tri.v0,
+            v1: tri.v1,
+            v2: tri.v2,
+            uv0: tri.uv0,
+            uv1: tri.uv1,
+            uv2: tri.uv2,
+            e01: tri.e01,
+            e02: tri.e02,
+            normal: tri.normal,
+        }
+    }
 }
 
 impl From<&Primitive> for GpuPrimitive {
@@ -209,10 +227,7 @@ impl From<&Primitive> for GpuPrimitive {
                 normal: triangle.normal,
             },
 
-            Primitive::Mesh(mesh) => GpuPrimitive::Mesh {
-                id: mesh.id.id as u32,
-                triangle_count: mesh.triangle_count,
-            },
+            Primitive::Mesh(_) => panic!(),
         }
     }
 }
@@ -224,9 +239,8 @@ pub struct GpuInstances {
 }
 
 impl GpuInstances {
-    pub fn new(scene: Arc<Scene>) -> Self {
-        let instances = scene.instances.iter().map(|instance| GpuInstance::from(instance)).collect();
-
+    pub fn new(instances: &Vec<Instance>) -> Self {
+        let instances = instances.iter().map(|instance| GpuInstance::from(instance)).collect();
         Self { instances }
     }
 }
@@ -256,8 +270,8 @@ pub struct GpuMaterials {
     materials: Vec<GpuMaterial>,
 }
 
-impl From<&Vec<Material>> for GpuMaterials {
-    fn from(materials: &Vec<Material>) -> Self {
+impl GpuMaterials {
+    fn new(materials: &Vec<Material>) -> Self {
         let gpu_materials: Vec<GpuMaterial> = materials.iter().map(GpuMaterial::from).collect();
         Self { materials: gpu_materials }
     }
