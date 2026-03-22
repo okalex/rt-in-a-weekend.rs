@@ -148,6 +148,16 @@ pub enum GpuPrimitive {
         radius: f32,
         radius_sqrd: f32,
     },
+
+    Triangle {
+        a: Vec3,
+        b: Vec3,
+        c: Vec3,
+        e1: Vec3,
+        e2: Vec3,
+        normal: Vec3,
+    },
+
     Quad {
         q: Vec3,
         u: Vec3,
@@ -176,6 +186,15 @@ impl From<&Primitive> for GpuPrimitive {
                 normal: quad.normal,
                 d: quad.d,
                 area: quad.area,
+            },
+
+            Primitive::Triangle(triangle) => GpuPrimitive::Triangle {
+                a: triangle.a,
+                b: triangle.b,
+                c: triangle.c,
+                e1: triangle.e1,
+                e2: triangle.e2,
+                normal: triangle.normal,
             },
         }
     }

@@ -4,6 +4,7 @@ use crate::rt::{
         hit_record::HitRecord,
         quad::Quad,
         sphere::Sphere,
+        triangle::Triangle,
     },
     interval::Interval,
     ray::Ray,
@@ -17,11 +18,16 @@ use crate::rt::{
 pub enum Primitive {
     Sphere(Sphere),
     Quad(Quad),
+    Triangle(Triangle),
 }
 
 impl Primitive {
     pub fn sphere(center: Point, radius: Float) -> Primitive {
         Self::Sphere(Sphere::stationary(center, radius))
+    }
+
+    pub fn triangle(a: Point, b: Point, c: Point) -> Primitive {
+        Self::Triangle(Triangle::new(a, b, c))
     }
 
     pub fn quad(q: Point, u: Vector, v: Vector) -> Primitive {
@@ -32,6 +38,7 @@ impl Primitive {
         match self {
             Self::Sphere(s) => s.aabb,
             Self::Quad(q) => q.aabb,
+            Self::Triangle(t) => t.aabb,
         }
     }
 
@@ -39,6 +46,7 @@ impl Primitive {
         match self {
             Self::Sphere(s) => s.hit(ray, ray_t),
             Self::Quad(q) => q.hit(ray, ray_t),
+            Self::Triangle(t) => t.hit(ray, ray_t),
         }
     }
 }

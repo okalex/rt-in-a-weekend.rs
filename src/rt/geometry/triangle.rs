@@ -1,34 +1,48 @@
-use parry3d_f64::{
-    bounding_volume::Aabb,
-    math::Vec3,
-    query::RayCast,
-    shape::Triangle as Parry3dTriangle,
-};
+use parry3d_f64::math::Vec3;
 
 use crate::rt::{
-    geometry::hit_record::HitRecord,
+    geometry::{
+        aabb::Aabb,
+        hit_record::HitRecord,
+    },
     interval::Interval,
     ray::Ray,
     types::{
-        from_parry_vec,
-        new_parry_vec,
         Float,
+        Point,
+        Vector,
     },
 };
 
 pub struct Triangle {
-    underlying: Parry3dTriangle,
-    bbox: Aabb,
-    pub mat_idx: usize,
+    pub a: Vector,
+    pub b: Vector,
+    pub c: Vector,
+    pub e1: Vector,
+    pub e2: Vector,
+    pub normal: Vector,
+    pub aabb: Aabb,
+    parry_aabb: parry3d_f64::bounding_volume::Aabb,
 }
 
 impl Triangle {
-    pub fn new(a: [Float; 3], b: [Float; 3], c: [Float; 3], mat_idx: usize) -> Self {
-        let underlying = Parry3dTriangle::new(new_parry_vec(a), new_parry_vec(b), new_parry_vec(c));
+    pub fn new(a: Point, b: Point, c: Point) -> Self {
+        let aabb = Aabb::from_points(vec![a, b, c]);
+        let parry_aabb = aabb.to_parry3d();
+
+        let e1 = b - a;
+        let e2 = c - a;
+        let normal = e1.cross(e2).normalize();
+
         Self {
-            underlying,
-            bbox: underlying.local_aabb(),
-            mat_idx,
+            a,
+            b,
+            c,
+            e1,
+            e2,
+            normal,
+            aabb,
+            parry_aabb,
         }
     }
 
@@ -49,29 +63,45 @@ impl Triangle {
     }
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        let r = ray.to_parry3d();
-        match self
-            .underlying
-            .cast_local_ray_and_get_normal(&r, ray_t.max as f64, true)
-        {
-            Some(intersection) if intersection.time_of_impact >= (ray_t.min as f64) => {
-                let normal = intersection.normal;
-                let front_face = r.dir.dot(normal) >= 0.0;
-                Some(HitRecord::new(
-                    ray.at(intersection.time_of_impact as Float),
-                    from_parry_vec(normal),
-                    front_face,
-                    intersection.time_of_impact as Float,
-                    0.0, // TODO
-                    0.0, // TODO
-                ))
-            }
+        let h = ray.dir.cross(self.e2);
+        let a = self.e1.dot(h);
 
-            _ => None,
+        if a.abs() < 1e-8 {
+            // Ray is parallel to plane, no hit
+            return None;
         }
+
+        let f = 1.0 / a;
+        let s = ray.orig - self.a;
+        let u = f * (s.dot(h));
+
+        if u < 0.0 || u > 1.0 {
+            // Outside of triangle, no hit
+            return None;
+        }
+
+        let q = s.cross(self.e1);
+        let v = f * ray.dir.dot(q);
+
+        if v < 0.0 || (u + v) > 1.0 {
+            // Outside of triangle, no hit
+            return None;
+        }
+
+        let t = f * self.e2.dot(q);
+
+        if !ray_t.contains(t) {
+            return None;
+        }
+
+        let point = ray.at(t);
+        let front_face = a >= 0.0;
+        let normal = if front_face { self.normal } else { -self.normal };
+
+        Some(HitRecord::new(point, normal, front_face, t, u, v))
     }
 
-    pub fn bounding_box(&self) -> &Aabb {
-        &self.bbox
+    pub fn bounding_box(&self) -> &parry3d_f64::bounding_volume::Aabb {
+        &self.parry_aabb
     }
 }

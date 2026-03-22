@@ -80,7 +80,7 @@ async fn main() {
             .max_depth(args.depth)
             .use_multithreading(args.multithreading)
             .use_importance_sampling(args.importance)
-            .background(Color::black())
+            // .background(Color::black())
             .build(args.aspect as Float),
     );
 

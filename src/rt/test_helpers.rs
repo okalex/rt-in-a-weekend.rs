@@ -148,10 +148,7 @@ fn rand_arr3() -> [Float; 3] {
 pub mod primitives {
 
     use crate::rt::{
-        geometry::{
-            primitive::Primitive,
-            quad::Quad,
-        },
+        geometry::primitive::Primitive,
         types::{
             Float,
             Point,
@@ -177,9 +174,9 @@ pub mod primitives {
         Primitive::quad(Point::from(q), Vector::from(u), Vector::from(v))
     }
 
-    // pub fn triangle(a: [Float; 3], b: [Float; 3], c: [Float; 3], mat_idx: usize) -> Primitive {
-    //     Hittable::Triangle(Triangle::new(a, b, c, mat_idx))
-    // }
+    pub fn triangle(a: [Float; 3], b: [Float; 3], c: [Float; 3]) -> Primitive {
+        Primitive::triangle(Point::from_array(a), Point::from_array(b), Point::from_array(c))
+    }
 
     // pub fn box3d(a: [Float; 3], b: [Float; 3], mat_idx: usize) -> Primitive {
     //     Hittable::HittableList(Box3d::new(Vector::from(a), Vector::from(b), mat_idx))

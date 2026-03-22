@@ -11,7 +11,9 @@ use crate::rt::{
         rand_range_vector,
     },
     test_helpers::{
-        cornell_room, materials, primitives
+        cornell_room,
+        materials,
+        primitives,
     },
     types::{
         Float,
@@ -25,6 +27,7 @@ pub fn get_scene(scene_idx: u32) -> (CameraOptions, Scene) {
         1 => scene1(),
         2 => scene2(),
         3 => scene3(),
+        4 => scene4(),
         _ => panic!(),
     }
 }
@@ -169,6 +172,59 @@ fn scene3() -> (CameraOptions, Scene) {
     let camera_options = cornell_room::camera();
 
     cornell_room::add_to_scene(&mut scene_builder);
+
+    (camera_options, scene_builder.build())
+}
+
+pub fn scene4() -> (CameraOptions, Scene) {
+    let mut scene_builder = SceneBuilder::new();
+    let materials = materials::defaults();
+    let primitives = primitives::defaults();
+
+    // Setup camera
+    let camera_options = CameraOptions::new()
+        .vfov(50.0)
+        .position([0.0, 1.5, 4.0])
+        .target([0.0, 0.5, 0.0])
+        .defocus_angle(0.5)
+        .focus_dist(3.4);
+
+    // Add materials
+    let checkered_id = scene_builder.add_material(materials.checkered);
+    let blue_id = scene_builder.add_material(materials.blue);
+    let red_id = scene_builder.add_material(materials.red);
+    let green_id = scene_builder.add_material(materials.green);
+    let white_id = scene_builder.add_material(materials.white);
+
+    // Make primitives
+    let tri1_prim = primitives::triangle([0.0, 1.0, 0.0], [-1.0, 0.0, -1.0], [1.0, 0.0, -1.0]);
+    let tri1_aabb = tri1_prim.aabb();
+    let tri2_prim = primitives::triangle([0.0, 1.0, 0.0], [1.0, 0.0, -1.0], [1.0, 0.0, 1.0]);
+    let tri2_aabb = tri2_prim.aabb();
+    let tri3_prim = primitives::triangle([0.0, 1.0, 0.0], [1.0, 0.0, 1.0], [-1.0, 0.0, 1.0]);
+    let tri3_aabb = tri3_prim.aabb();
+    let tri4_prim = primitives::triangle([0.0, 1.0, 0.0], [-1.0, 0.0, 1.0], [-1.0, 0.0, -1.0]);
+    let tri4_aabb = tri4_prim.aabb();
+
+    // Add primitives
+    let ground_id = scene_builder.add_primitive(primitives.ground);
+    let tri1_id = scene_builder.add_primitive(tri1_prim);
+    let tri2_id = scene_builder.add_primitive(tri2_prim);
+    let tri3_id = scene_builder.add_primitive(tri3_prim);
+    let tri4_id = scene_builder.add_primitive(tri4_prim);
+
+    // Make instances
+    let tri1 = Instance::new(tri1_id, blue_id, tri1_aabb);
+    let tri2 = Instance::new(tri2_id, red_id, tri2_aabb);
+    let tri3 = Instance::new(tri3_id, green_id, tri3_aabb);
+    let tri4 = Instance::new(tri4_id, white_id, tri4_aabb);
+
+    // Add instances
+    scene_builder.create_instance(ground_id, checkered_id);
+    scene_builder.add_instance(tri1);
+    scene_builder.add_instance(tri2);
+    scene_builder.add_instance(tri3);
+    scene_builder.add_instance(tri4);
 
     (camera_options, scene_builder.build())
 }

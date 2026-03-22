@@ -4,7 +4,7 @@ use glam::{
     Vec3A,
 };
 
-use crate::rt::types::{Float, Vector, to_parry_vec};
+use crate::rt::types::{Float, Point, Vector, to_parry_vec};
 
 #[derive(Clone, Copy)]
 pub struct Aabb {
@@ -26,6 +26,21 @@ impl Aabb {
         );
         let margin = Vector::splat(0.1); // TODO - what's a good choice here?
         Self { min: mins - margin, max: maxs + margin }
+    }
+
+    pub fn from_points(points: Vec<Point>) -> Self {
+        if points.is_empty() {
+            return Self::new(Vector::splat(0.0), Vector::splat(0.0));
+        }
+
+        let mut min = points[0];
+        let mut max = points[0];
+        for point in points[1..points.len()].iter() {
+            min = min.min(*point);
+            max = max.max(*point);
+        }
+
+        Self::new(min, max)
     }
 
     pub fn transform(&self, transform: Mat4) -> Self {
