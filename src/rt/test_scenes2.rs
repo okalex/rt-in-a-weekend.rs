@@ -24,15 +24,16 @@ use crate::rt::{
 
 pub fn get_scene(scene_idx: u32) -> (CameraOptions, Scene) {
     match scene_idx {
-        1 => scene1(),
-        2 => scene2(),
-        3 => scene3(),
-        4 => scene4(),
+        1 => scene_spheres(),
+        2 => scene_marbles(),
+        3 => scene_quads(),
+        4 => scene_triangles(),
         _ => panic!(),
     }
 }
 
-pub fn scene1() -> (CameraOptions, Scene) {
+// Test sphere rendering
+pub fn scene_spheres() -> (CameraOptions, Scene) {
     let mut scene_builder = SceneBuilder::new();
     let materials = materials::defaults();
     let primitives = primitives::defaults();
@@ -83,7 +84,8 @@ pub fn scene1() -> (CameraOptions, Scene) {
     (camera_options, scene_builder.build())
 }
 
-fn scene2() -> (CameraOptions, Scene) {
+// Test lots of spheres
+fn scene_marbles() -> (CameraOptions, Scene) {
     let mut scene_builder = SceneBuilder::new();
     let materials = materials::defaults();
     let primitives = primitives::defaults();
@@ -165,10 +167,9 @@ fn scene2() -> (CameraOptions, Scene) {
     (camera_options, scene_builder.build())
 }
 
-fn scene3() -> (CameraOptions, Scene) {
+// Test quad rendering
+fn scene_quads() -> (CameraOptions, Scene) {
     let mut scene_builder = SceneBuilder::new();
-    let materials = materials::defaults();
-    let primitives = primitives::defaults();
     let camera_options = cornell_room::camera();
 
     cornell_room::add_to_scene(&mut scene_builder);
@@ -176,7 +177,8 @@ fn scene3() -> (CameraOptions, Scene) {
     (camera_options, scene_builder.build())
 }
 
-pub fn scene4() -> (CameraOptions, Scene) {
+// Test triangle rendering
+pub fn scene_triangles() -> (CameraOptions, Scene) {
     let mut scene_builder = SceneBuilder::new();
     let materials = materials::defaults();
     let primitives = primitives::defaults();
