@@ -4,6 +4,7 @@ use encase::ShaderType;
 use encase_enum::ShaderEnum;
 use glam::{
     Mat4,
+    Vec2,
     Vec3,
 };
 use obvhs::bvh2::Bvh2;
@@ -150,11 +151,14 @@ pub enum GpuPrimitive {
     },
 
     Triangle {
-        a: Vec3,
-        b: Vec3,
-        c: Vec3,
-        e1: Vec3,
-        e2: Vec3,
+        v0: Vec3,
+        v1: Vec3,
+        v2: Vec3,
+        uv0: Vec2,
+        uv1: Vec2,
+        uv2: Vec2,
+        e01: Vec3,
+        e02: Vec3,
         normal: Vec3,
     },
 
@@ -167,11 +171,16 @@ pub enum GpuPrimitive {
         d: f32,
         area: f32,
     },
+
+    Mesh {
+        id: u32,
+        triangle_count: u32,
+    },
 }
 
 impl From<&Primitive> for GpuPrimitive {
-    fn from(hittable: &Primitive) -> Self {
-        match hittable {
+    fn from(primitive: &Primitive) -> Self {
+        match primitive {
             Primitive::Sphere(sphere) => GpuPrimitive::Sphere {
                 center: sphere.center.orig, // TODO: support moving later
                 radius: sphere.radius,
@@ -189,12 +198,20 @@ impl From<&Primitive> for GpuPrimitive {
             },
 
             Primitive::Triangle(triangle) => GpuPrimitive::Triangle {
-                a: triangle.a,
-                b: triangle.b,
-                c: triangle.c,
-                e1: triangle.e1,
-                e2: triangle.e2,
+                v0: triangle.v0,
+                v1: triangle.v1,
+                v2: triangle.v2,
+                uv0: triangle.uv0,
+                uv1: triangle.uv1,
+                uv2: triangle.uv2,
+                e01: triangle.e01,
+                e02: triangle.e02,
                 normal: triangle.normal,
+            },
+
+            Primitive::Mesh(mesh) => GpuPrimitive::Mesh {
+                id: mesh.id.id as u32,
+                triangle_count: mesh.triangle_count,
             },
         }
     }

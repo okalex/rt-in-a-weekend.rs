@@ -6,8 +6,8 @@ import package::{
 };
 
 fn hit_triangle(triangle: types::GpuPrimitive_Triangle, ray: Ray, ray_t: Interval) -> HitRecord {
-    let h = cross(ray.dir, triangle.e2);
-    let a = dot(triangle.e1, h);
+    let h = cross(ray.dir, triangle.e02);
+    let a = dot(triangle.e01, h);
 
     if abs(a) < 1e-8 {
         // Parallel to plane
@@ -15,21 +15,21 @@ fn hit_triangle(triangle: types::GpuPrimitive_Triangle, ray: Ray, ray_t: Interva
     }
 
     let f = 1.0 / a;
-    let s = ray.orig - triangle.a;
+    let s = ray.orig - triangle.v0;
     let u = f * dot(s, h);
 
     if u < 0.0 || u > 1.0 {
         return no_hit();
     }
 
-    let q = cross(s, triangle.e1);
+    let q = cross(s, triangle.e01);
     let v = f * dot(ray.dir, q);
 
     if v < 0.0 || (u + v) > 1.0 {
         return no_hit();
     }
 
-    let t = f * dot(triangle.e2, q);
+    let t = f * dot(triangle.e02, q);
 
     if !interval_contains(ray_t, t) {
         return no_hit();
@@ -42,6 +42,9 @@ fn hit_triangle(triangle: types::GpuPrimitive_Triangle, ray: Ray, ray_t: Interva
         normal = -normal;
     }
 
+    let w = 1.0 - u - v;
+    let uv = triangle.uv0 * w + triangle.uv1 * u + triangle.uv2 * v;
+
     return HitRecord(
         true,
         0,
@@ -49,7 +52,7 @@ fn hit_triangle(triangle: types::GpuPrimitive_Triangle, ray: Ray, ray_t: Interva
         normal,
         is_outward,
         t,
-        u,
-        v,
+        uv[0],
+        uv[1],
     );
 }

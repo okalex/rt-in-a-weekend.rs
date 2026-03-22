@@ -4,7 +4,12 @@ use glam::{
     Vec3A,
 };
 
-use crate::rt::types::{Float, Point, Vector, to_parry_vec};
+use crate::rt::types::{
+    to_parry_vec,
+    Float,
+    Point,
+    Vector,
+};
 
 #[derive(Clone, Copy)]
 pub struct Aabb {
@@ -14,18 +19,13 @@ pub struct Aabb {
 
 impl Aabb {
     pub fn new(min: Vector, max: Vector) -> Self {
-        let mins = Vector::new(
-            Float::min(min.x, max.x),
-            Float::min(min.y, max.y),
-            Float::min(min.z, max.z),
-        );
-        let maxs = Vector::new(
-            Float::max(min.x, max.x),
-            Float::max(min.y, max.y),
-            Float::max(min.z, max.z),
-        );
-        let margin = Vector::splat(0.1); // TODO - what's a good choice here?
-        Self { min: mins - margin, max: maxs + margin }
+        let mins = Vector::new(Float::min(min.x, max.x), Float::min(min.y, max.y), Float::min(min.z, max.z));
+        let maxs = Vector::new(Float::max(min.x, max.x), Float::max(min.y, max.y), Float::max(min.z, max.z));
+        let margin = Vector::splat(0.001); // TODO - what's a good choice here?
+        Self {
+            min: mins - margin,
+            max: maxs + margin,
+        }
     }
 
     pub fn from_points(points: Vec<Point>) -> Self {
@@ -73,9 +73,6 @@ impl Aabb {
     }
 
     pub fn to_parry3d(&self) -> parry3d_f64::bounding_volume::Aabb {
-        parry3d_f64::bounding_volume::Aabb::new(
-            to_parry_vec(self.min), 
-            to_parry_vec(self.max)
-        )
+        parry3d_f64::bounding_volume::Aabb::new(to_parry_vec(self.min), to_parry_vec(self.max))
     }
 }

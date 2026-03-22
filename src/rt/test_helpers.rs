@@ -226,11 +226,8 @@ pub mod cornell_room {
 
         // Make primitives
         let floor_prim = primitives::quad([0.0, 0.0, 0.0], [1000.0, 0.0, 0.0], [0.0, 0.0, 1000.0]);
-        let floor_aabb = floor_prim.aabb();
         let wall_prim = primitives::quad([0.0, 0.0, 0.0], [1000.0, 0.0, 0.0], [0.0, 1000.0, 0.0]);
-        let wall_aabb = wall_prim.aabb();
         let light_prim = primitives::quad([400.0, 999.9, 400.0], [200.0, 0.0, 0.0], [0.0, 0.0, 200.0]);
-        let light_aabb = light_prim.aabb();
 
         // Add primitives
         let floor_id = scene_builder.add_primitive(floor_prim);
@@ -238,16 +235,16 @@ pub mod cornell_room {
         let light_id = scene_builder.add_primitive(light_prim);
 
         // Make instances
-        let floor = Instance::new(floor_id, white_id, floor_aabb).translate([0.0, 0.0, 0.0]);
-        let ceiling = Instance::new(floor_id, white_id, floor_aabb).translate([0.0, 1000.0, 0.0]);
-        let back_wall = Instance::new(wall_id, white_id, wall_aabb).translate([0.0, 0.0, 1000.0]);
-        let left_wall = Instance::new(wall_id, green_id, wall_aabb)
+        let floor = Instance::new(floor_id, white_id).translate([0.0, 0.0, 0.0]);
+        let ceiling = Instance::new(floor_id, white_id).translate([0.0, 1000.0, 0.0]);
+        let back_wall = Instance::new(wall_id, white_id).translate([0.0, 0.0, 1000.0]);
+        let left_wall = Instance::new(wall_id, green_id)
             .rotate_y(degrees_to_radians(90.0))
             .translate([1000.0, 0.0, 1000.0]);
-        let right_wall = Instance::new(wall_id, red_id, wall_aabb)
+        let right_wall = Instance::new(wall_id, red_id)
             .rotate_y(degrees_to_radians(90.0))
             .translate([0.0, 0.0, 1000.0]);
-        let light = Instance::new(light_id, diffuse_light_id, light_aabb);
+        let light = Instance::new(light_id, diffuse_light_id);
 
         // Add instances
         scene_builder.add_instance(floor);

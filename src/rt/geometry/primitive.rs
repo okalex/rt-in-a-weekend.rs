@@ -1,16 +1,14 @@
 use crate::rt::{
     geometry::{
-        aabb::Aabb,
-        hit_record::HitRecord,
         quad::Quad,
+        scene::{MeshDescriptor, MeshId},
         sphere::Sphere,
         triangle::Triangle,
     },
-    interval::Interval,
-    ray::Ray,
     types::{
         Float,
         Point,
+        Uint,
         Vector,
     },
 };
@@ -19,6 +17,7 @@ pub enum Primitive {
     Sphere(Sphere),
     Quad(Quad),
     Triangle(Triangle),
+    Mesh(MeshDescriptor),
 }
 
 impl Primitive {
@@ -34,19 +33,7 @@ impl Primitive {
         Self::Quad(Quad::new(q, u, v))
     }
 
-    pub fn aabb(&self) -> Aabb {
-        match self {
-            Self::Sphere(s) => s.aabb,
-            Self::Quad(q) => q.aabb,
-            Self::Triangle(t) => t.aabb,
-        }
-    }
-
-    pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        match self {
-            Self::Sphere(s) => s.hit(ray, ray_t),
-            Self::Quad(q) => q.hit(ray, ray_t),
-            Self::Triangle(t) => t.hit(ray, ray_t),
-        }
+    pub fn mesh(id: MeshId, triangle_count: Uint) -> Primitive {
+        Self::Mesh(MeshDescriptor { id, triangle_count })
     }
 }

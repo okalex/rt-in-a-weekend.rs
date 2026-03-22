@@ -43,11 +43,14 @@ struct GpuPrimitive_Sphere {
 }
 
 struct GpuPrimitive_Triangle {
-    a: vec3<f32>,
-    b: vec3<f32>,
-    c: vec3<f32>,
-    e1: vec3<f32>,
-    e2: vec3<f32>,
+    v0: vec3<f32>,
+    v1: vec3<f32>,
+    v2: vec3<f32>,
+    uv0: vec2<f32>,
+    uv1: vec2<f32>,
+    uv2: vec2<f32>,
+    e01: vec3<f32>,
+    e02: vec3<f32>,
     normal: vec3<f32>,
 }
 
@@ -61,13 +64,19 @@ struct GpuPrimitive_Quad {
     area: f32,
 }
 
+struct GpuPrimitive_Mesh {
+    id: u32,
+    triangle_count: u32,
+}
+
 const GPUPRIMITIVE_SPHERE: u32 = 0u;
 const GPUPRIMITIVE_TRIANGLE: u32 = 1u;
 const GPUPRIMITIVE_QUAD: u32 = 2u;
+const GPUPRIMITIVE_MESH: u32 = 3u;
 
 struct GpuPrimitive {
     _type: u32,
-    data: array<vec4<f32>, 6>,
+    data: array<vec4<f32>, 8>,
 }
 
 struct GpuPrimitives {
@@ -159,11 +168,15 @@ fn unpack_GpuPrimitive_Sphere(v: GpuPrimitive) -> GpuPrimitive_Sphere {
 }
 
 fn unpack_GpuPrimitive_Triangle(v: GpuPrimitive) -> GpuPrimitive_Triangle {
-    return GpuPrimitive_Triangle(v.data[0].xyz, v.data[1].xyz, v.data[2].xyz, v.data[3].xyz, v.data[4].xyz, v.data[5].xyz);
+    return GpuPrimitive_Triangle(v.data[0].xyz, v.data[1].xyz, v.data[2].xyz, v.data[3].xy, v.data[3].zw, v.data[4].xy, v.data[5].xyz, v.data[6].xyz, v.data[7].xyz);
 }
 
 fn unpack_GpuPrimitive_Quad(v: GpuPrimitive) -> GpuPrimitive_Quad {
     return GpuPrimitive_Quad(v.data[0].xyz, v.data[1].xyz, v.data[2].xyz, v.data[3].xyz, v.data[4].xyz, v.data[4].w, v.data[5].x);
+}
+
+fn unpack_GpuPrimitive_Mesh(v: GpuPrimitive) -> GpuPrimitive_Mesh {
+    return GpuPrimitive_Mesh(bitcast<u32>(v.data[0].x), bitcast<u32>(v.data[0].y));
 }
 
 fn unpack_GpuMaterial_Lambertian(v: GpuMaterial) -> GpuMaterial_Lambertian {

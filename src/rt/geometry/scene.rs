@@ -18,6 +18,7 @@ use crate::rt::{
     geometry::{
         aabb::Aabb,
         hit_record::HitRecord,
+        mesh::Mesh,
         primitive::Primitive,
     },
     interval::Interval,
@@ -25,6 +26,7 @@ use crate::rt::{
     ray::Ray,
     types::{
         Float,
+        Uint,
         INFINITY,
     },
 };
@@ -35,12 +37,22 @@ pub struct PrimitiveId {
 }
 
 #[derive(Clone, Copy)]
-pub struct MaterialId {
+pub struct InstanceId {
     pub id: usize,
 }
 
 #[derive(Clone, Copy)]
-pub struct InstanceId {
+pub struct MeshId {
+    pub id: usize,
+}
+
+pub struct MeshDescriptor {
+    pub id: MeshId,
+    pub triangle_count: Uint,
+}
+
+#[derive(Clone, Copy)]
+pub struct MaterialId {
     pub id: usize,
 }
 
@@ -49,17 +61,15 @@ pub struct Instance {
     pub material_id: MaterialId,
     pub transform: Mat4,
     pub inv_transform: Mat4,
-    aabb: Aabb,
 }
 
 impl Instance {
-    pub fn new(primitive_id: PrimitiveId, material_id: MaterialId, aabb: Aabb) -> Self {
+    pub fn new(primitive_id: PrimitiveId, material_id: MaterialId) -> Self {
         Self {
             primitive_id,
             material_id,
             transform: Mat4::IDENTITY,
             inv_transform: Mat4::IDENTITY,
-            aabb,
         }
     }
 
@@ -70,7 +80,6 @@ impl Instance {
             material_id: self.material_id,
             transform: new_transform,
             inv_transform: new_transform.inverse(),
-            aabb: self.aabb.transform(transform),
         }
     }
 
@@ -114,6 +123,7 @@ impl Instance {
 pub struct SceneBuilder {
     primitives: Vec<Primitive>,
     instances: Vec<Instance>,
+    meshes: Vec<Mesh>,
     materials: Vec<Material>,
 }
 
@@ -122,6 +132,7 @@ impl SceneBuilder {
         Self {
             primitives: vec![],
             instances: vec![],
+            meshes: vec![],
             materials: vec![],
         }
     }
@@ -138,6 +149,12 @@ impl SceneBuilder {
         MaterialId { id }
     }
 
+    pub fn add_mesh(&mut self, mesh: Mesh) -> MeshId {
+        let id = self.meshes.len();
+        self.meshes.push(mesh);
+        MeshId { id }
+    }
+
     pub fn add_instance(&mut self, instance: Instance) -> InstanceId {
         if !self.contains_primitive(&instance.primitive_id) || !self.contains_material(&instance.material_id) {
             panic!();
@@ -149,14 +166,14 @@ impl SceneBuilder {
     }
 
     pub fn create_instance(&mut self, primitive_id: PrimitiveId, material_id: MaterialId) -> InstanceId {
-        let primitive = &self.primitives[primitive_id.id];
-        let instance = Instance::new(primitive_id, material_id, primitive.aabb());
-
+        let instance = Instance::new(primitive_id, material_id);
         self.add_instance(instance)
     }
 
     pub fn build(self) -> Scene {
-        Scene::new(self.primitives, self.instances, self.materials)
+        let mut scene = Scene::new(self.primitives, self.instances, self.meshes, self.materials);
+        scene.build_bvh();
+        scene
     }
 
     fn contains_primitive(&self, primitive_id: &PrimitiveId) -> bool {
@@ -171,26 +188,36 @@ impl SceneBuilder {
 pub struct Scene {
     pub primitives: Vec<Primitive>,
     pub instances: Vec<Instance>,
+    pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
     pub bvh: Bvh2,
 }
 
 impl Scene {
-    pub fn new(primitives: Vec<Primitive>, instances: Vec<Instance>, materials: Vec<Material>) -> Self {
-        let bvh = Self::build_bvh(&instances);
-
+    pub fn new(primitives: Vec<Primitive>, instances: Vec<Instance>, meshes: Vec<Mesh>, materials: Vec<Material>) -> Self {
+        let instance_count = instances.len();
         Self {
             primitives,
             instances,
+            meshes,
             materials,
-            bvh,
+            bvh: Bvh2::zeroed(instance_count),
         }
     }
 
-    fn build_bvh(instances: &Vec<Instance>) -> Bvh2 {
+    fn build_bvh(&mut self) {
+        // aabb: self.aabb.transform(transform),
         let mut build_time = Duration::default();
-        let aabbs: Vec<_> = instances.iter().map(|i| i.aabb.to_obvhs()).collect();
-        build_bvh2(&aabbs, BvhBuildParams::fastest_build(), &mut build_time)
+        let aabbs: Vec<_> = self
+            .instances
+            .iter()
+            .map(|instance| {
+                let primitive = self.get_primitive(&instance.primitive_id).unwrap(); // This should be safe
+                let aabb = self.aabb_for(primitive).transform(instance.transform);
+                aabb.to_obvhs()
+            })
+            .collect();
+        self.bvh = build_bvh2(&aabbs, BvhBuildParams::fastest_build(), &mut build_time);
     }
 
     pub fn get_instance(&self, instance_id: &InstanceId) -> Option<&Instance> {
@@ -199,6 +226,10 @@ impl Scene {
 
     pub fn get_primitive(&self, primitive_id: &PrimitiveId) -> Option<&Primitive> {
         self.primitives.get(primitive_id.id)
+    }
+
+    pub fn get_mesh(&self, mesh_id: &MeshId) -> Option<&Mesh> {
+        self.meshes.get(mesh_id.id)
     }
 
     pub fn get_material(&self, material_id: &MaterialId) -> Option<&Material> {
@@ -240,7 +271,7 @@ impl Scene {
             let local_to_world = instance.transform;
             let transformed_ray = ray.transform(world_to_local);
 
-            match primitive.hit(&transformed_ray, ray_t.update_max(closest_t)) {
+            match self.hit_primitive(primitive, &transformed_ray, ray_t.update_max(closest_t)) {
                 None => INFINITY,
 
                 Some(hit) => {
@@ -263,5 +294,23 @@ impl Scene {
         });
 
         hit_record
+    }
+
+    fn hit_primitive(&self, primitive: &Primitive, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
+        match primitive {
+            Primitive::Sphere(sphere) => sphere.hit(ray, ray_t),
+            Primitive::Quad(quad) => quad.hit(ray, ray_t),
+            Primitive::Triangle(triangle) => triangle.hit(ray, ray_t),
+            Primitive::Mesh(mesh) => self.get_mesh(&mesh.id).and_then(|m| m.hit(ray, ray_t)),
+        }
+    }
+
+    pub fn aabb_for(&self, primitive: &Primitive) -> Aabb {
+        match primitive {
+            Primitive::Sphere(sphere) => sphere.aabb,
+            Primitive::Quad(quad) => quad.aabb,
+            Primitive::Triangle(triangle) => triangle.aabb,
+            Primitive::Mesh(mesh) => self.get_mesh(&mesh.id).map(|m| m.aabb).unwrap(),
+        }
     }
 }

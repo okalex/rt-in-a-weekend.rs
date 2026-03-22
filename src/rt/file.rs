@@ -7,10 +7,7 @@ use std::{
     path::Path,
 };
 
-use crate::rt::geometry::{
-    hittable::Hittable,
-    mesh::Mesh,
-};
+use crate::rt::geometry::mesh::Mesh;
 
 #[allow(dead_code)]
 pub fn load_string_path(path: &Path) -> anyhow::Result<String> {
@@ -27,7 +24,7 @@ pub fn load_string(file_name: &str) -> anyhow::Result<String> {
 }
 
 #[allow(dead_code)]
-pub fn load_model_with_mat(file_name: &str, mat_idx: usize) -> anyhow::Result<Vec<Hittable>> {
+pub fn load_model(file_name: &str) -> anyhow::Result<Vec<Mesh>> {
     eprintln!("Loading model from {}", file_name);
 
     let obj_text = load_string(file_name)?;
@@ -38,7 +35,7 @@ pub fn load_model_with_mat(file_name: &str, mat_idx: usize) -> anyhow::Result<Ve
     let (models, obj_materials) = tobj::load_obj_buf(
         &mut obj_reader,
         &tobj::LoadOptions {
-            single_index: false,
+            single_index: true,
             triangulate: true,
             ..Default::default()
         },
@@ -49,10 +46,7 @@ pub fn load_model_with_mat(file_name: &str, mat_idx: usize) -> anyhow::Result<Ve
         },
     )?;
 
-    let meshes = models
-        .into_iter()
-        .map(|m| Hittable::Mesh(Mesh::from_tobj(&m.mesh, mat_idx)))
-        .collect::<Vec<_>>();
+    let meshes = models.into_iter().map(|m| Mesh::from_tobj(&m.mesh)).collect::<Vec<_>>();
 
     Ok(meshes)
 }

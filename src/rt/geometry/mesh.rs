@@ -1,132 +1,137 @@
-use std::sync::Arc;
+use std::time::Duration;
 
-use parry3d_f64::{
-    bounding_volume::Aabb,
-    math::Vec3,
-    query::RayCast,
-    shape::{FeatureId, TriMesh},
+use glam::Vec2;
+use obvhs::{
+    bvh2::{
+        builder::build_bvh2,
+        Bvh2,
+    },
+    ray::RayHit,
+    BvhBuildParams,
 };
 
 use crate::rt::{
+    geometry::{
+        aabb::Aabb,
+        hit_record::HitRecord,
+        triangle::Triangle,
+    },
     interval::Interval,
-    geometry::{hit_record::HitRecord, triangle::Triangle},
     ray::Ray,
-    types::{Float, Point, Uint, from_parry_vec, to_parry_vec},
+    types::{
+        Float,
+        Uint,
+        Vector,
+        INFINITY,
+    },
 };
 
+pub struct TriangleId {
+    pub id: usize,
+}
+
 pub struct Mesh {
-    underlying: TriMesh,
-    tex_coords: Arc<Vec<[Float; 2]>>,
-    tex_coord_indices: Arc<Vec<Uint>>,
-    bbox: Aabb,
-    mat_idx: usize,
+    pub triangles: Vec<Triangle>,
+    pub aabb: Aabb,
+    parry_aabb: parry3d_f64::bounding_volume::Aabb,
+    bvh: Bvh2,
 }
 
 impl Mesh {
-    pub fn from_tobj(obj: &tobj::Mesh, mat_idx: usize) -> Self {
-        let vertices = obj
+    pub fn from_tobj(obj: &tobj::Mesh) -> Self {
+        let vertices: Vec<Vector> = obj
             .positions
             .chunks_exact(3)
-            .map(|m| Vec3::new(m[0].into(), m[1].into(), m[2].into()))
+            .map(|m| Vector::new(m[0].into(), m[1].into(), m[2].into()))
             .collect();
-        let indices = obj
+
+        let uvs: Vec<Vec2> = obj
+            .texcoords
+            .chunks_exact(2)
+            .map(|vt| Vec2::new(vt[0] as Float, vt[1] as Float))
+            .collect();
+
+        let indices: Vec<[usize; 3]> = obj
             .indices
             .chunks_exact(3)
-            .map(|i| [i[0], i[1], i[2]])
+            .map(|i| [i[0] as usize, i[1] as usize, i[2] as usize])
             .collect();
-        let tex_coords: Arc<Vec<[Float; 2]>> = Arc::new(
-            obj.texcoords
-                .chunks_exact(2)
-                .map(|vt| [vt[0] as Float, vt[1] as Float])
-                .collect(),
-        );
-        let tex_coord_indices = Arc::new(
-            obj.texcoord_indices
-                .clone()
-                .into_iter()
-                .map(|i| i as Uint)
-                .collect(),
-        );
-        let underlying = match TriMesh::new(vertices, indices) {
-            Ok(mesh) => mesh,
-            _ => panic!(),
-        };
-        let bbox = underlying.local_aabb();
+
+        let triangles: Vec<Triangle> = indices
+            .iter()
+            .map(|i| {
+                let v0 = vertices[i[0]];
+                let v1 = vertices[i[1]];
+                let v2 = vertices[i[2]];
+                if uvs.len() > 0 {
+                    let uv0 = uvs[i[0]];
+                    let uv1 = uvs[i[1]];
+                    let uv2 = uvs[i[2]];
+                    Triangle::new_with_uvs(v0, v1, v2, uv0, uv1, uv2)
+                } else {
+                    Triangle::new(v0, v1, v2) // TODO: Use planar uv-mapping instead
+                }
+            })
+            .collect();
+
+        let bvh = Self::build_bvh(&triangles);
+        let obvhs_aabb = bvh.nodes[0].aabb;
+        let aabb = Aabb::new(Vector::from(obvhs_aabb.min), Vector::from(obvhs_aabb.max));
+        let parry_aabb = aabb.to_parry3d();
 
         Self {
-            underlying,
-            tex_coords,
-            tex_coord_indices,
-            bbox,
-            mat_idx,
+            triangles,
+            aabb,
+            parry_aabb,
+            bvh,
         }
     }
 
-    pub fn get_face_uvs(&self, face_id: usize, hit_point: Point) -> [Float; 2] {
-        if face_id >= self.tex_coord_indices.len() {
-            return [0.0, 0.0];
-        }
+    fn build_bvh(triangles: &Vec<Triangle>) -> Bvh2 {
+        let mut build_time = Duration::default();
+        let aabbs: Vec<_> = triangles.iter().map(|i| i.aabb.to_obvhs()).collect();
+        build_bvh2(&aabbs, BvhBuildParams::fastest_build(), &mut build_time)
+    }
 
-        let tex_coord_idx = self.tex_coord_indices[face_id] as usize;
-        if tex_coord_idx >= self.tex_coords.len() {
-            return [0.0, 0.0];
-        }
+    pub fn triangle_count(&self) -> Uint {
+        self.triangles.len() as Uint
+    }
 
-        // For face_id, get the 3 tex coord indices
-        let base = face_id * 3;
-        let uv0 = self.tex_coords[self.tex_coord_indices[base] as usize];
-        let uv1 = self.tex_coords[self.tex_coord_indices[base + 1] as usize];
-        let uv2 = self.tex_coords[self.tex_coord_indices[base + 2] as usize];
-
-        // Get triangle vertices from the TriMesh
-        let tri = self.underlying.triangle(face_id as u32);
-        // Compute barycentric coords of hit point on the triangle
-        let verts = tri.vertices();
-        let hit = to_parry_vec(hit_point);
-        let (w0, w1, w2) = Triangle::barycentric_coords(&verts[0], &verts[1], &verts[2], &hit); // returns (u, v, w)
-
-        // Interpolate UVs
-        let u = w0 * uv0[0] + w1 * uv1[0] + w2 * uv2[0];
-        let v = w0 * uv0[1] + w1 * uv1[1] + w2 * uv2[1];
-        [u, v]
+    pub fn get_triangle(&self, triangle_id: &TriangleId) -> Option<&Triangle> {
+        self.triangles.get(triangle_id.id)
     }
 
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<HitRecord> {
-        let r = ray.to_parry3d();
-        match self
-            .underlying
-            .cast_local_ray_and_get_normal(&r, ray_t.max as f64, true)
-        {
-            Some(intersection) if intersection.time_of_impact >= (ray_t.min as f64) => {
-                let point = ray.at(intersection.time_of_impact as Float);
-                let normal = intersection.normal;
-                let front_face = r.dir.dot(normal) >= 0.0;
+        let obvhs_ray = ray.to_obvhs(ray_t);
+        let mut rec = RayHit::none();
+        let mut hit_record: Option<HitRecord> = None;
+        let mut closest_t = ray_t.max;
 
-                let [u, v] = match intersection.feature {
-                    FeatureId::Face(id) => {
-                        let num_tris = self.underlying.indices().len() as u32;
-                        let real_id = if id >= num_tris { id - num_tris } else { id };
-                        self.get_face_uvs(real_id as usize, point)
-                        // self.get_tex_coords(id as usize, point)
-                    }
-                    _ => [0.0, 0.0],
-                };
+        self.bvh.ray_traverse(obvhs_ray, &mut rec, |_r, prim_idx| {
+            let triangle_id = TriangleId {
+                id: self.bvh.primitive_indices[prim_idx] as usize,
+            };
 
-                Some(HitRecord::new(
-                    point,
-                    from_parry_vec(normal),
-                    front_face,
-                    intersection.time_of_impact as Float,
-                    u,
-                    v,
-                ))
+            let triangle = match self.get_triangle(&triangle_id) {
+                Some(triangle) => triangle,
+                None => return INFINITY,
+            };
+
+            match triangle.hit(ray, ray_t.update_max(closest_t)) {
+                None => INFINITY,
+
+                Some(hit) => {
+                    closest_t = hit.t;
+                    hit_record = Some(hit);
+                    closest_t
+                }
             }
+        });
 
-            _ => None,
-        }
+        hit_record
     }
 
-    pub fn bounding_box(&self) -> &Aabb {
-        &self.bbox
+    pub fn bounding_box(&self) -> &parry3d_f64::bounding_volume::Aabb {
+        &self.parry_aabb
     }
 }
