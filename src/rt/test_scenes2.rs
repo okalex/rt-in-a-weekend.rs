@@ -60,11 +60,14 @@ pub fn scene_spheres() -> (CameraOptions, Scene) {
     let gold_id = scene_builder.add_material(materials.gold);
     let diffuse_light_id = scene_builder.add_material(materials.diffuse_light);
 
+    // Add ground
+    let ground_id = scene_builder.add_primitive(primitives.ground);
+    scene_builder.create_instance(ground_id, checkered_id);
+
     // Make primitives
     let sphere_prim = primitives::sphere([0.0, 0.0, 0.0], 0.5);
 
     // Add primitives
-    let ground_id = scene_builder.add_primitive(primitives.ground);
     let sphere_id = scene_builder.add_primitive(sphere_prim);
 
     // Make instances
@@ -77,7 +80,6 @@ pub fn scene_spheres() -> (CameraOptions, Scene) {
         .translate([0.0, 2.5, 0.0]);
 
     // Add instances
-    scene_builder.create_instance(ground_id, checkered_id);
     scene_builder.add_instance(sphere_blue);
     scene_builder.add_instance(sphere_glass);
     scene_builder.add_instance(sphere_air);
@@ -107,11 +109,14 @@ fn scene_marbles() -> (CameraOptions, Scene) {
     let glass_id = scene_builder.add_material(materials.glass);
     let gold_id = scene_builder.add_material(materials.gold);
 
+    // Add ground
+    let ground_id = scene_builder.add_primitive(primitives.ground);
+    scene_builder.create_instance(ground_id, checkered_id);
+
     // Make primitives
     let sphere_prim = primitives::sphere([0.0, 0.0, 0.0], 1.0);
 
     // Add primitives
-    let ground_id = scene_builder.add_primitive(primitives.ground);
     let sphere_id = scene_builder.add_primitive(sphere_prim);
 
     // Make instances
@@ -120,7 +125,6 @@ fn scene_marbles() -> (CameraOptions, Scene) {
     let sphere_gold = Instance::new(sphere_id, gold_id).translate([4.0, 1.0, 0.0]);
 
     // Add instances
-    scene_builder.create_instance(ground_id, checkered_id);
     scene_builder.add_instance(sphere_glass);
     scene_builder.add_instance(sphere_red);
     scene_builder.add_instance(sphere_gold);
@@ -198,6 +202,10 @@ pub fn scene_triangles() -> (CameraOptions, Scene) {
     let green_id = scene_builder.add_material(materials.green);
     let white_id = scene_builder.add_material(materials.white);
 
+    // Add ground
+    let ground_id = scene_builder.add_primitive(primitives.ground);
+    scene_builder.create_instance(ground_id, checkered_id);
+
     // Make primitives
     let tri1_prim = primitives::triangle([0.0, 1.0, 0.0], [-1.0, 0.0, -1.0], [1.0, 0.0, -1.0]);
     let tri2_prim = primitives::triangle([0.0, 1.0, 0.0], [1.0, 0.0, -1.0], [1.0, 0.0, 1.0]);
@@ -205,7 +213,6 @@ pub fn scene_triangles() -> (CameraOptions, Scene) {
     let tri4_prim = primitives::triangle([0.0, 1.0, 0.0], [-1.0, 0.0, 1.0], [-1.0, 0.0, -1.0]);
 
     // Add primitives
-    let ground_id = scene_builder.add_primitive(primitives.ground);
     let tri1_id = scene_builder.add_primitive(tri1_prim);
     let tri2_id = scene_builder.add_primitive(tri2_prim);
     let tri3_id = scene_builder.add_primitive(tri3_prim);
@@ -218,7 +225,6 @@ pub fn scene_triangles() -> (CameraOptions, Scene) {
     let tri4 = Instance::new(tri4_id, white_id);
 
     // Add instances
-    scene_builder.create_instance(ground_id, checkered_id);
     scene_builder.add_instance(tri1);
     scene_builder.add_instance(tri2);
     scene_builder.add_instance(tri3);
@@ -243,10 +249,23 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
     // Add materials
     let checkered_id = scene_builder.add_material(materials.checkered);
     let material_id = scene_builder.add_material(materials.gold);
+    let diffuse_light_id = scene_builder.add_material(materials.diffuse_light);
 
     // Add ground
     let ground_id = scene_builder.add_primitive(primitives.ground);
     scene_builder.create_instance(ground_id, checkered_id);
+
+    // Make primitives
+    let sphere_prim = primitives::sphere([0.0, 0.0, 0.0], 0.2);
+
+    // Add primitives
+    let sphere_id = scene_builder.add_primitive(sphere_prim);
+
+    // Add lights
+    for _ in -9..=9{
+        let light = Instance::new(sphere_id, diffuse_light_id).translate([rand_range(-3.0, 3.0), 3.0, rand_range(-3.0, 3.0)]);
+        scene_builder.add_instance(light);
+    }
 
     // Add meshes
     let model = match load_model("bunny.obj") {
