@@ -13,7 +13,6 @@ futures = "0.3.32"
 glam = { version = "0.30", features = ["encase"] }
 image = "0.25.9"
 log = "0.4.29"
-parry3d-f64 = "0.26.0"
 pollster = "0.4.0"
 rand = "0.10.0"
 tobj = { version = "3.2", default-features = false, features = ["async"] }

@@ -29,7 +29,6 @@ pub struct Triangle {
     pub e02: Vector,
     pub normal: Vector,
     pub aabb: Aabb,
-    parry_aabb: parry3d_f64::bounding_volume::Aabb,
 }
 
 impl Triangle {
@@ -47,7 +46,6 @@ impl Triangle {
         let normal = e01.cross(e02).normalize();
 
         let aabb = Aabb::from_points(vec![v0, v1, v2]);
-        let parry_aabb = aabb.to_parry3d();
 
         Self {
             v0,
@@ -60,7 +58,6 @@ impl Triangle {
             e02,
             normal,
             aabb,
-            parry_aabb,
         }
     }
 
@@ -104,9 +101,5 @@ impl Triangle {
         let uv = self.uv0 * w + self.uv1 * u + self.uv2 * v;
 
         Some(HitRecord::new(point, normal, front_face, t, uv[0], uv[1]))
-    }
-
-    pub fn bounding_box(&self) -> &parry3d_f64::bounding_volume::Aabb {
-        &self.parry_aabb
     }
 }

@@ -7,9 +7,14 @@ use crate::{
         ray::Ray,
     },
     util::{
-        interval::Interval, random::rand, types::{
-            Float, INFINITY, Point, Vector
-        }
+        interval::Interval,
+        random::rand,
+        types::{
+            Float,
+            Point,
+            Vector,
+            INFINITY,
+        },
     },
 };
 
@@ -20,7 +25,6 @@ pub struct Quad {
     pub v: Vector,
     pub w: Vector,
     pub aabb: Aabb,
-    parry_aabb: parry3d_f64::bounding_volume::Aabb, // TODO: delete
     pub normal: Vector,
     pub d: Float,
     pub area: Float,
@@ -29,7 +33,6 @@ pub struct Quad {
 impl Quad {
     pub fn new(q: Point, u: Vector, v: Vector) -> Self {
         let aabb = Aabb::new(q, q + u + v);
-        let parry_aabb = aabb.to_parry3d();
 
         let n = u.cross(v);
         let normal = n.normalize();
@@ -43,7 +46,6 @@ impl Quad {
             v,
             w,
             aabb,
-            parry_aabb,
             normal,
             d,
             area,
@@ -79,10 +81,6 @@ impl Quad {
         let (front_face, face_normal) = HitRecord::get_front_face(ray, self.normal);
 
         Some(HitRecord::new(intersection, face_normal, front_face, t, alpha, beta))
-    }
-
-    pub fn bounding_box(&self) -> &parry3d_f64::bounding_volume::Aabb {
-        &self.parry_aabb
     }
 
     pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {

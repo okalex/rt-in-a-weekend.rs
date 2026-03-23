@@ -11,11 +11,3 @@ pub type Point = glam::Vec3;
 
 pub const PI: Float = PI64 as Float;
 pub const INFINITY: Float = INF64 as Float;
-
-pub fn new_parry_vec(arr: [Float; 3]) -> parry3d_f64::math::Vec3 {
-    parry3d_f64::math::Vec3::new(arr[0] as f64, arr[1] as f64, arr[2] as f64)
-}
-
-pub fn to_parry_vec(vec: Vector) -> parry3d_f64::math::Vec3 {
-    new_parry_vec([vec.x, vec.y, vec.z])
-}

@@ -5,7 +5,6 @@ use glam::{
 };
 
 use crate::util::types::{
-    to_parry_vec,
     Float,
     Point,
     Vector,
@@ -70,9 +69,5 @@ impl Aabb {
 
     pub fn to_obvhs(&self) -> obvhs::aabb::Aabb {
         obvhs::aabb::Aabb::new(Vec3A::from(self.min), Vec3A::from(self.max))
-    }
-
-    pub fn to_parry3d(&self) -> parry3d_f64::bounding_volume::Aabb {
-        parry3d_f64::bounding_volume::Aabb::new(to_parry_vec(self.min), to_parry_vec(self.max))
     }
 }

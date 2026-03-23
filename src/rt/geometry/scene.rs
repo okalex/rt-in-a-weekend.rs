@@ -46,6 +46,7 @@ pub struct InstanceId {
 
 #[derive(Clone, Copy)]
 pub struct LightId {
+    #[allow(unused)]
     pub id: usize,
 }
 

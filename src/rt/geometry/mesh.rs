@@ -36,7 +36,6 @@ pub struct TriangleId {
 pub struct Mesh {
     pub triangles: Vec<Triangle>,
     pub aabb: Aabb,
-    parry_aabb: parry3d_f64::bounding_volume::Aabb,
     pub bvh: Bvh2,
 }
 
@@ -80,14 +79,8 @@ impl Mesh {
         let bvh = Self::build_bvh(&triangles);
         let obvhs_aabb = bvh.nodes[0].aabb;
         let aabb = Aabb::new(Vector::from(obvhs_aabb.min), Vector::from(obvhs_aabb.max));
-        let parry_aabb = aabb.to_parry3d();
 
-        Self {
-            triangles,
-            aabb,
-            parry_aabb,
-            bvh,
-        }
+        Self { triangles, aabb, bvh }
     }
 
     fn build_bvh(triangles: &Vec<Triangle>) -> Bvh2 {
@@ -128,9 +121,5 @@ impl Mesh {
         });
 
         hit_record
-    }
-
-    pub fn bounding_box(&self) -> &parry3d_f64::bounding_volume::Aabb {
-        &self.parry_aabb
     }
 }

@@ -25,18 +25,11 @@ pub struct Sphere {
     pub center: Ray,
     pub radius: Float,
     pub aabb: Aabb,
-    parry_aabb: parry3d_f64::bounding_volume::Aabb, // TODO: delete
 }
 
 impl Sphere {
     pub fn new(center: Ray, radius: Float, aabb: Aabb) -> Sphere {
-        let parry_aabb = aabb.to_parry3d();
-        Sphere {
-            center,
-            radius,
-            aabb,
-            parry_aabb,
-        }
+        Sphere { center, radius, aabb }
     }
 
     pub fn stationary(center: Point, radius: Float) -> Sphere {
@@ -114,10 +107,6 @@ impl Sphere {
         let (u, v) = Sphere::get_uv(&face_normal); // Why is this not &point?
 
         Some(HitRecord::new(point, face_normal, front_face, root, u, v))
-    }
-
-    pub fn bounding_box(&self) -> &parry3d_f64::bounding_volume::Aabb {
-        &self.parry_aabb
     }
 
     pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {
