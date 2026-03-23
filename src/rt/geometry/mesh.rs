@@ -40,6 +40,14 @@ pub struct Mesh {
 }
 
 impl Mesh {
+    pub fn new(triangles: Vec<Triangle>) -> Self {
+        let bvh = Self::build_bvh(&triangles);
+        let obvhs_aabb = bvh.nodes[0].aabb;
+        let aabb = Aabb::new(Vector::from(obvhs_aabb.min), Vector::from(obvhs_aabb.max));
+
+        Self { triangles, aabb, bvh }
+    }
+
     pub fn from_tobj(obj: &tobj::Mesh) -> Self {
         let vertices: Vec<Vector> = obj
             .positions
@@ -76,11 +84,7 @@ impl Mesh {
             })
             .collect();
 
-        let bvh = Self::build_bvh(&triangles);
-        let obvhs_aabb = bvh.nodes[0].aabb;
-        let aabb = Aabb::new(Vector::from(obvhs_aabb.min), Vector::from(obvhs_aabb.max));
-
-        Self { triangles, aabb, bvh }
+        Self::new(triangles)
     }
 
     fn build_bvh(triangles: &Vec<Triangle>) -> Bvh2 {

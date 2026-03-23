@@ -2,6 +2,7 @@ use crate::{
     examples::helpers::{
         cornell_room,
         materials,
+        meshes::box3d,
         primitives,
     },
     rt::{
@@ -16,15 +17,18 @@ use crate::{
         },
     },
     util::{
-        file::load_model, random::{
+        file::load_model,
+        random::{
             rand,
             rand_range,
             rand_range_vector,
-        }, trig::degrees_to_radians, types::{
+        },
+        trig::degrees_to_radians,
+        types::{
             Float,
             Point,
             Vector,
-        }
+        },
     },
 };
 
@@ -32,7 +36,7 @@ pub fn get_scene(scene_idx: u32) -> (CameraOptions, Scene) {
     match scene_idx {
         1 => scene_spheres(),
         2 => scene_marbles(),
-        3 => scene_quads(),
+        3 => scene_cornell(),
         4 => scene_triangles(),
         5 => scene_mesh(),
         _ => panic!(),
@@ -172,12 +176,39 @@ fn scene_marbles() -> (CameraOptions, Scene) {
     (camera_options, scene_builder.build())
 }
 
-// Test quad rendering
-fn scene_quads() -> (CameraOptions, Scene) {
+// Test quad and mesh rendering
+fn scene_cornell() -> (CameraOptions, Scene) {
     let mut scene_builder = SceneBuilder::new();
+    let materials = materials::defaults();
     let camera_options = cornell_room::camera();
 
     cornell_room::add_to_scene(&mut scene_builder);
+
+    let white_id = scene_builder.add_material(materials.white);
+
+    {
+        // Right box
+        let mesh = box3d(300.0, 300.0, 300.0);
+        let mesh_id = scene_builder.add_mesh(mesh);
+        let primitive = Primitive::mesh(mesh_id);
+        let primitive_id = scene_builder.add_primitive(primitive);
+        let instance = Instance::new(primitive_id, white_id)
+            .rotate_y(degrees_to_radians(-18.0))
+            .translate([236.0, 0.0, 118.0]);
+        let _ = scene_builder.add_instance(instance);
+    }
+
+    {
+        // Left box
+        let mesh = box3d(300.0, 600.0, 300.0);
+        let mesh_id = scene_builder.add_mesh(mesh);
+        let primitive = Primitive::mesh(mesh_id);
+        let primitive_id = scene_builder.add_primitive(primitive);
+        let instance = Instance::new(primitive_id, white_id)
+            .rotate_y(degrees_to_radians(15.0))
+            .translate([482.0, 0.0, 536.0]);
+        let _ = scene_builder.add_instance(instance);
+    }
 
     (camera_options, scene_builder.build())
 }

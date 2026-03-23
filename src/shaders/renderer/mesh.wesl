@@ -15,11 +15,11 @@ fn hit_mesh(mesh: types::GpuPrimitive_Mesh, ray: Ray, ray_t: Interval) -> HitRec
     var curr_hit = no_hit();
     var stack = new_stack();
     let inv_dir = 1.0 / ray.dir;
-    push(&stack, 0u);
+    push(&stack, bvh_offset);
 
     while !is_empty(&stack) {
         let node_idx = pop(&stack);
-        let node = mesh_bvhs.nodes[bvh_offset + node_idx];
+        let node = mesh_bvhs.nodes[node_idx];
 
         if is_leaf(node) {
             let triangle_id = node.left_or_prim;

@@ -198,6 +198,49 @@ pub mod primitives {
     // }
 }
 
+pub mod meshes {
+    use crate::{
+        rt::geometry::{
+            mesh::Mesh,
+            triangle::Triangle,
+        },
+        util::types::{
+            Float,
+            Point,
+            Vector,
+        },
+    };
+
+    fn rect(q: Point, u: Vector, v: Vector) -> Vec<Triangle> {
+        vec![Triangle::new(q, q + u + v, q + v), Triangle::new(q, q + u, q + u + v)]
+    }
+
+    pub fn make_box3d(q: Point, u: Vector, v: Vector, w: Vector) -> Mesh {
+        let triangles: Vec<_> = vec![
+            rect(q, u, v),     // front
+            rect(q + w, u, v), // back
+            rect(q, u, w),     // bottom
+            rect(q + v, u, w), // top
+            rect(q, v, w),     // left
+            rect(q + u, v, w), // right
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+
+        Mesh::new(triangles)
+    }
+
+    pub fn box3d(width: Float, height: Float, depth: Float) -> Mesh {
+        make_box3d(
+            Point::new(0.0, 0.0, 0.0),
+            Vector::new(width, 0.0, 0.0),
+            Vector::new(0.0, height, 0.0),
+            Vector::new(0.0, 0.0, depth),
+        )
+    }
+}
+
 pub mod cornell_room {
     use crate::{
         examples::helpers::{
