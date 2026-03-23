@@ -1,17 +1,17 @@
 struct Stack {
-    data: array<u32, 64>, // Fixed size required for most address spaces
+    data: array<u32, 24>, // Fixed size required for most address spaces
     top: i32,
 };
 
 fn new_stack() -> Stack {
     return Stack(
-        array<u32, 64>(),
+        array<u32, 24>(),
         -1i,
     );
 }
 
 fn push(s: ptr<function, Stack>, value: u32) {
-    if (*s).top < 63 { // Boundary check
+    if (*s).top < 23 { // Boundary check
         (*s).top += 1;
         (*s).data[(*s).top] = value;
     }

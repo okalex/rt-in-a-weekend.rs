@@ -4,7 +4,7 @@ import package::{
     constants::INF,
     hit_record::{HitRecord, no_hit},
     interval::Interval,
-    material::{get_material, scatter, emitted, material_scattering_pdf},
+    material::{ScatterRecord, get_material, scatter, emitted, material_scattering_pdf},
     mesh::hit_mesh,
     pdf::{LightsPdf, lights_pdf_value, lights_pdf_generate, new_cosine_pdf, cosine_pdf_value},
     quad::hit_quad,
@@ -15,7 +15,7 @@ import package::{
     transform::{transform_point, transform_direction},
     triangle::hit_triangle,
     types,
-    vector::ZEROS,
+    vector::{ZEROS, ONES},
 };
 
 fn get_ray_color(ray: Ray) -> vec3<f32> {
@@ -34,37 +34,13 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
             let scatter_record = scatter(material, hit_ray, hit_record);
 
             if scatter_record.is_scattered {
-
                 if scatter_record.skip_pdf {
                     color = color * (emitted_color + scatter_record.attenuation);
                     hit_ray = scatter_record.scattered;
                 } else {
-
-                    var scattered_dir: vec3<f32>;
-                    var pdf_value: f32;
-
-                    if gpu_meta.importance_sampling > 0 && arrayLength(&lights.lights) > 0 {
-
-                        let lights_pdf = LightsPdf(hit_record.point);
-
-                        let chance = f32(rand() < 0.5);
-                        scattered_dir = chance * scatter_record.scattered.dir + (1.0 - chance) * lights_pdf_generate(lights_pdf);
-
-                        let cosine_pdf = new_cosine_pdf(hit_record.normal);
-                        pdf_value = 0.5 * lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, scattered_dir);
-                    } else {
-                        scattered_dir = scatter_record.scattered.dir;
-                        pdf_value = scatter_record.pdf_value;
-                    }
-
-                    // Discard NaNs
-                    if pdf_value > 1e-8 {
-                        let new_scattered = Ray(hit_record.point, scattered_dir);
-                        let scattering_pdf = material_scattering_pdf(material, hit_record, new_scattered);
-                        color = color * (emitted_color + scatter_record.attenuation * scattering_pdf / pdf_value);
-                    }
-
-                    hit_ray = Ray(scatter_record.scattered.orig, scattered_dir);
+                    let scatter_result = scatter_ray(material, hit_record, scatter_record);
+                    color = color * (emitted_color + scatter_result.scattered_color);
+                    hit_ray = Ray(scatter_record.scattered.orig, scatter_result.scattered_dir);
                 }
             } else {
                 return color * emitted_color;
@@ -75,6 +51,40 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
     }
 
     return ZEROS;
+}
+
+struct ScatterResult {
+    pdf_value: f32,
+    scattered_dir: vec3<f32>,
+    scattered_color: vec3<f32>,
+};
+
+fn scatter_ray(material: types::GpuMaterial, hit_record: HitRecord, scatter_record: ScatterRecord) -> ScatterResult {
+    var result: ScatterResult;
+
+    if gpu_meta.importance_sampling > 0 && arrayLength(&lights.lights) > 0 {
+        let lights_pdf = LightsPdf(hit_record.point);
+
+        let chance = f32(rand() < 0.5);
+        result.scattered_dir = chance * scatter_record.scattered.dir + (1.0 - chance) * lights_pdf_generate(lights_pdf);
+
+        let cosine_pdf = new_cosine_pdf(hit_record.normal);
+        result.pdf_value = 0.5 * lights_pdf_value(lights_pdf, result.scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, result.scattered_dir);
+    } else {
+        result.scattered_dir = scatter_record.scattered.dir;
+        result.pdf_value = scatter_record.pdf_value;
+    }
+
+    // Discard NaNs
+    if result.pdf_value > 1e-8 {
+        let new_scattered = Ray(hit_record.point, result.scattered_dir);
+        let scattering_pdf = material_scattering_pdf(material, hit_record, new_scattered);
+        result.scattered_color = scatter_record.attenuation * scattering_pdf / result.pdf_value;
+    } else {
+        result.scattered_color = ONES;
+    }
+
+    return result;
 }
 
 fn hit_instances(ray: Ray, ray_t: Interval) -> HitRecord {
