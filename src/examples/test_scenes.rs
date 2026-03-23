@@ -26,54 +26,6 @@
 //     types::{Float, Point, Uint, Vector},
 // };
 
-// fn camera_triangle() -> CameraOptions {
-//     CameraOptions::new()
-//         .vfov(50.0)
-//         .position([0.0, 1.0, 2.0])
-//         .target([0.0, 0.5, 0.0])
-//         .defocus_angle(0.5)
-//         .focus_dist(3.4)
-// }
-
-// fn scene_triangle() -> Scene {
-//     let mut scene = HittableList::new();
-//     let materials = Materials::new();
-
-//     let ground = Shapes::checkered_ground(&materials);
-//     let tri1 = Shapes::triangle(
-//         [0.0, 1.0, -1.0],
-//         [-1.0, 0.0, -1.0],
-//         [1.0, 0.5, -1.0],
-//         materials.get("blue"),
-//     );
-
-//     scene.add(ground);
-//     scene.add(tri1);
-
-//     Scene::no_lights(scene, materials.materials)
-// }
-
-// fn scene_obj(scale: Float) -> Scene {
-//     let mut scene = HittableList::new();
-//     let mut lights = HittableList::new();
-//     let materials = Materials::new();
-
-//     let (room, room_lights) = HittableList::cornell_room(&materials, scale);
-//     scene.add(room);
-//     lights.add(room_lights);
-
-//     let objs = match load_model_with_mat("cube.obj", materials.get("rusty_metal")) {
-//         Ok(os) => os,
-//         _ => panic!(),
-//     };
-//     for obj in objs {
-//         let moved = translate(rotate_y(obj, 205.0), [10.0, 1.0, 5.0]);
-//         scene.add(moved);
-//     }
-
-//     Scene::new(scene, materials.materials, lights)
-// }
-
 // fn scene_pbr(scale: Float) -> Scene {
 //     let mut scene = HittableList::new();
 //     let mut lights = HittableList::new();
@@ -117,25 +69,6 @@
 //     Scene::new(scene, materials.materials, lights)
 // }
 
-// fn camera_c() -> CameraOptions {
-//     CameraOptions::new()
-//         .position([13.0, 2.0, 3.0])
-//         .target([0.0, 0.0, 0.0])
-// }
-
-// fn scene_c() -> Scene {
-//     let mut scene = HittableList::new();
-//     let materials = Materials::new();
-
-//     let sphere1 = Shapes::sphere([0.0, -10.0, 0.0], 10.0, materials.get("checkered"));
-//     let sphere2 = Shapes::sphere([0.0, 10.0, 0.0], 10.0, materials.get("checkered"));
-
-//     scene.add(sphere1);
-//     scene.add(sphere2);
-
-//     Scene::no_lights(scene, materials.materials)
-// }
-
 // fn camera_d() -> CameraOptions {
 //     CameraOptions::new()
 //         .position([0.0, 4.0, 16.0])
@@ -151,76 +84,6 @@
 
 //     scene.add(globe);
 //     scene.add(ground);
-
-//     Scene::no_lights(scene, materials.materials)
-// }
-
-// fn camera_e() -> CameraOptions {
-//     CameraOptions::new()
-//         .position([13.0, 2.0, 3.0])
-//         .target([0.0, 0.0, 0.0])
-// }
-
-// fn scene_e() -> Scene {
-//     let mut scene = HittableList::new();
-//     let materials = Materials::new();
-
-//     let ground = Shapes::checkered_ground(&materials);
-//     let sphere2 = Shapes::sphere([0.0, 2.0, 0.0], 2.0, materials.get("marble"));
-
-//     scene.add(ground);
-//     scene.add(sphere2);
-
-//     Scene::no_lights(scene, materials.materials)
-// }
-
-// fn camera_f() -> CameraOptions {
-//     CameraOptions::new()
-//         .vfov(80.0)
-//         .position([0.0, 0.0, 9.0])
-//         .target([0.0, 0.0, 0.0])
-// }
-
-// fn scene_f() -> Scene {
-//     let mut scene = HittableList::new();
-//     let materials = Materials::new();
-
-//     let left = Shapes::quad(
-//         [-3.0, -2.0, 5.0],
-//         [0.0, 0.0, -4.0],
-//         [0.0, 4.0, 0.0],
-//         materials.get("red"),
-//     );
-//     let back = Shapes::quad(
-//         [-2.0, -2.0, 0.0],
-//         [4.0, 0.0, 0.0],
-//         [0.0, 4.0, 0.0],
-//         materials.get("green"),
-//     );
-//     let right = Shapes::quad(
-//         [3.0, -2.0, 1.0],
-//         [0.0, 0.0, 4.0],
-//         [0.0, 4.0, 0.0],
-//         materials.get("blue"),
-//     );
-//     let upper = Shapes::quad(
-//         [-2.0, 3.0, 1.0],
-//         [4.0, 0.0, 0.0],
-//         [0.0, 0.0, 4.0],
-//         materials.get("orange"),
-//     );
-//     let lower = Shapes::quad(
-//         [-2.0, -3.0, 5.0],
-//         [4.0, 0.0, 0.0],
-//         [0.0, 0.0, -4.0],
-//         materials.get("teal"),
-//     );
-
-//     scene.add(left);
-//     scene.add(back);
-//     scene.add(right);
-//     scene.add(upper);
-//     scene.add(lower);
 
 //     Scene::no_lights(scene, materials.materials)
 // }
@@ -252,39 +115,6 @@
 //     scene.add(sphere_light);
 
 //     Scene::no_lights(scene, materials.materials)
-// }
-
-// fn scene_cornell() -> Scene {
-//     let mut scene = HittableList::new();
-//     let mut lights = HittableList::new();
-//     let materials = Materials::new();
-
-//     let mut box_right = Shapes::box3d(
-//         [0.0, 0.0, 0.0],
-//         [165.0, 165.0, 165.0],
-//         materials.get("white"),
-//     );
-//     box_right = rotate_y(box_right, -18.0);
-//     box_right = translate(box_right, [130.0, 0.0, 65.0]);
-//     // let sphere_right = Shapes::sphere([190.0, 90.0, 190.0], 90.0, materials.get("glass"));
-
-//     let mut box_left = Shapes::box3d(
-//         [0.0, 0.0, 0.0],
-//         [165.0, 330.0, 165.0],
-//         materials.get("white"),
-//     );
-//     box_left = rotate_y(box_left, 15.0);
-//     box_left = translate(box_left, [265.0, 0.0, 295.0]);
-
-//     let (room, room_lights) = HittableList::cornell_room(&materials, 555.0);
-//     scene.add(room);
-//     lights.add(room_lights);
-
-//     // scene.add(sphere_right);
-//     scene.add(box_right);
-//     scene.add(box_left);
-
-//     Scene::new(scene, materials.materials, lights)
 // }
 
 // fn scene_cornell_smoke() -> Scene {
