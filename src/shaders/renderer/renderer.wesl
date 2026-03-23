@@ -80,7 +80,7 @@ fn scatter_ray(material: types::GpuMaterial, hit_record: HitRecord, scatter_reco
             let scattering_pdf = material_scattering_pdf(material, hit_record, result.scattered_ray);
             result.scattered_color = scatter_record.attenuation * scattering_pdf / pdf_value;
         } else {
-            result.scattered_color = ONES;
+            result.scattered_color = ZEROS;
         }
     } else {
         result.scattered_color = scatter_record.attenuation;

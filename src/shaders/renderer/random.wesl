@@ -13,7 +13,7 @@ fn pcg(n: u32) -> u32 {
 }
 
 fn init_rng(x: u32, y: u32, frame: u32) {
-    rng_state = pcg(x + y * gpu_meta.width + frame * gpu_meta.width * gpu_meta.height);
+    rng_state = pcg(pcg(x) + pcg(y) + pcg(frame));
 }
 
 fn rand() -> f32 {
