@@ -1,12 +1,9 @@
 use crate::{
     rt::geometry::{
-        quad::Quad,
-        scene::{
+        constant_medium::ConstantMedium, quad::Quad, scene::{
             MeshDescriptor,
             MeshId,
-        },
-        sphere::Sphere,
-        triangle::Triangle,
+        }, sphere::Sphere, triangle::Triangle
     },
     util::types::{
         Float,
@@ -21,6 +18,7 @@ pub enum Primitive {
     Quad(Quad),
     Triangle(Triangle),
     Mesh(MeshDescriptor),
+    Medium(ConstantMedium),
 }
 
 impl Primitive {
@@ -48,6 +46,7 @@ impl Primitive {
             Self::Quad(obj) => obj.pdf_value(origin, direction),
             Self::Sphere(obj) => obj.pdf_value(origin, direction),
             Self::Triangle(_) => default, // TODO
+            Self::Medium(_) => default, // TODO
         }
     }
 
@@ -59,6 +58,7 @@ impl Primitive {
             Self::Quad(obj) => obj.random(origin),
             Self::Sphere(obj) => obj.random(origin),
             Self::Triangle(_) => default, // TODO
+            Self::Medium(_) => default, // TODO
         }
     }
 }

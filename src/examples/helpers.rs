@@ -122,7 +122,6 @@ pub mod materials {
         Material::PbrMaterial(PbrMaterial::new(color, metallicity))
     }
 
-    #[allow(dead_code)]
     pub fn isotropic(albedo: [Float; 3]) -> Material {
         Material::Isotropic(Isotropic::from(albedo))
     }

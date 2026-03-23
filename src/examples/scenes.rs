@@ -8,6 +8,7 @@ use crate::{
     rt::{
         camera::CameraOptions,
         geometry::{
+            constant_medium::ConstantMedium,
             primitive::Primitive,
             scene::{
                 Instance,
@@ -37,8 +38,9 @@ pub fn get_scene(scene_idx: u32) -> (CameraOptions, Scene) {
         1 => scene_spheres(),
         2 => scene_marbles(),
         3 => scene_cornell(),
-        4 => scene_triangles(),
-        5 => scene_mesh(),
+        4 => scene_cornell_smoke(),
+        5 => scene_triangles(),
+        6 => scene_mesh(),
         _ => panic!(),
     }
 }
@@ -190,24 +192,63 @@ fn scene_cornell() -> (CameraOptions, Scene) {
         // Right box
         let mesh = box3d(300.0, 300.0, 300.0);
         let mesh_id = scene_builder.add_mesh(mesh);
-        let primitive = Primitive::mesh(mesh_id);
-        let primitive_id = scene_builder.add_primitive(primitive);
-        let instance = Instance::new(primitive_id, white_id)
-            .rotate_y(degrees_to_radians(-18.0))
-            .translate([236.0, 0.0, 118.0]);
-        let _ = scene_builder.add_instance(instance);
+        let primitive_id = scene_builder.add_primitive(Primitive::mesh(mesh_id));
+        let _ = scene_builder.add_instance(
+            Instance::new(primitive_id, white_id)
+                .rotate_y(degrees_to_radians(-18.0))
+                .translate([236.0, 0.0, 118.0]),
+        );
     }
 
     {
         // Left box
         let mesh = box3d(300.0, 600.0, 300.0);
         let mesh_id = scene_builder.add_mesh(mesh);
-        let primitive = Primitive::mesh(mesh_id);
-        let primitive_id = scene_builder.add_primitive(primitive);
-        let instance = Instance::new(primitive_id, white_id)
-            .rotate_y(degrees_to_radians(15.0))
-            .translate([482.0, 0.0, 536.0]);
-        let _ = scene_builder.add_instance(instance);
+        let primitive_id = scene_builder.add_primitive(Primitive::mesh(mesh_id));
+        let _ = scene_builder.add_instance(
+            Instance::new(primitive_id, white_id)
+                .rotate_y(degrees_to_radians(15.0))
+                .translate([482.0, 0.0, 536.0]),
+        );
+    }
+
+    (camera_options, scene_builder.build())
+}
+
+// Test constant medium rendering
+fn scene_cornell_smoke() -> (CameraOptions, Scene) {
+    let mut scene_builder = SceneBuilder::new();
+    let camera_options = cornell_room::camera();
+
+    cornell_room::add_to_scene(&mut scene_builder);
+
+    let light_smoke_id = scene_builder.add_material(materials::isotropic([0.9, 0.9, 0.9]));
+    let dark_smoke_id = scene_builder.add_material(materials::isotropic([0.2, 0.2, 0.2]));
+
+    {
+        // Right box
+        let mesh = box3d(300.0, 300.0, 300.0);
+        let mesh_id = scene_builder.add_mesh(mesh);
+        let boundary_id = scene_builder.add_primitive(Primitive::mesh(mesh_id));
+        let primitive_id = scene_builder.add_primitive(Primitive::Medium(ConstantMedium::new(boundary_id, 0.006)));
+        let _ = scene_builder.add_instance(
+            Instance::new(primitive_id, light_smoke_id)
+                .rotate_y(degrees_to_radians(-18.0))
+                .translate([236.0, 0.0, 118.0]),
+        );
+    }
+
+    {
+        // Left box
+        let mesh = box3d(300.0, 600.0, 300.0);
+        let mesh_id = scene_builder.add_mesh(mesh);
+        let boundary_id = scene_builder.add_primitive(Primitive::mesh(mesh_id));
+        let primitive_id = scene_builder.add_primitive(Primitive::Medium(ConstantMedium::new(boundary_id, 0.003)));
+        let _ = scene_builder.add_instance(
+            Instance::new(primitive_id, dark_smoke_id)
+                .rotate_y(degrees_to_radians(15.0))
+                .translate([482.0, 0.0, 536.0]),
+        );
     }
 
     (camera_options, scene_builder.build())

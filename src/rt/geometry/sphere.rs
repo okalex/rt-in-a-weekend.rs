@@ -39,27 +39,6 @@ impl Sphere {
         Self::new(ray, radius, aabb)
     }
 
-    // pub fn moving(center1: Point, center2: Point, radius: Float) -> Sphere {
-    //     let ray = Ray::new(center1, center2 - center1, 0.0);
-    //     let rvec = Vector::splat(radius);
-    //     let box1 = {
-    //         let points = vec![
-    //             to_parry_vec(ray.at(0.0) - rvec),
-    //             to_parry_vec(ray.at(0.0) + rvec),
-    //         ];
-    //         Aabb::from_points(points)
-    //     };
-    //     let box2 = {
-    //         let points = vec![
-    //             to_parry_vec(ray.at(1.0) - rvec),
-    //             to_parry_vec(ray.at(1.0) + rvec),
-    //         ];
-    //         Aabb::from_points(points)
-    //     };
-    //     let bbox = box1.merged(&box2);
-    //     Self::new(ray, radius, bbox)
-    // }
-
     pub fn get_uv(normal: &Vector) -> (Float, Float) {
         let u = 0.5 + (-normal.z).atan2(normal.x) / (2.0 * PI);
         let v = 0.5 + normal.y.asin() / PI;

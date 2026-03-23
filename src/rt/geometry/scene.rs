@@ -281,7 +281,7 @@ impl Scene {
     pub fn hit(&self, ray: &Ray, ray_t: Interval) -> Option<(InstanceId, HitRecord)> {
         let obvhs_ray = ray.to_obvhs(ray_t);
         let mut rec = RayHit::none();
-        let mut hit_record: Option<(InstanceId, HitRecord)> = None;
+        let mut hit_record = None;
         let mut closest_t = ray_t.max;
 
         self.bvh.ray_traverse(obvhs_ray, &mut rec, |_r, prim_idx| {
@@ -334,6 +334,19 @@ impl Scene {
             Primitive::Quad(quad) => quad.hit(ray, ray_t),
             Primitive::Triangle(triangle) => triangle.hit(ray, ray_t),
             Primitive::Mesh(mesh) => self.get_mesh(&mesh.id).and_then(|m| m.hit(ray, ray_t)),
+            Primitive::Medium(medium) => {
+                let boundary = self.get_primitive(&medium.boundary_id).unwrap();
+                let hit_fn = |ray: &Ray, interval: Interval| -> Option<HitRecord> {
+                    match boundary {
+                        Primitive::Sphere(sphere) => sphere.hit(ray, interval),
+                        Primitive::Quad(quad) => quad.hit(ray, interval),
+                        Primitive::Triangle(triangle) => triangle.hit(ray, interval),
+                        Primitive::Mesh(mesh) => self.get_mesh(&mesh.id).and_then(|m| m.hit(ray, interval)),
+                        Primitive::Medium(_) => panic!(), // Don't allow nested mediums
+                    }
+                };
+                medium.hit(hit_fn, ray, ray_t)
+            }
         }
     }
 
@@ -343,6 +356,10 @@ impl Scene {
             Primitive::Quad(quad) => quad.aabb,
             Primitive::Triangle(triangle) => triangle.aabb,
             Primitive::Mesh(mesh) => self.get_mesh(&mesh.id).map(|m| m.aabb).unwrap(),
+            Primitive::Medium(medium) => {
+                let boundary = self.get_primitive(&medium.boundary_id).unwrap();
+                self.aabb_for(boundary) // TODO - this could recurse indefinitely
+            }
         }
     }
 }

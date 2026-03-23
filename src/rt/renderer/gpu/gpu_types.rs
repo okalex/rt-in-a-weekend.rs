@@ -228,7 +228,9 @@ impl From<&Primitive> for GpuPrimitive {
                 normal: triangle.normal,
             },
 
-            Primitive::Mesh(_) => panic!(),
+            Primitive::Medium(_) => todo!(),
+
+            Primitive::Mesh(_) => panic!(), // This is added in scene construction
         }
     }
 }
