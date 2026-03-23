@@ -10,12 +10,11 @@ import package::{
 };
 
 fn hit_mesh(mesh: types::GpuPrimitive_Mesh, ray: Ray, ray_t: Interval) -> HitRecord {
-    let bvh_offset = mesh.mesh_bvh_id;
     var curr_ray_t = ray_t;
     var curr_hit = no_hit();
     var stack = new_stack();
     let inv_dir = 1.0 / ray.dir;
-    push(&stack, bvh_offset);
+    push(&stack, mesh.mesh_bvh_id);
 
     while !is_empty(&stack) {
         let node_idx = pop(&stack);
