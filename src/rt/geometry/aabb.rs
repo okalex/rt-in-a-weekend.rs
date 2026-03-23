@@ -4,7 +4,7 @@ use glam::{
     Vec3A,
 };
 
-use crate::rt::types::{
+use crate::util::types::{
     to_parry_vec,
     Float,
     Point,

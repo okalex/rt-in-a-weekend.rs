@@ -1,9 +1,16 @@
 use std::cell::RefCell;
 
-use rand::RngExt;
-use rand::rngs::SmallRng;
+use rand::{
+    rngs::SmallRng,
+    RngExt,
+};
 
-use crate::rt::types::{Float, Int, PI, Vector};
+use crate::util::types::{
+    Float,
+    Int,
+    Vector,
+    PI,
+};
 
 thread_local! {
     static RNG: RefCell<SmallRng> = RefCell::new(rand::make_rng());
@@ -36,11 +43,7 @@ pub fn rand_vector() -> Vector {
 }
 
 pub fn rand_range_vector(min: Float, max: Float) -> Vector {
-    Vector::new(
-        rand_range(min, max),
-        rand_range(min, max),
-        rand_range(min, max),
-    )
+    Vector::new(rand_range(min, max), rand_range(min, max), rand_range(min, max))
 }
 
 pub fn rand_unit_vector() -> Vector {

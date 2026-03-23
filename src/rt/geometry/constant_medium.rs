@@ -3,15 +3,19 @@ use std::sync::Arc;
 use parry3d_f64::bounding_volume::Aabb;
 
 use super::hittable::Hittable;
-use crate::rt::{
-    geometry::hit_record::HitRecord,
-    interval::Interval,
-    random::rand,
-    ray::Ray,
-    types::{
-        Float,
-        Vector,
-        INFINITY,
+use crate::{
+    rt::{
+        geometry::hit_record::HitRecord,
+        ray::Ray,
+    },
+    util::{
+        interval::Interval,
+        random::rand,
+        types::{
+            Float,
+            Vector,
+            INFINITY,
+        },
     },
 };
 

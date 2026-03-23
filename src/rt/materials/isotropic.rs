@@ -1,13 +1,27 @@
 use std::sync::Arc;
 
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::pdf::{Pdf, SpherePdf};
-use crate::rt::ray::Ray;
-use crate::rt::textures::solid_color::SolidColor;
-use crate::rt::types::{Float, PI};
-use crate::rt::{color::Color, textures::texture::Texture};
-
 use super::material::ScatterRecord;
+use crate::{
+    rt::{
+        geometry::hit_record::HitRecord,
+        pdf::{
+            Pdf,
+            SpherePdf,
+        },
+        ray::Ray,
+        textures::{
+            solid_color::SolidColor,
+            texture::Texture,
+        },
+    },
+    util::{
+        color::Color,
+        types::{
+            Float,
+            PI,
+        },
+    },
+};
 
 pub struct Isotropic {
     texture: Arc<Texture>,

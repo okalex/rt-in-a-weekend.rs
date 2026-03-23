@@ -1,11 +1,18 @@
 use std::sync::Arc;
 
-use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
+use winit::{
+    event_loop::ActiveEventLoop,
+    keyboard::KeyCode,
+    window::Window,
+};
 
-use crate::rt::{
-    frame_buffer::FrameBuffer,
-    gpu::{gpu::Gpu, gpu_texture::GpuTexture},
-    types::Uint,
+use crate::{
+    gpu::{
+        gpu::Gpu,
+        gpu_texture::GpuTexture,
+    },
+    rt::frame_buffer::FrameBuffer,
+    util::types::Uint,
 };
 
 pub struct State {
@@ -24,8 +31,7 @@ impl State {
         let texture = GpuTexture::new(&gpu.device(), Arc::clone(&frame_buffer));
         let bind_group_layout = gpu.create_bind_group_layout(&texture.bind_group_layout_entries(0));
         let bind_group = gpu.create_bind_group(&bind_group_layout, &texture.bind_group_entries(0));
-        let display_shader =
-            gpu.create_shader(wgpu::include_wgsl!("../../shaders/display_shader.wgsl"));
+        let display_shader = gpu.create_shader(wgpu::include_wgsl!("../shaders/display_shader.wgsl"));
         let render_pipeline = gpu.create_render_pipeline(&[&bind_group_layout], &display_shader);
 
         Ok(Self {
@@ -59,8 +65,7 @@ impl State {
         }
 
         // Copy data to GPU
-        self.gpu
-            .write_texture(Arc::clone(&self.frame_buffer), &self.texture);
+        self.gpu.write_texture(Arc::clone(&self.frame_buffer), &self.texture);
         self.gpu.render(&self.render_pipeline, &self.bind_group);
 
         Ok(())

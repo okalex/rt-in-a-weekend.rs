@@ -1,12 +1,14 @@
 use std::sync::Arc;
 
-use crate::rt::{
-    color::Color,
-    textures::solid_color::SolidColor,
-    types::{
-        Float,
-        Int,
-        Point,
+use crate::{
+    rt::textures::solid_color::SolidColor,
+    util::{
+        color::Color,
+        types::{
+            Float,
+            Int,
+            Point,
+        },
     },
 };
 

@@ -7,10 +7,9 @@ use winit::{
     window::Window,
 };
 
-use crate::rt::{
-    frame_buffer::FrameBuffer,
+use crate::{
     gpu::gpu_texture::GpuTexture,
-    types::Uint,
+    rt::frame_buffer::FrameBuffer, util::types::Uint,
 };
 
 pub enum Gpu {

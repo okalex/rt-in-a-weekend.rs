@@ -15,9 +15,9 @@ use encase::{
     ShaderType,
 };
 
-use crate::rt::{
+use crate::{
     gpu::gpu::Gpu,
-    renderer::gpu::{
+    rt::renderer::gpu::{
         gpu_meta::GpuMeta,
         gpu_types::GpuScene,
     },

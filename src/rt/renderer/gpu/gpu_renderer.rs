@@ -5,23 +5,27 @@ use std::{
 
 use wesl::include_wesl;
 
-use crate::rt::{
-    camera::Camera,
-    color::Color,
-    frame_buffer::FrameBuffer,
-    geometry::scene::Scene,
+use crate::{
     gpu::{
         gpu::Gpu,
         gpu_compute::GpuCompute,
     },
-    renderer::{
-        gpu::{
-            gpu_meta::GpuMeta,
-            gpu_types::GpuScene,
+    rt::{
+        camera::Camera,
+        frame_buffer::FrameBuffer,
+        geometry::scene::Scene,
+        renderer::{
+            gpu::{
+                gpu_meta::GpuMeta,
+                gpu_types::GpuScene,
+            },
+            render_options::RenderOptions,
         },
-        render_options::RenderOptions,
     },
-    types::Float,
+    util::{
+        color::Color,
+        types::Float,
+    },
 };
 
 pub struct GpuRenderer {

@@ -14,19 +14,23 @@ use obvhs::{
     BvhBuildParams,
 };
 
-use crate::rt::{
-    geometry::{
-        aabb::Aabb,
-        hit_record::HitRecord,
-        mesh::Mesh,
-        primitive::Primitive,
+use crate::{
+    rt::{
+        geometry::{
+            aabb::Aabb,
+            hit_record::HitRecord,
+            mesh::Mesh,
+            primitive::Primitive,
+        },
+        materials::material::Material,
+        ray::Ray,
     },
-    interval::Interval,
-    materials::material::Material,
-    ray::Ray,
-    types::{
-        Float,
-        INFINITY,
+    util::{
+        interval::Interval,
+        types::{
+            Float,
+            INFINITY,
+        },
     },
 };
 

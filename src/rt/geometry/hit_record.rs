@@ -1,6 +1,6 @@
-use crate::rt::{
-    ray::Ray,
-    types::{
+use crate::{
+    rt::ray::Ray,
+    util::types::{
         Float,
         Point,
         Vector,

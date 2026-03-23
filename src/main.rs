@@ -1,32 +1,40 @@
+mod app;
+mod examples;
+mod gpu;
 mod rt;
+mod util;
 
 use std::sync::Arc;
 
 use clap::Parser;
 use winit::event_loop::EventLoop;
 
-#[allow(unused)]
-use crate::rt::color::Color;
-use crate::rt::{
-    app::app::App,
-    camera::Camera,
-    frame_buffer::FrameBuffer,
+use crate::util::{
+    color::Color,
     ppm_writer::PpmWriter,
-    renderer::{
-        cpu::line_server::LineServer,
-        render_options::{
-            RenderOptions,
-            RenderOptionsBuilder,
-        },
-        renderer::Renderer,
-    },
-    sampler::Sampler,
-    test_scenes2::get_scene,
     types::{
         Float,
         Uint,
     },
-    viewport::Viewport,
+};
+#[allow(unused)]
+use crate::{
+    app::app::App,
+    examples::scenes::get_scene,
+    rt::{
+        camera::Camera,
+        frame_buffer::FrameBuffer,
+        renderer::{
+            cpu::line_server::LineServer,
+            render_options::{
+                RenderOptions,
+                RenderOptionsBuilder,
+            },
+            renderer::Renderer,
+        },
+        sampler::Sampler,
+        viewport::Viewport,
+    },
 };
 
 #[derive(Parser, Debug)]

@@ -2,22 +2,26 @@ use std::sync::Arc;
 
 use glam::Mat4;
 
-use crate::rt::{
-    geometry::primitive::Primitive,
-    onb::Onb,
-    random::{
-        rand,
-        rand_cos_dir,
-        rand_int,
-        rand_on_hemisphere,
-        rand_unit_vector,
+use crate::{
+    rt::{
+        geometry::primitive::Primitive,
+        onb::Onb,
     },
-    types::{
-        Float,
-        Int,
-        Point,
-        Vector,
-        PI,
+    util::{
+        random::{
+            rand,
+            rand_cos_dir,
+            rand_int,
+            rand_on_hemisphere,
+            rand_unit_vector,
+        },
+        types::{
+            Float,
+            Int,
+            Point,
+            Vector,
+            PI,
+        },
     },
 };
 

@@ -1,16 +1,21 @@
 use std::sync::Arc;
 
-use crate::rt::color::Color;
-use crate::rt::materials::dielectric::Dielectric;
-use crate::rt::materials::emissive::Emissive;
-use crate::rt::materials::isotropic::Isotropic;
-use crate::rt::materials::lambertian::Lambertian;
-use crate::rt::materials::metal::Metal;
-use crate::rt::materials::pbr_material::PbrMaterial;
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::pdf::Pdf;
-use crate::rt::ray::Ray;
-use crate::rt::types::{Float, Vector};
+use crate::{
+    rt::{
+        geometry::hit_record::HitRecord,
+        materials::{
+            dielectric::Dielectric,
+            emissive::Emissive,
+            isotropic::Isotropic,
+            lambertian::Lambertian,
+            metal::Metal,
+            pbr_material::PbrMaterial,
+        },
+        pdf::Pdf,
+        ray::Ray,
+    },
+    util::{color::Color, types::{Float, Vector}},
+};
 
 pub struct ScatterRecord {
     pub attenuation: Color,

@@ -3,14 +3,25 @@ use std::sync::Arc;
 use winit::{
     application::ApplicationHandler,
     dpi::LogicalSize,
-    event::{KeyEvent, WindowEvent},
+    event::{
+        KeyEvent,
+        WindowEvent,
+    },
     event_loop::ActiveEventLoop,
     keyboard::PhysicalKey,
-    window::{Window, WindowId},
+    window::{
+        Window,
+        WindowId,
+    },
 };
 
-use crate::rt::{
-    app::state::State, frame_buffer::FrameBuffer, renderer::renderer::Renderer, types::Uint,
+use crate::{
+    app::state::State,
+    rt::{
+        frame_buffer::FrameBuffer,
+        renderer::renderer::Renderer,
+    },
+    util::types::Uint,
 };
 
 #[allow(unused)]
@@ -22,12 +33,7 @@ pub struct App {
 }
 
 impl App {
-    pub fn new(
-        width: Uint,
-        height: Uint,
-        renderer: Arc<Renderer>,
-        frame_buffer: Arc<FrameBuffer>,
-    ) -> Self {
+    pub fn new(width: Uint, height: Uint, renderer: Arc<Renderer>, frame_buffer: Arc<FrameBuffer>) -> Self {
         tokio::spawn(async move {
             renderer.render().await;
         });
@@ -52,20 +58,14 @@ impl ApplicationHandler<State> for App {
             .with_resizable(false);
 
         let window = Arc::new(event_loop.create_window(window_attrs).unwrap());
-        self.state =
-            Some(pollster::block_on(State::new(window, Arc::clone(&self.frame_buffer))).unwrap());
+        self.state = Some(pollster::block_on(State::new(window, Arc::clone(&self.frame_buffer))).unwrap());
     }
 
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: State) {
         self.state = Some(event);
     }
 
-    fn window_event(
-        &mut self,
-        event_loop: &ActiveEventLoop,
-        _window_id: WindowId,
-        event: WindowEvent,
-    ) {
+    fn window_event(&mut self, event_loop: &ActiveEventLoop, _window_id: WindowId, event: WindowEvent) {
         let state = match &mut self.state {
             Some(canvas) => canvas,
             None => return,

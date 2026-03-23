@@ -1,10 +1,22 @@
-use crate::rt::{
-    random::{rand, rand_in_unit_disk},
-    ray::Ray,
-    sampler::Sampler,
-    types::{Float, Point, Uint, Vector},
-    util::degrees_to_radians,
-    viewport::Viewport,
+use crate::{
+    rt::{
+        ray::Ray,
+        sampler::Sampler,
+        viewport::Viewport,
+    },
+    util::{
+        random::{
+            rand,
+            rand_in_unit_disk,
+        },
+        trig::degrees_to_radians,
+        types::{
+            Float,
+            Point,
+            Uint,
+            Vector,
+        },
+    },
 };
 
 pub struct Disk {
@@ -21,8 +33,7 @@ pub struct Camera {
 
 impl Camera {
     pub fn new(options: CameraOptions, viewport: Viewport, sampler: Sampler) -> Self {
-        let defocus_radius =
-            options.focus_dist * degrees_to_radians(options.defocus_angle / 2.0).tan();
+        let defocus_radius = options.focus_dist * degrees_to_radians(options.defocus_angle / 2.0).tan();
         let defocus_disk = Disk {
             u: viewport.u * defocus_radius,
             v: viewport.v * defocus_radius,
@@ -46,9 +57,7 @@ impl Camera {
     }
 
     fn get_ray(&self, i: Uint, j: Uint, offset: Vector) -> Ray {
-        let pixel_sample = self
-            .viewport
-            .pixel_loc(i as Float + offset.x, j as Float + offset.y);
+        let pixel_sample = self.viewport.pixel_loc(i as Float + offset.x, j as Float + offset.y);
 
         let ray_origin = if self.options.defocus_angle <= 0.0 {
             self.options.position
@@ -63,9 +72,7 @@ impl Camera {
 
     fn defocus_disk_sample(&self) -> Point {
         let p = rand_in_unit_disk();
-        return Point::from(
-            self.options.position + (self.defocus_disk.u * p.x) + (self.defocus_disk.v * p.y),
-        );
+        return Point::from(self.options.position + (self.defocus_disk.u * p.x) + (self.defocus_disk.v * p.y));
     }
 }
 

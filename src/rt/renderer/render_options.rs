@@ -1,6 +1,9 @@
-use crate::rt::{
+use crate::util::{
     color::Color,
-    types::{Float, Uint},
+    types::{
+        Float,
+        Uint,
+    },
 };
 
 pub struct RenderOptions {

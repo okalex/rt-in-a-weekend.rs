@@ -1,5 +1,5 @@
-use crate::rt::{
-    geometry::{
+use crate::{
+    rt::geometry::{
         quad::Quad,
         scene::{
             MeshDescriptor,
@@ -8,7 +8,7 @@ use crate::rt::{
         sphere::Sphere,
         triangle::Triangle,
     },
-    types::{
+    util::types::{
         Float,
         Point,
         Vector,

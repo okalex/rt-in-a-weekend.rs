@@ -1,4 +1,4 @@
-use crate::rt::types::Vector;
+use crate::util::types::Vector;
 
 pub struct Onb {
     axis: [Vector; 3],

@@ -1,13 +1,21 @@
 use std::sync::Arc;
 
-use crate::rt::color::Color;
-use crate::rt::materials::material::ScatterRecord;
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::pdf::{CosinePdf, Pdf};
-use crate::rt::ray::Ray;
-use crate::rt::textures::solid_color::SolidColor;
-use crate::rt::textures::texture::Texture;
-use crate::rt::types::{Float, PI, Vector};
+use crate::{
+    rt::{
+        geometry::hit_record::HitRecord,
+        materials::material::ScatterRecord,
+        pdf::{
+            CosinePdf,
+            Pdf,
+        },
+        ray::Ray,
+        textures::{
+            solid_color::SolidColor,
+            texture::Texture,
+        },
+    },
+    util::{color::Color, types::{Float, PI, Vector}},
+};
 
 pub struct Lambertian {
     pub texture: Arc<Texture>,

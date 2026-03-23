@@ -1,4 +1,4 @@
-use crate::rt::{
+use crate::util::{
     random::rand,
     types::Float,
 };
@@ -6,28 +6,32 @@ use crate::rt::{
 pub mod materials {
     use std::sync::Arc;
 
-    use crate::rt::{
-        color::Color,
-        materials::{
-            dielectric::Dielectric,
-            emissive::Emissive,
-            isotropic::Isotropic,
-            lambertian::Lambertian,
-            material::Material,
-            metal::Metal,
-            pbr_material::PbrMaterial,
-        },
-        random::rand_range,
-        test_helpers::{
+    use crate::{
+        examples::helpers::{
             rand_arr3,
             textures,
         },
-        textures::{
-            image_map::ImageMap,
-            perlin_noise::PerlinNoise,
-            texture::Texture,
+        rt::{
+            materials::{
+                dielectric::Dielectric,
+                emissive::Emissive,
+                isotropic::Isotropic,
+                lambertian::Lambertian,
+                material::Material,
+                metal::Metal,
+                pbr_material::PbrMaterial,
+            },
+            textures::{
+                image_map::ImageMap,
+                perlin_noise::PerlinNoise,
+                texture::Texture,
+            },
         },
-        types::Float,
+        util::{
+            color::Color,
+            random::rand_range,
+            types::Float,
+        },
     };
 
     #[allow(unused)]
@@ -147,9 +151,9 @@ fn rand_arr3() -> [Float; 3] {
 
 pub mod primitives {
 
-    use crate::rt::{
-        geometry::primitive::Primitive,
-        types::{
+    use crate::{
+        rt::geometry::primitive::Primitive,
+        util::types::{
             Float,
             Point,
             Vector,
@@ -195,17 +199,19 @@ pub mod primitives {
 }
 
 pub mod cornell_room {
-    use crate::rt::{
-        camera::CameraOptions,
-        geometry::scene::{
-            Instance,
-            SceneBuilder,
-        },
-        test_helpers::{
+    use crate::{
+        examples::helpers::{
             materials,
             primitives,
         },
-        util::degrees_to_radians,
+        rt::{
+            camera::CameraOptions,
+            geometry::scene::{
+                Instance,
+                SceneBuilder,
+            },
+        },
+        util::trig::degrees_to_radians,
     };
 
     pub fn camera() -> CameraOptions {
@@ -252,7 +258,7 @@ pub mod cornell_room {
         scene_builder.add_instance(back_wall);
         scene_builder.add_instance(left_wall);
         scene_builder.add_instance(right_wall);
-        
+
         let light_instance_id = scene_builder.add_instance(light);
         scene_builder.add_light(light_instance_id);
     }

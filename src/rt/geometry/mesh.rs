@@ -10,18 +10,22 @@ use obvhs::{
     BvhBuildParams,
 };
 
-use crate::rt::{
-    geometry::{
-        aabb::Aabb,
-        hit_record::HitRecord,
-        triangle::Triangle,
+use crate::{
+    rt::{
+        geometry::{
+            aabb::Aabb,
+            hit_record::HitRecord,
+            triangle::Triangle,
+        },
+        ray::Ray,
     },
-    interval::Interval,
-    ray::Ray,
-    types::{
-        Float,
-        Vector,
-        INFINITY,
+    util::{
+        interval::Interval,
+        types::{
+            Float,
+            Vector,
+            INFINITY,
+        },
     },
 };
 

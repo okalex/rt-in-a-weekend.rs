@@ -1,6 +1,9 @@
-use glam::{Mat4, Vec3A};
+use glam::{
+    Mat4,
+    Vec3A,
+};
 
-use crate::rt::{
+use crate::util::{
     interval::Interval,
     types::{
         Float,
@@ -32,11 +35,6 @@ impl Ray {
     }
 
     pub fn to_obvhs(&self, ray_t: Interval) -> obvhs::ray::Ray {
-        obvhs::ray::Ray::new(
-            Vec3A::from(self.orig),
-            Vec3A::from(self.dir),
-            ray_t.min,
-            ray_t.max,
-        )
+        obvhs::ray::Ray::new(Vec3A::from(self.orig), Vec3A::from(self.dir), ray_t.min, ray_t.max)
     }
 }

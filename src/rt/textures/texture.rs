@@ -1,9 +1,17 @@
-use crate::rt::{
-    color::Color,
-    textures::{
-        checkered::Checkered, image_map::ImageMap, perlin_noise::PerlinNoise,
+use crate::{
+    rt::textures::{
+        checkered::Checkered,
+        image_map::ImageMap,
+        perlin_noise::PerlinNoise,
         solid_color::SolidColor,
-    }, types::{Float, Point},
+    },
+    util::{
+        color::Color,
+        types::{
+            Float,
+            Point,
+        },
+    },
 };
 
 pub enum Texture {

@@ -6,10 +6,12 @@ use parry3d_f64::bounding_volume::{
 };
 
 use super::hittable::Hittable;
-use crate::rt::{
-    geometry::hit_record::HitRecord,
-    interval::Interval,
-    ray::Ray,
+use crate::{
+    rt::{
+        geometry::hit_record::HitRecord,
+        ray::Ray,
+    },
+    util::interval::Interval,
 };
 
 pub struct HittableList {

@@ -1,6 +1,9 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    Arc,
+    Mutex,
+};
 
-use crate::rt::types::Uint;
+use crate::util::types::Uint;
 
 pub struct LineServer {
     lines: Arc<Mutex<Vec<Uint>>>,

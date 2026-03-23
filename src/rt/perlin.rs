@@ -1,6 +1,14 @@
-use crate::rt::{
-    random::{rand_int, rand_range_vector},
-    types::{Float, Int, Point, Vector},
+use crate::util::{
+    random::{
+        rand_int,
+        rand_range_vector,
+    },
+    types::{
+        Float,
+        Int,
+        Point,
+        Vector,
+    },
 };
 
 pub struct Perlin {
@@ -15,9 +23,7 @@ impl Perlin {
 
     pub fn new() -> Self {
         Self {
-            rand_vec: (0..Self::POINT_COUNT)
-                .map(|_| rand_range_vector(-1.0, 1.0).normalize())
-                .collect(),
+            rand_vec: (0..Self::POINT_COUNT).map(|_| rand_range_vector(-1.0, 1.0).normalize()).collect(),
             perm_x: Self::generate_perm(),
             perm_y: Self::generate_perm(),
             perm_z: Self::generate_perm(),
@@ -40,8 +46,7 @@ impl Perlin {
                     let x_idx = ((i + di) & 255) as usize;
                     let y_idx = ((j + dj) & 255) as usize;
                     let z_idx = ((k + dk) & 255) as usize;
-                    let rand_idx =
-                        (self.perm_x[x_idx] ^ self.perm_y[y_idx] ^ self.perm_z[z_idx]) as usize;
+                    let rand_idx = (self.perm_x[x_idx] ^ self.perm_y[y_idx] ^ self.perm_z[z_idx]) as usize;
                     c[di as usize][dj as usize][dk as usize] = self.rand_vec[rand_idx];
                 }
             }

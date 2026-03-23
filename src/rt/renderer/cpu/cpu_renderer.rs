@@ -3,32 +3,36 @@ use std::{
     time::Instant,
 };
 
-use crate::rt::{
-    camera::Camera,
-    color::Color,
-    frame_buffer::FrameBuffer,
-    geometry::{
-        hit_record::HitRecord,
-        scene::Scene,
+use crate::{
+    rt::{
+        camera::Camera,
+        frame_buffer::FrameBuffer,
+        geometry::{
+            hit_record::HitRecord,
+            scene::Scene,
+        },
+        materials::material::{
+            Material,
+            ScatterRecord,
+        },
+        pdf::{
+            CosinePdf,
+            Pdf,
+            TransformedPrimitive,
+        },
+        ray::Ray,
+        renderer::{
+            cpu::line_server::LineServer,
+            render_options::RenderOptions,
+        },
     },
-    interval::Interval,
-    materials::material::{
-        Material,
-        ScatterRecord,
-    },
-    pdf::{
-        CosinePdf,
-        Pdf,
-        TransformedPrimitive,
-    },
-    ray::Ray,
-    renderer::{
-        cpu::line_server::LineServer,
-        render_options::RenderOptions,
-    },
-    types::{
-        Uint,
-        INFINITY,
+    util::{
+        color::Color,
+        interval::Interval,
+        types::{
+            Uint,
+            INFINITY,
+        },
     },
 };
 

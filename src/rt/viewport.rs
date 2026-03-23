@@ -1,6 +1,15 @@
-use crate::rt::camera::CameraOptions;
-use crate::rt::types::{Float, Point, Uint, Vector};
-use crate::rt::util::degrees_to_radians;
+use crate::{
+    rt::camera::CameraOptions,
+    util::{
+        trig::degrees_to_radians,
+        types::{
+            Float,
+            Point,
+            Uint,
+            Vector,
+        },
+    },
+};
 
 pub struct Viewport {
     pub delta_u: Vector,
@@ -25,12 +34,7 @@ impl Viewport {
         let viewport_v = -v * (viewport_height as Float);
         let delta_u = viewport_u / (img_width as Float);
         let delta_v = viewport_v / (img_height as Float);
-        let upper_left = Point::from(
-            camera_options.position
-                - viewport_u / 2.0
-                - viewport_v / 2.0
-                - w * camera_options.focus_dist,
-        );
+        let upper_left = Point::from(camera_options.position - viewport_u / 2.0 - viewport_v / 2.0 - w * camera_options.focus_dist);
         let pixel00_loc = upper_left + (delta_u + delta_v) / 2.0;
 
         Viewport {

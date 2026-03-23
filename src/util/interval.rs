@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use crate::rt::types::{
+use crate::util::types::{
     Float,
     INFINITY,
 };

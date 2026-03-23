@@ -1,13 +1,24 @@
 use std::sync::Arc;
 
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::pdf::Pdf;
-use crate::rt::random::rand;
-use crate::rt::ray::Ray;
-use crate::rt::types::Float;
-use crate::rt::{color::Color, pdf::SpherePdf};
-
-use super::material::{ScatterRecord, reflect, reflectance, refract};
+use super::material::{
+    reflect,
+    reflectance,
+    refract,
+    ScatterRecord,
+};
+use crate::{
+    rt::{
+        geometry::hit_record::HitRecord,
+        pdf::{
+            Pdf,
+            SpherePdf,
+        },
+        ray::Ray,
+    },
+    util::{
+        color::Color, random::rand, types::Float
+    },
+};
 
 pub struct Dielectric {
     pub refraction_idx: Float,

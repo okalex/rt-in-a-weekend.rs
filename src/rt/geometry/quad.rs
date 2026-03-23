@@ -1,16 +1,15 @@
-use crate::rt::{
-    geometry::{
-        aabb::Aabb,
-        hit_record::HitRecord,
+use crate::{
+    rt::{
+        geometry::{
+            aabb::Aabb,
+            hit_record::HitRecord,
+        },
+        ray::Ray,
     },
-    interval::Interval,
-    random::rand,
-    ray::Ray,
-    types::{
-        Float,
-        Point,
-        Vector,
-        INFINITY,
+    util::{
+        interval::Interval, random::rand, types::{
+            Float, INFINITY, Point, Vector
+        }
     },
 };
 

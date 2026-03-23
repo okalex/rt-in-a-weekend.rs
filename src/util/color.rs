@@ -1,7 +1,18 @@
-use crate::rt::random::rand;
-use crate::rt::types::Float;
-use crate::rt::{interval::Interval, types::Vector};
-use std::ops::{Add, Div, Mul, Sub};
+use std::ops::{
+    Add,
+    Div,
+    Mul,
+    Sub,
+};
+
+use crate::util::{
+    interval::Interval,
+    random::rand,
+    types::{
+        Float,
+        Vector,
+    },
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Color {
@@ -59,11 +70,7 @@ impl Color {
     }
 
     pub fn to_linear(&self) -> Color {
-        Self::new(
-            gamma_to_linear(self.r()),
-            gamma_to_linear(self.g()),
-            gamma_to_linear(self.b()),
-        )
+        Self::new(gamma_to_linear(self.r()), gamma_to_linear(self.g()), gamma_to_linear(self.b()))
     }
 
     pub fn to_u8(&self) -> [u8; 3] {

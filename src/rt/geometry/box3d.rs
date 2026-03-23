@@ -1,10 +1,10 @@
-use crate::rt::{
-    geometry::{
+use crate::{
+    rt::geometry::{
         hittable::Hittable,
         hittable_list::HittableList,
         quad::Quad,
     },
-    types::{
+    util::types::{
         Point,
         Vector,
     },

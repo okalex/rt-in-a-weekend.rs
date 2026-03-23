@@ -1,12 +1,24 @@
 use std::sync::Arc;
 
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::pdf::{Pdf, SpherePdf};
-use crate::rt::ray::Ray;
-use crate::rt::types::Float;
-use crate::rt::{color::Color, random::rand_unit_vector};
-
-use super::material::{ScatterRecord, reflect};
+use super::material::{
+    reflect,
+    ScatterRecord,
+};
+use crate::{
+    rt::{
+        geometry::hit_record::HitRecord,
+        pdf::{
+            Pdf,
+            SpherePdf,
+        },
+        ray::Ray,
+    },
+    util::{
+        color::Color,
+        random::rand_unit_vector,
+        types::Float,
+    },
+};
 
 pub struct Metal {
     pub albedo: Color,

@@ -1,30 +1,31 @@
-use crate::rt::{
-    camera::CameraOptions,
-    file::load_model,
-    geometry::{
-        primitive::Primitive,
-        scene::{
-            Instance,
-            Scene,
-            SceneBuilder,
-        },
-    },
-    random::{
-        rand,
-        rand_range,
-        rand_range_vector,
-    },
-    test_helpers::{
+use crate::{
+    examples::helpers::{
         cornell_room,
         materials,
         primitives,
     },
-    types::{
-        Float,
-        Point,
-        Vector,
+    rt::{
+        camera::CameraOptions,
+        geometry::{
+            primitive::Primitive,
+            scene::{
+                Instance,
+                Scene,
+                SceneBuilder,
+            },
+        },
     },
-    util::degrees_to_radians,
+    util::{
+        file::load_model, random::{
+            rand,
+            rand_range,
+            rand_range_vector,
+        }, trig::degrees_to_radians, types::{
+            Float,
+            Point,
+            Vector,
+        }
+    },
 };
 
 pub fn get_scene(scene_idx: u32) -> (CameraOptions, Scene) {
@@ -262,7 +263,7 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
     let sphere_id = scene_builder.add_primitive(sphere_prim);
 
     // Add lights
-    for _ in -9..=9{
+    for _ in -9..=9 {
         let light = Instance::new(sphere_id, diffuse_light_id).translate([rand_range(-3.0, 3.0), 3.0, rand_range(-3.0, 3.0)]);
         let instance_id = scene_builder.add_instance(light);
         scene_builder.add_light(instance_id);

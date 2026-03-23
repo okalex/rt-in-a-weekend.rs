@@ -1,11 +1,19 @@
 use std::sync::Arc;
 
-use crate::rt::color::Color;
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::ray::Ray;
-use crate::rt::textures::solid_color::SolidColor;
-use crate::rt::textures::texture::Texture;
-use crate::rt::types::Float;
+use crate::{
+    rt::{
+        geometry::hit_record::HitRecord,
+        ray::Ray,
+        textures::{
+            solid_color::SolidColor,
+            texture::Texture,
+        },
+    },
+    util::{
+        color::Color,
+        types::Float,
+    },
+};
 
 pub struct Emissive {
     pub texture: Arc<Texture>,
@@ -19,8 +27,7 @@ impl Emissive {
     #[allow(unused)]
     pub fn emitted(&self, r_in: &Ray, hit_record: &HitRecord) -> Color {
         if hit_record.front_face {
-            self.texture
-                .value(hit_record.u, hit_record.v, &hit_record.point)
+            self.texture.value(hit_record.u, hit_record.v, &hit_record.point)
         } else {
             Color::black()
         }

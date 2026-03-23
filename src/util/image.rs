@@ -1,9 +1,16 @@
-use image::{ImageReader, metadata::CicpColorPrimaries as ColorSpace};
 use std::path::Path;
 
-use crate::rt::{
+use image::{
+    metadata::CicpColorPrimaries as ColorSpace,
+    ImageReader,
+};
+
+use crate::util::{
     color::Color,
-    types::{Float, Uint},
+    types::{
+        Float,
+        Uint,
+    },
 };
 
 pub struct Image {
@@ -24,8 +31,7 @@ impl Image {
         let width = img.width();
         let height = img.height();
 
-        let mut pixels: Vec<Vec<Color>> =
-            vec![vec![Color::black(); width as usize]; height as usize];
+        let mut pixels: Vec<Vec<Color>> = vec![vec![Color::black(); width as usize]; height as usize];
         for j in 0..height {
             for i in 0..width {
                 let pixel = img.get_pixel(i, j); // Note: this is not safe - ignoring errors for now

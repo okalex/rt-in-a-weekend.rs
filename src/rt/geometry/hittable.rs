@@ -12,9 +12,9 @@ use crate::{
             sphere::Sphere,
             triangle::Triangle,
         },
-        interval::Interval,
         ray::Ray,
     },
+    util::interval::Interval,
 };
 
 pub enum Hittable {

@@ -1,13 +1,26 @@
 use std::sync::Arc;
 
-use crate::rt::{
-    color::Color,
-    materials::material::{ScatterRecord, reflect},
-    geometry::hit_record::HitRecord,
-    pdf::{Pdf, SpherePdf},
-    random::rand_on_hemisphere,
-    ray::Ray,
-    types::{Float, Vector},
+use crate::{
+    rt::{
+        geometry::hit_record::HitRecord,
+        materials::material::{
+            reflect,
+            ScatterRecord,
+        },
+        pdf::{
+            Pdf,
+            SpherePdf,
+        },
+        ray::Ray,
+    },
+    util::{
+        color::Color,
+        random::rand_on_hemisphere,
+        types::{
+            Float,
+            Vector,
+        },
+    },
 };
 
 pub struct PbrMaterial {
@@ -23,10 +36,7 @@ pub struct PbrMaterial {
 
 impl PbrMaterial {
     pub fn new(albedo: Color, metallicity: Float) -> Self {
-        Self {
-            albedo,
-            metallicity,
-        }
+        Self { albedo, metallicity }
     }
 
     #[allow(unused)]
@@ -50,8 +60,7 @@ impl PbrMaterial {
     #[allow(unused)]
     pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         // Diffuse scatter
-        let mut scatter_dir = self.diffuse_scatter(r_in.dir, rec.normal)
-            + self.metallic_scatter(r_in.dir, rec.normal);
+        let mut scatter_dir = self.diffuse_scatter(r_in.dir, rec.normal) + self.metallic_scatter(r_in.dir, rec.normal);
 
         if all_are_less_than(scatter_dir, 1e-8) {
             scatter_dir = rec.normal;

@@ -1,15 +1,19 @@
 use glam::Vec2;
 
-use crate::rt::{
-    geometry::{
-        aabb::Aabb,
-        hit_record::HitRecord,
+use crate::{
+    rt::{
+        geometry::{
+            aabb::Aabb,
+            hit_record::HitRecord,
+        },
+        ray::Ray,
     },
-    interval::Interval,
-    ray::Ray,
-    types::{
-        Point,
-        Vector,
+    util::{
+        interval::Interval,
+        types::{
+            Point,
+            Vector,
+        },
     },
 };
 

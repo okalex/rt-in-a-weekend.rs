@@ -1,7 +1,11 @@
-use crate::rt::{
+use crate::util::{
     color::Color,
     random::rand,
-    types::{Float, Uint, Vector},
+    types::{
+        Float,
+        Uint,
+        Vector,
+    },
 };
 
 pub enum Sampler {
