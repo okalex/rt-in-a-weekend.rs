@@ -57,18 +57,18 @@ fn get_uv(sphere: types::GpuPrimitive_Sphere, normal: vec3<f32>) -> array<f32, 2
 }
 
 fn sphere_pdf_value(sphere: types::GpuPrimitive_Sphere, origin: vec3<f32>, direction: vec3<f32>) -> f32 {
-    // This method only works for stationary spheres.
-    let ray = Ray(origin, direction);
-    let interval = Interval(0.001, INF);
-    let hit_record = hit_sphere(sphere, ray, interval);
-    if hit_record.is_hit {
-        let dist_sqrd = length_squared(sphere.center - origin);
-        let cos_theta_max = sqrt(1.0 - sphere.radius * sphere.radius / dist_sqrd);
-        let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
-        return 1.0 / solid_angle;
-    } else {
-        return 0.0;
-    }
+    // Slightly optimized hit test
+    let to_center = sphere.center - origin;
+    let dist_sqrd = length_squared(to_center);
+    if dist_sqrd <= sphere.radius_sqrd { return 0.0; } // inside sphere
+
+    let cos_theta_max = sqrt(1.0 - sphere.radius_sqrd / dist_sqrd);
+    let cos_angle = dot(normalize(direction), normalize(to_center));
+
+    if cos_angle < cos_theta_max { return 0.0; } // misses the sphere
+
+    let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
+    return 1.0 / solid_angle;
 }
 
 fn sphere_random(sphere: types::GpuPrimitive_Sphere, origin: vec3<f32>) -> vec3<f32> {

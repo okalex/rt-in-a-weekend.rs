@@ -48,16 +48,22 @@ fn hit_quad(quad: types::GpuPrimitive_Quad, ray: Ray, ray_t: Interval) -> HitRec
 }
 
 fn quad_pdf_value(quad: types::GpuPrimitive_Quad, origin: vec3<f32>, direction: vec3<f32>) -> f32 {
-    let ray = Ray(origin, direction);
-    let interval = Interval(0.001, INF);
-    let hit_record = hit_quad(quad, ray, interval);
-    if hit_record.is_hit {
-        let dist_sqrd = hit_record.t * hit_record.t * length_squared(direction);
-        let cos = abs(dot(direction, hit_record.normal) / length(direction));
-        return dist_sqrd / (cos * quad.area);
-    } else {
-        return 0.0;
-    }
+    // Slightly optimized hit test
+    let denom = dot(quad.normal, direction);
+    if abs(denom) < 1e-8 { return 0.0; }
+
+    let t = (quad.d - dot(quad.normal, origin)) / denom;
+    if t < 0.001 { return 0.0; }
+
+    let intersection = origin + direction * t;
+    let hit_vec = intersection - quad.q;
+    let alpha = dot(quad.w, cross(hit_vec, quad.v));
+    let beta = dot(quad.w, cross(quad.u, hit_vec));
+    if alpha < 0.0 || alpha > 1.0 || beta < 0.0 || beta > 1.0 { return 0.0; }
+
+    let dist_sqrd = t * t * length_squared(direction);
+    let cos = abs(denom) / length(direction); // reuses denom!
+    return dist_sqrd / (cos * quad.area);
 }
 
 fn quad_random(quad: types::GpuPrimitive_Quad, origin: vec3<f32>) -> vec3<f32> {

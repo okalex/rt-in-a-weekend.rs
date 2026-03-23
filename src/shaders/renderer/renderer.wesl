@@ -8,7 +8,7 @@ import package::{
     mesh::hit_mesh,
     pdf::{LightsPdf, lights_pdf_value, lights_pdf_generate, new_cosine_pdf, cosine_pdf_value},
     quad::hit_quad,
-    random::rand,
+    random::{rand, rand_range_int},
     ray::Ray,
     sphere::hit_sphere,
     stack::{new_stack, push, pop, is_empty},
@@ -47,11 +47,8 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
 
                         let lights_pdf = LightsPdf(hit_record.point);
 
-                        if rand() < 0.5 {
-                            scattered_dir = lights_pdf_generate(lights_pdf);
-                        } else {
-                            scattered_dir = scatter_record.scattered.dir;
-                        }
+                        let chance = f32(rand() < 0.5);
+                        scattered_dir = chance * scatter_record.scattered.dir + (1.0 - chance) * lights_pdf_generate(lights_pdf);
 
                         let cosine_pdf = new_cosine_pdf(hit_record.normal);
                         pdf_value = 0.5 * lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, scattered_dir);
