@@ -34,14 +34,9 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
             let scatter_record = scatter(material, hit_ray, hit_record);
 
             if scatter_record.is_scattered {
-                if scatter_record.skip_pdf {
-                    color = color * (emitted_color + scatter_record.attenuation);
-                    hit_ray = scatter_record.scattered;
-                } else {
-                    let scatter_result = scatter_ray(material, hit_record, scatter_record);
-                    color = color * (emitted_color + scatter_result.scattered_color);
-                    hit_ray = Ray(scatter_record.scattered.orig, scatter_result.scattered_dir);
-                }
+                let scatter_result = scatter_ray(material, hit_record, scatter_record);
+                color = color * (emitted_color + scatter_result.scattered_color);
+                hit_ray = scatter_result.scattered_ray;
             } else {
                 return color * emitted_color;
             }
@@ -54,34 +49,42 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
 }
 
 struct ScatterResult {
-    pdf_value: f32,
-    scattered_dir: vec3<f32>,
+    scattered_ray: Ray,
     scattered_color: vec3<f32>,
 };
 
 fn scatter_ray(material: types::GpuMaterial, hit_record: HitRecord, scatter_record: ScatterRecord) -> ScatterResult {
     var result: ScatterResult;
 
-    if gpu_meta.importance_sampling > 0 && arrayLength(&lights.lights) > 0 {
-        let lights_pdf = LightsPdf(hit_record.point);
+    if !scatter_record.skip_pdf {
+        var pdf_value: f32;
+        var scattered_dir: vec3<f32>;
 
-        let chance = f32(rand() < 0.5);
-        result.scattered_dir = chance * scatter_record.scattered.dir + (1.0 - chance) * lights_pdf_generate(lights_pdf);
+        if gpu_meta.importance_sampling > 0 && arrayLength(&lights.lights) > 0 {
+            let lights_pdf = LightsPdf(hit_record.point);
 
-        let cosine_pdf = new_cosine_pdf(hit_record.normal);
-        result.pdf_value = 0.5 * lights_pdf_value(lights_pdf, result.scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, result.scattered_dir);
+            let chance = f32(rand() < 0.5);
+            scattered_dir = chance * scatter_record.scattered.dir + (1.0 - chance) * lights_pdf_generate(lights_pdf);
+
+            let cosine_pdf = new_cosine_pdf(hit_record.normal);
+            pdf_value = 0.5 * lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, scattered_dir);
+        } else {
+            scattered_dir = scatter_record.scattered.dir;
+            pdf_value = scatter_record.pdf_value;
+        }
+
+        result.scattered_ray = Ray(scatter_record.scattered.orig, scattered_dir);
+
+        // Discard NaNs
+        if pdf_value > 1e-8 {
+            let scattering_pdf = material_scattering_pdf(material, hit_record, result.scattered_ray);
+            result.scattered_color = scatter_record.attenuation * scattering_pdf / pdf_value;
+        } else {
+            result.scattered_color = ONES;
+        }
     } else {
-        result.scattered_dir = scatter_record.scattered.dir;
-        result.pdf_value = scatter_record.pdf_value;
-    }
-
-    // Discard NaNs
-    if result.pdf_value > 1e-8 {
-        let new_scattered = Ray(hit_record.point, result.scattered_dir);
-        let scattering_pdf = material_scattering_pdf(material, hit_record, new_scattered);
-        result.scattered_color = scatter_record.attenuation * scattering_pdf / result.pdf_value;
-    } else {
-        result.scattered_color = ONES;
+        result.scattered_color = scatter_record.attenuation;
+        result.scattered_ray = scatter_record.scattered;
     }
 
     return result;
