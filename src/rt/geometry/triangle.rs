@@ -13,6 +13,7 @@ use crate::rt::{
     },
 };
 
+#[derive(Clone)]
 pub struct Triangle {
     pub v0: Point,
     pub v1: Point,

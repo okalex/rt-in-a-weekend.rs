@@ -20,7 +20,6 @@ use crate::rt::{
     ray::Ray,
     types::{
         Float,
-        Uint,
         Vector,
         INFINITY,
     },
@@ -91,10 +90,6 @@ impl Mesh {
         let mut build_time = Duration::default();
         let aabbs: Vec<_> = triangles.iter().map(|i| i.aabb.to_obvhs()).collect();
         build_bvh2(&aabbs, BvhBuildParams::fastest_build(), &mut build_time)
-    }
-
-    pub fn triangle_count(&self) -> Uint {
-        self.triangles.len() as Uint
     }
 
     pub fn get_triangle(&self, triangle_id: &TriangleId) -> Option<&Triangle> {

@@ -1,13 +1,16 @@
 use std::sync::Arc;
 
-use parry3d_f64::bounding_volume::{Aabb, BoundingVolume};
+use parry3d_f64::bounding_volume::{
+    Aabb,
+    BoundingVolume,
+};
 
 use super::hittable::Hittable;
-use crate::rt::interval::Interval;
-use crate::rt::geometry::hit_record::HitRecord;
-use crate::rt::random::rand_int;
-use crate::rt::ray::Ray;
-use crate::rt::types::{Float, Int, Point, Vector};
+use crate::rt::{
+    geometry::hit_record::HitRecord,
+    interval::Interval,
+    ray::Ray,
+};
 
 pub struct HittableList {
     pub objects: Vec<Arc<Hittable>>,
@@ -55,20 +58,5 @@ impl HittableList {
 
     pub fn bounding_box(&self) -> &Aabb {
         &self.bbox
-    }
-
-    pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {
-        let weight = 1.0 / self.objects.len() as Float;
-        let mut sum = 0.0;
-        for object in &self.objects {
-            sum += weight * object.pdf_value(origin, direction);
-        }
-
-        sum
-    }
-
-    pub fn random(&self, origin: &Point) -> Vector {
-        let int_size = self.objects.len() as Int;
-        self.objects[rand_int(0, int_size - 1) as usize].random(origin)
     }
 }

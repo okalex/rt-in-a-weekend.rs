@@ -19,7 +19,3 @@ pub fn new_parry_vec(arr: [Float; 3]) -> parry3d_f64::math::Vec3 {
 pub fn to_parry_vec(vec: Vector) -> parry3d_f64::math::Vec3 {
     new_parry_vec([vec.x, vec.y, vec.z])
 }
-
-pub fn from_parry_vec(vec: parry3d_f64::math::Vec3) -> Vector {
-    Vector::new(vec.x as Float, vec.y as Float, vec.z as Float)
-}

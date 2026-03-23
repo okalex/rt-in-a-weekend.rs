@@ -16,6 +16,7 @@ use crate::rt::{
     },
 };
 
+#[derive(Clone)]
 pub struct Sphere {
     pub center: Ray,
     pub radius: Float,

@@ -264,7 +264,8 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
     // Add lights
     for _ in -9..=9{
         let light = Instance::new(sphere_id, diffuse_light_id).translate([rand_range(-3.0, 3.0), 3.0, rand_range(-3.0, 3.0)]);
-        scene_builder.add_instance(light);
+        let instance_id = scene_builder.add_instance(light);
+        scene_builder.add_light(instance_id);
     }
 
     // Add meshes
@@ -273,9 +274,8 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
         _ => vec![],
     };
     for mesh in model {
-        let triangle_count = mesh.triangle_count();
         let mesh_id = scene_builder.add_mesh(mesh);
-        let primitive = Primitive::mesh(mesh_id, triangle_count);
+        let primitive = Primitive::mesh(mesh_id);
         let primitive_id = scene_builder.add_primitive(primitive);
         let instance = Instance::new(primitive_id, material_id)
             .scale_uniform(10.0)

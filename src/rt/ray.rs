@@ -3,13 +3,13 @@ use glam::{Mat4, Vec3A};
 use crate::rt::{
     interval::Interval,
     types::{
-        to_parry_vec,
         Float,
         Point,
         Vector,
     },
 };
 
+#[derive(Clone)]
 pub struct Ray {
     pub orig: Point,
     pub dir: Vector,
@@ -29,10 +29,6 @@ impl Ray {
         let orig = transform.transform_point3(self.orig);
         let dir = transform.transform_vector3(self.dir);
         Self::new(orig, dir, self.time)
-    }
-
-    pub fn to_parry3d(&self) -> parry3d_f64::query::Ray {
-        parry3d_f64::query::Ray::new(to_parry_vec(self.orig), to_parry_vec(self.dir))
     }
 
     pub fn to_obvhs(&self, ray_t: Interval) -> obvhs::ray::Ray {

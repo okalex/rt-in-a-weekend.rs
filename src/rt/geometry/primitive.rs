@@ -1,18 +1,21 @@
 use crate::rt::{
     geometry::{
         quad::Quad,
-        scene::{MeshDescriptor, MeshId},
+        scene::{
+            MeshDescriptor,
+            MeshId,
+        },
         sphere::Sphere,
         triangle::Triangle,
     },
     types::{
         Float,
         Point,
-        Uint,
         Vector,
     },
 };
 
+#[derive(Clone)]
 pub enum Primitive {
     Sphere(Sphere),
     Quad(Quad),
@@ -33,7 +36,29 @@ impl Primitive {
         Self::Quad(Quad::new(q, u, v))
     }
 
-    pub fn mesh(id: MeshId, triangle_count: Uint) -> Primitive {
-        Self::Mesh(MeshDescriptor { id, triangle_count })
+    pub fn mesh(id: MeshId) -> Primitive {
+        Self::Mesh(MeshDescriptor { id })
+    }
+
+    pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {
+        let default = 0.0;
+        match self {
+            // Self::ConstantMedium(_) => default,
+            Self::Mesh(_) => default, // TODO
+            Self::Quad(obj) => obj.pdf_value(origin, direction),
+            Self::Sphere(obj) => obj.pdf_value(origin, direction),
+            Self::Triangle(_) => default, // TODO
+        }
+    }
+
+    pub fn random(&self, origin: &Point) -> Vector {
+        let default = Vector::new(1.0, 0.0, 0.0);
+        match self {
+            // Self::ConstantMedium(_) => default,
+            Self::Mesh(_) => default, // TODO
+            Self::Quad(obj) => obj.random(origin),
+            Self::Sphere(obj) => obj.random(origin),
+            Self::Triangle(_) => default, // TODO
+        }
     }
 }

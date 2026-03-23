@@ -19,6 +19,7 @@ use crate::rt::{
     pdf::{
         CosinePdf,
         Pdf,
+        TransformedPrimitive,
     },
     ray::Ray,
     renderer::{
@@ -176,9 +177,14 @@ impl CpuRenderWorker {
             None => {
                 let pdf = self.get_pdf(hit_record, scatter_record);
                 let scattered_dir = pdf.generate();
+                let pdf_value = pdf.value(&scattered_dir);
+
+                if pdf_value < 1e-10 {
+                    return Color::black();
+                }
+
                 let scattered_ray = Ray::new(hit_record.point, scattered_dir, ray.time);
                 let scattering_pdf = mat.scattering_pdf(ray, hit_record, &scattered_ray);
-                let pdf_value = pdf.value(&scattered_dir);
                 let sample_color = self.ray_color(&scattered_ray, depth + 1);
 
                 scatter_record.attenuation * scattering_pdf * sample_color / pdf_value
@@ -188,18 +194,27 @@ impl CpuRenderWorker {
 
     fn get_pdf(&self, hit_record: &HitRecord, scatter_record: &ScatterRecord) -> Arc<Pdf> {
         if self.options.use_importance_sampling {
-            // if self.scene.lights.len() > 0 {
-            //     let light_pdf = Arc::new(Pdf::Hittable(HittablePdf::new(
-            //         Arc::clone(&self.scene.lights),
-            //         hit_record.point,
-            //     )));
-            //     Arc::new(Pdf::Mixture(MixturePdf::new(
-            //         light_pdf,
-            //         Arc::clone(&scatter_record.pdf),
-            //     )))
-            // } else {
-            Arc::clone(&scatter_record.pdf)
-            // }
+            if self.scene.lights.len() > 0 {
+                let primitives: Vec<_> = self
+                    .scene
+                    .lights
+                    .iter()
+                    .flat_map(|instance_id| {
+                        let instance = self.scene.get_instance(instance_id)?;
+                        let primitive = self.scene.get_primitive_for(instance_id)?.clone();
+                        Some(TransformedPrimitive {
+                            primitive,
+                            transform: instance.transform,
+                            inv_transform: instance.inv_transform,
+                        })
+                    })
+                    .collect();
+
+                let light_pdf = Arc::new(Pdf::multi(hit_record.point, primitives));
+                Arc::new(Pdf::mixture(light_pdf, Arc::clone(&scatter_record.pdf)))
+            } else {
+                Arc::clone(&scatter_record.pdf)
+            }
         } else {
             // Arc::new(Pdf::Hemisphere(HemispherePdf::new(hit_record.normal)))
             Arc::new(Pdf::Cosine(CosinePdf::new(&hit_record.normal)))

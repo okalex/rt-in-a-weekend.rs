@@ -26,7 +26,6 @@ use crate::rt::{
     ray::Ray,
     types::{
         Float,
-        Uint,
         INFINITY,
     },
 };
@@ -42,13 +41,18 @@ pub struct InstanceId {
 }
 
 #[derive(Clone, Copy)]
+pub struct LightId {
+    pub id: usize,
+}
+
+#[derive(Clone, Copy)]
 pub struct MeshId {
     pub id: usize,
 }
 
+#[derive(Clone)]
 pub struct MeshDescriptor {
     pub id: MeshId,
-    pub triangle_count: Uint,
 }
 
 #[derive(Clone, Copy)]
@@ -125,6 +129,7 @@ pub struct SceneBuilder {
     instances: Vec<Instance>,
     meshes: Vec<Mesh>,
     materials: Vec<Material>,
+    lights: Vec<InstanceId>,
 }
 
 impl SceneBuilder {
@@ -134,6 +139,7 @@ impl SceneBuilder {
             instances: vec![],
             meshes: vec![],
             materials: vec![],
+            lights: vec![],
         }
     }
 
@@ -170,8 +176,18 @@ impl SceneBuilder {
         self.add_instance(instance)
     }
 
+    pub fn add_light(&mut self, instance_id: InstanceId) -> LightId {
+        if !self.contains_instance(&instance_id) {
+            panic!();
+        }
+
+        let id = self.lights.len();
+        self.lights.push(instance_id);
+        LightId { id }
+    }
+
     pub fn build(self) -> Scene {
-        let mut scene = Scene::new(self.primitives, self.instances, self.meshes, self.materials);
+        let mut scene = Scene::new(self.primitives, self.instances, self.meshes, self.materials, self.lights);
         scene.build_bvh();
         scene
     }
@@ -183,6 +199,10 @@ impl SceneBuilder {
     fn contains_material(&self, material_id: &MaterialId) -> bool {
         material_id.id < self.materials.len()
     }
+
+    fn contains_instance(&self, instance_id: &InstanceId) -> bool {
+        instance_id.id < self.instances.len()
+    }
 }
 
 pub struct Scene {
@@ -190,17 +210,25 @@ pub struct Scene {
     pub instances: Vec<Instance>,
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
+    pub lights: Vec<InstanceId>,
     pub bvh: Bvh2,
 }
 
 impl Scene {
-    pub fn new(primitives: Vec<Primitive>, instances: Vec<Instance>, meshes: Vec<Mesh>, materials: Vec<Material>) -> Self {
+    pub fn new(
+        primitives: Vec<Primitive>,
+        instances: Vec<Instance>,
+        meshes: Vec<Mesh>,
+        materials: Vec<Material>,
+        lights: Vec<InstanceId>,
+    ) -> Self {
         let instance_count = instances.len();
         Self {
             primitives,
             instances,
             meshes,
             materials,
+            lights,
             bvh: Bvh2::zeroed(instance_count),
         }
     }

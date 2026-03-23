@@ -14,6 +14,7 @@ use crate::rt::{
     },
 };
 
+#[derive(Clone)]
 pub struct Quad {
     pub q: Point,
     pub u: Vector,

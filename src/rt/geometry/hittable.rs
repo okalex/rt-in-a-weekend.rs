@@ -1,22 +1,19 @@
 use glam::Vec3A;
 use obvhs::Boundable;
 
-use crate::rt::{
-    geometry::{
-        constant_medium::ConstantMedium,
-        hit_record::HitRecord,
-        hittable_list::HittableList,
-        mesh::Mesh,
-        quad::Quad,
-        sphere::Sphere,
-        triangle::Triangle,
-    },
-    interval::Interval,
-    ray::Ray,
-    types::{
-        Float,
-        Point,
-        Vector,
+use crate::{
+    rt::{
+        geometry::{
+            constant_medium::ConstantMedium,
+            hit_record::HitRecord,
+            hittable_list::HittableList,
+            mesh::Mesh,
+            quad::Quad,
+            sphere::Sphere,
+            triangle::Triangle,
+        },
+        interval::Interval,
+        ray::Ray,
     },
 };
 
@@ -49,30 +46,6 @@ impl Hittable {
             Self::Quad(obj) => obj.bounding_box(),
             Self::Sphere(obj) => obj.bounding_box(),
             Self::Triangle(obj) => obj.bounding_box(),
-        }
-    }
-
-    pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {
-        let default = 0.0;
-        match self {
-            Self::ConstantMedium(_) => default,
-            Self::HittableList(obj) => obj.pdf_value(origin, direction),
-            Self::Mesh(_) => default,
-            Self::Quad(obj) => obj.pdf_value(origin, direction),
-            Self::Sphere(obj) => obj.pdf_value(origin, direction),
-            Self::Triangle(_) => default,
-        }
-    }
-
-    pub fn random(&self, origin: &Point) -> Vector {
-        let default = Vector::new(1.0, 0.0, 0.0);
-        match self {
-            Self::ConstantMedium(_) => default,
-            Self::HittableList(obj) => obj.random(origin),
-            Self::Mesh(_) => default,
-            Self::Quad(obj) => obj.random(origin),
-            Self::Sphere(obj) => obj.random(origin),
-            Self::Triangle(_) => default,
         }
     }
 }

@@ -33,12 +33,4 @@ impl HitRecord {
         let face_normal = if front_face { outward_normal } else { -outward_normal };
         (front_face, face_normal)
     }
-
-    pub fn set_point(&self, new_point: Point) -> Self {
-        Self::new(new_point, self.normal, self.front_face, self.t, self.u, self.v)
-    }
-
-    pub fn set_normal(&self, new_normal: Vector) -> Self {
-        Self::new(self.point, new_normal, self.front_face, self.t, self.u, self.v)
-    }
 }

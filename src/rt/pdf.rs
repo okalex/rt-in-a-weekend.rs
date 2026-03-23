@@ -1,10 +1,24 @@
 use std::sync::Arc;
 
+use glam::Mat4;
+
 use crate::rt::{
-    geometry::hittable_list::HittableList,
+    geometry::primitive::Primitive,
     onb::Onb,
-    random::{rand, rand_cos_dir, rand_on_hemisphere, rand_unit_vector},
-    types::{Float, PI, Point, Vector},
+    random::{
+        rand,
+        rand_cos_dir,
+        rand_int,
+        rand_on_hemisphere,
+        rand_unit_vector,
+    },
+    types::{
+        Float,
+        Int,
+        Point,
+        Vector,
+        PI,
+    },
 };
 
 #[allow(unused)]
@@ -12,17 +26,25 @@ pub enum Pdf {
     Sphere(SpherePdf),
     Hemisphere(HemispherePdf),
     Cosine(CosinePdf),
-    Hittable(HittablePdf),
+    Multi(MultiPdf),
     Mixture(MixturePdf),
 }
 
 impl Pdf {
+    pub fn multi(origin: Point, primitives: Vec<TransformedPrimitive>) -> Self {
+        Self::Multi(MultiPdf::new(origin, primitives))
+    }
+
+    pub fn mixture(p0: Arc<Pdf>, p1: Arc<Pdf>) -> Self {
+        Self::Mixture(MixturePdf::new(p0, p1))
+    }
+
     pub fn value(&self, direction: &Vector) -> Float {
         match self {
             Self::Sphere(pdf) => pdf.value(direction),
             Self::Hemisphere(pdf) => pdf.value(direction),
             Self::Cosine(pdf) => pdf.value(direction),
-            Self::Hittable(pdf) => pdf.value(direction),
+            Self::Multi(pdf) => pdf.value(direction),
             Self::Mixture(pdf) => pdf.value(direction),
         }
     }
@@ -32,7 +54,7 @@ impl Pdf {
             Self::Sphere(pdf) => pdf.generate(),
             Self::Hemisphere(pdf) => pdf.generate(),
             Self::Cosine(pdf) => pdf.generate(),
-            Self::Hittable(pdf) => pdf.generate(),
+            Self::Multi(pdf) => pdf.generate(),
             Self::Mixture(pdf) => pdf.generate(),
         }
     }
@@ -94,22 +116,43 @@ impl CosinePdf {
     }
 }
 
-pub struct HittablePdf {
-    object: Arc<HittableList>,
-    orig: Point,
+#[derive(Clone)]
+pub struct TransformedPrimitive {
+    pub primitive: Primitive,
+    pub transform: Mat4,
+    pub inv_transform: Mat4,
 }
 
-impl HittablePdf {
-    pub fn new(object: Arc<HittableList>, orig: Point) -> Self {
-        Self { object, orig }
+pub struct MultiPdf {
+    origin: Point,
+    primitives: Vec<TransformedPrimitive>,
+}
+
+impl MultiPdf {
+    pub fn new(origin: Point, primitives: Vec<TransformedPrimitive>) -> Self {
+        Self { origin, primitives }
     }
 
     fn value(&self, direction: &Vector) -> Float {
-        self.object.pdf_value(&self.orig, direction)
+        let weight = 1.0 / self.primitives.len() as Float;
+        let mut sum = 0.0;
+        for tp in &self.primitives {
+            // Transform origin and direction to the primitive's local space
+            let local_origin = tp.inv_transform.transform_point3(self.origin);
+            let local_dir = tp.inv_transform.transform_vector3(*direction);
+            sum += weight * tp.primitive.pdf_value(&local_origin, &local_dir)
+        }
+
+        sum
     }
 
     fn generate(&self) -> Vector {
-        self.object.random(&self.orig)
+        let count = self.primitives.len() as Int;
+        let tp = &self.primitives[rand_int(0, count - 1) as usize];
+        // Generate direction in local space, then transform to world space
+        let local_origin = tp.inv_transform.transform_point3(self.origin);
+        let local_dir = tp.primitive.random(&local_origin);
+        tp.transform.transform_vector3(local_dir).normalize()
     }
 }
 
