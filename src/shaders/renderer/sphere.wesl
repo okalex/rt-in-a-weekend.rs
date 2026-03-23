@@ -1,7 +1,9 @@
 import package::{
-    constants::PI,
+    constants::{PI, INF},
     hit_record::{HitRecord, no_hit},
     interval::Interval,
+    onb::{new_onb, transform_onb},
+    random::rand,
     ray::{Ray, ray_at},
     types,
     vector::length_squared,
@@ -52,4 +54,39 @@ fn get_uv(sphere: types::GpuPrimitive_Sphere, normal: vec3<f32>) -> array<f32, 2
     let u = 0.5 + atan2(-normal.z, normal.x) / (2.0 * PI);
     let v = 0.5 + asin(normal.y) / PI;
     return array(u, v);
+}
+
+fn sphere_pdf_value(sphere: types::GpuPrimitive_Sphere, origin: vec3<f32>, direction: vec3<f32>) -> f32 {
+    // This method only works for stationary spheres.
+    let ray = Ray(origin, direction);
+    let interval = Interval(0.001, INF);
+    let hit_record = hit_sphere(sphere, ray, interval);
+    if hit_record.is_hit {
+        let dist_sqrd = length_squared(sphere.center - origin);
+        let cos_theta_max = sqrt(1.0 - sphere.radius * sphere.radius / dist_sqrd);
+        let solid_angle = 2.0 * PI * (1.0 - cos_theta_max);
+        return 1.0 / solid_angle;
+    } else {
+        return 0.0;
+    }
+}
+
+fn sphere_random(sphere: types::GpuPrimitive_Sphere, origin: vec3<f32>) -> vec3<f32> {
+    let direction = sphere.center - origin;
+    let dist_sqrd = length_squared(direction);
+    let uvw = new_onb(direction);
+    return transform_onb(uvw, rand_to_sphere(sphere.radius, dist_sqrd));
+}
+
+fn rand_to_sphere(radius: f32, dist_sqrd: f32) -> vec3<f32> {
+    let r1 = rand();
+    let r2 = rand();
+    let z = 1.0 + r2 * (sqrt(1.0 - radius * radius / dist_sqrd) - 1.0);
+
+    let phi = 2.0 * PI * r1;
+    let tmp = sqrt(1.0 - z * z);
+    let x = cos(phi) * tmp;
+    let y = sin(phi) * tmp;
+
+    return vec3<f32>(x, y, z);
 }

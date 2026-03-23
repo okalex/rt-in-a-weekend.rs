@@ -118,7 +118,6 @@ impl Sphere {
 
     pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {
         // This method only works for stationary spheres.
-
         let ray = Ray::new(*origin, *direction, 0.0);
         let interval = Interval::new(0.001, INFINITY);
         match self.hit(&ray, interval) {

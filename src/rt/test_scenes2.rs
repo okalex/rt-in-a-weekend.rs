@@ -243,7 +243,7 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
         .vfov(50.0)
         .position([0.0, 1.0, 3.0])
         .target([0.0, 0.5, 0.0])
-        .defocus_angle(0.5)
+        .defocus_angle(0.0)
         .focus_dist(3.4);
 
     // Add materials

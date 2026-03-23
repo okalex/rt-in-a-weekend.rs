@@ -13,8 +13,7 @@ use crate::rt::{
     geometry::{
         primitive::Primitive,
         scene::{
-            Instance,
-            Scene,
+            Instance, InstanceId, Scene
         },
         triangle::Triangle,
     },
@@ -29,6 +28,7 @@ pub struct GpuScene {
     pub meshes: GpuMeshes,
     pub mesh_bvhs: GpuBvh,
     pub materials: GpuMaterials,
+    pub lights: GpuLights,
 }
 
 #[derive(ShaderType, Debug)]
@@ -86,6 +86,7 @@ impl From<&Arc<Scene>> for GpuScene {
             meshes: GpuMeshes::new(mesh_triangles),
             mesh_bvhs: GpuBvh::new(mesh_bvhs),
             materials,
+            lights: GpuLights::new(&scene.lights),
         }
     }
 }
@@ -368,5 +369,19 @@ impl From<Arc<Texture>> for GpuTexture {
 impl From<&Arc<Texture>> for GpuTexture {
     fn from(texture: &Arc<Texture>) -> Self {
         Self::from(texture.as_ref())
+    }
+}
+
+#[derive(ShaderType, Debug)]
+pub struct GpuLights {
+    #[shader(size(runtime))]
+    lights: Vec<u32>,
+}
+
+impl GpuLights {
+    pub fn new(lights: &Vec<InstanceId>) -> Self {
+        Self {
+            lights: lights.iter().map(|id| id.id as u32 ).collect()
+        }
     }
 }

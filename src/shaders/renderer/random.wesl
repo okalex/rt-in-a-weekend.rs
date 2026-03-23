@@ -25,6 +25,11 @@ fn rand_range(min: f32, max: f32) -> f32 {
     return min + (max - min) * rand();
 }
 
+fn rand_range_int(min: i32, max: i32) -> i32 {
+    let range = u32(max - min + 1);
+    return min + i32(u32(rand() * f32(range)));
+}
+
 fn rand_vector() -> vec3<f32> {
     return vec3<f32>(rand(), rand(), rand());
 }

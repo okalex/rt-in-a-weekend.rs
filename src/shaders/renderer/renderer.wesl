@@ -1,15 +1,18 @@
 import package::{
-    bindings::{gpu_meta, instance_bvh, primitives, instances},
+    bindings::{gpu_meta, instance_bvh, primitives, instances, lights},
     bvh::{intersects_bvh_node, is_leaf},
     constants::INF,
     hit_record::{HitRecord, no_hit},
     interval::Interval,
-    material::{get_material, scatter, emitted},
+    material::{get_material, scatter, emitted, material_scattering_pdf},
     mesh::hit_mesh,
+    pdf::{LightsPdf, lights_pdf_value, lights_pdf_generate, new_cosine_pdf, cosine_pdf_value},
     quad::hit_quad,
+    random::rand,
     ray::Ray,
     sphere::hit_sphere,
     stack::{new_stack, push, pop, is_empty},
+    transform::{transform_point, transform_direction},
     triangle::hit_triangle,
     types,
     vector::ZEROS,
@@ -21,23 +24,50 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
     let ray_t = Interval(0.001, INF);
 
     for (var bounces = 0u; bounces < gpu_meta.max_depth; bounces = bounces + 1) {
+
         let hit_record = hit_instances(hit_ray, ray_t);
+
         if hit_record.is_hit {
+
             let material = get_material(hit_record.instance_id);
             let emitted_color = emitted(material, hit_ray, hit_record);
             let scatter_record = scatter(material, hit_ray, hit_record);
 
             if scatter_record.is_scattered {
+
                 if scatter_record.skip_pdf {
                     color = color * (emitted_color + scatter_record.attenuation);
                     hit_ray = scatter_record.scattered;
                 } else {
-                    // Discard NaNs
-                    if scatter_record.pdf_value > 1e-8 {
-                        color = color * (emitted_color + scatter_record.attenuation * scatter_record.scattering_pdf / scatter_record.pdf_value);
+
+                    var scattered_dir: vec3<f32>;
+                    var pdf_value: f32;
+
+                    if gpu_meta.importance_sampling > 0 && arrayLength(&lights.lights) > 0 {
+
+                        let lights_pdf = LightsPdf(hit_record.point);
+
+                        if rand() < 0.5 {
+                            scattered_dir = lights_pdf_generate(lights_pdf);
+                        } else {
+                            scattered_dir = scatter_record.scattered.dir;
+                        }
+
+                        let cosine_pdf = new_cosine_pdf(hit_record.normal);
+                        pdf_value = 0.5 * lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, scattered_dir);
+                    } else {
+                        scattered_dir = scatter_record.scattered.dir;
+                        pdf_value = scatter_record.pdf_value;
                     }
 
-                    hit_ray = scatter_record.scattered;
+                    // Discard NaNs
+                    if pdf_value > 1e-8 {
+                        let new_scattered = Ray(hit_record.point, scattered_dir);
+                        let scattering_pdf = material_scattering_pdf(material, hit_record, new_scattered);
+                        color = color * (emitted_color + scatter_record.attenuation * scattering_pdf / pdf_value);
+                    }
+
+                    hit_ray = Ray(scatter_record.scattered.orig, scattered_dir);
                 }
             } else {
                 return color * emitted_color;
@@ -138,15 +168,6 @@ fn transform_hit_record(
     new_record.normal = transform_normal(hit_record.normal, inv_transform);
 
     return new_record;
-}
-
-fn transform_point(point: vec3<f32>, transform: mat4x4<f32>) -> vec3<f32> {
-    let p4 = transform * vec4<f32>(point, 1.0);
-    return p4.xyz / p4.w;
-}
-
-fn transform_direction(direction: vec3<f32>, transform: mat4x4<f32>) -> vec3<f32> {
-    return (transform * vec4<f32>(direction, 0.0)).xyz;
 }
 
 fn transform_normal(normal: vec3<f32>, inv_transform: mat4x4<f32>) -> vec3<f32> {

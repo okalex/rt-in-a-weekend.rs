@@ -146,3 +146,14 @@ fn lambertian_scattering_pdf(hit_record: HitRecord, scattered: Ray) -> f32 {
     let cos_theta = dot(hit_record.normal, normalize(scattered.dir));
     return max(0.0, cos_theta / PI);
 }
+
+fn material_scattering_pdf(mat: types::GpuMaterial, hit_record: HitRecord, scattered: Ray) -> f32 {
+    switch mat._type {
+        case types::GPUMATERIAL_LAMBERTIAN {
+            return lambertian_scattering_pdf(hit_record, scattered);
+        }
+        default: {
+            return 0.0;
+        }
+    }
+}

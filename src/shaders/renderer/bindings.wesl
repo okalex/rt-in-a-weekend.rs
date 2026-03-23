@@ -11,3 +11,4 @@ import package::{
 @group(0) @binding(5) var<storage, read> meshes: types::GpuMeshes;
 @group(0) @binding(6) var<storage, read> mesh_bvhs: types::GpuBvh;
 @group(0) @binding(7) var<storage, read> materials: types::GpuMaterials;
+@group(0) @binding(8) var<storage, read> lights: types::GpuLights;

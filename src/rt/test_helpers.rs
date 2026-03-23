@@ -252,6 +252,8 @@ pub mod cornell_room {
         scene_builder.add_instance(back_wall);
         scene_builder.add_instance(left_wall);
         scene_builder.add_instance(right_wall);
-        scene_builder.add_instance(light);
+        
+        let light_instance_id = scene_builder.add_instance(light);
+        scene_builder.add_light(light_instance_id);
     }
 }

@@ -34,6 +34,7 @@ pub struct GpuCompute<O: NoUninit + AnyBitPattern> {
     pub meshes_buf: wgpu::Buffer,
     pub mesh_bvhs_buf: wgpu::Buffer,
     pub materials_buf: wgpu::Buffer,
+    pub lights_buf: wgpu::Buffer,
     output_buf: wgpu::Buffer,
     temp_buf: wgpu::Buffer,
     _o: PhantomData<O>,
@@ -72,6 +73,9 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
 
         let materials_size = scene.materials.size().get();
         let materials_buf = gpu.create_buffer(materials_size, buffer_usages::INPUT);
+
+        let lights_size = scene.lights.size().get();
+        let lights_buf = gpu.create_buffer(lights_size, buffer_usages::INPUT);
 
         let output_buf = gpu.create_buffer(output_size, buffer_usages::OUTPUT);
         let temp_buf = gpu.create_buffer(output_size, buffer_usages::TEMP);
@@ -113,6 +117,10 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
                     binding: 7,
                     resource: materials_buf.as_entire_binding(),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 8,
+                    resource: lights_buf.as_entire_binding(),
+                },
             ],
         );
 
@@ -127,6 +135,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
             meshes_buf,
             mesh_bvhs_buf,
             materials_buf,
+            lights_buf,
             output_buf,
             temp_buf,
             _o: PhantomData,
@@ -143,6 +152,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
         self.init_buf(&scene.meshes, &self.meshes_buf);
         self.init_buf(&scene.mesh_bvhs, &self.mesh_bvhs_buf);
         self.init_buf(&scene.materials, &self.materials_buf);
+        self.init_buf(&scene.lights, &self.lights_buf);
     }
 
     pub fn init_buf<T: ShaderType + WriteInto>(&self, data: &T, buf: &wgpu::Buffer) {

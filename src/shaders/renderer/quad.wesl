@@ -1,8 +1,11 @@
 import package::{
+    constants::INF,
     hit_record::{HitRecord, no_hit},
     interval::{Interval, interval_contains},
+    random::rand,
     ray::{Ray, ray_at},
     types,
+    vector::length_squared,
 };
 
 fn hit_quad(quad: types::GpuPrimitive_Quad, ray: Ray, ray_t: Interval) -> HitRecord {
@@ -42,4 +45,22 @@ fn hit_quad(quad: types::GpuPrimitive_Quad, ray: Ray, ray_t: Interval) -> HitRec
         alpha,
         beta,
     );
+}
+
+fn quad_pdf_value(quad: types::GpuPrimitive_Quad, origin: vec3<f32>, direction: vec3<f32>) -> f32 {
+    let ray = Ray(origin, direction);
+    let interval = Interval(0.001, INF);
+    let hit_record = hit_quad(quad, ray, interval);
+    if hit_record.is_hit {
+        let dist_sqrd = hit_record.t * hit_record.t * length_squared(direction);
+        let cos = abs(dot(direction, hit_record.normal) / length(direction));
+        return dist_sqrd / (cos * quad.area);
+    } else {
+        return 0.0;
+    }
+}
+
+fn quad_random(quad: types::GpuPrimitive_Quad, origin: vec3<f32>) -> vec3<f32> {
+    let p = quad.q + rand() * quad.u + rand() * quad.v;
+    return p - origin;
 }
