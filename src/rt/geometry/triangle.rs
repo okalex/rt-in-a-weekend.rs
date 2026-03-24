@@ -19,44 +19,35 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Triangle {
-    pub v0: Point,
-    pub v1: Point,
-    pub v2: Point,
-    pub uv0: Vec2,
-    pub uv1: Vec2,
-    pub uv2: Vec2,
+    pub v: [Point; 3],
+    pub uv: [Vec2; 3],
+    pub normal: [Vector; 3],
     pub e01: Vector,
     pub e02: Vector,
-    pub normal: Vector,
     pub aabb: Aabb,
 }
 
 impl Triangle {
     pub fn new(v0: Point, v1: Point, v2: Point) -> Self {
-        let uv0 = Vec2::new(0.0, 0.0);
-        let uv1 = Vec2::new(1.0, 0.0);
-        let uv2 = Vec2::new(0.0, 1.0);
-
-        Self::new_with_uvs(v0, v1, v2, uv0, uv1, uv2)
+        Self::new_with_uvs([v0, v1, v2], None, None)
     }
 
-    pub fn new_with_uvs(v0: Point, v1: Point, v2: Point, uv0: Vec2, uv1: Vec2, uv2: Vec2) -> Self {
-        let e01 = v1 - v0;
-        let e02 = v2 - v0;
-        let normal = e01.cross(e02).normalize();
+    pub fn new_with_uvs(v: [Point; 3], uv: Option<[Vec2; 3]>, normal: Option<[Vector; 3]>) -> Self {
+        let uv = uv.unwrap_or([Vec2::new(0.0, 0.0), Vec2::new(1.0, 0.0), Vec2::new(0.0, 1.0)]);
 
-        let aabb = Aabb::from_points(vec![v0, v1, v2]);
+        let e01 = v[1] - v[0];
+        let e02 = v[2] - v[0];
+        let n = e01.cross(e02).normalize();
+        let normal = normal.unwrap_or([n, n, n]);
+
+        let aabb = Aabb::from_points(Vec::from(v));
 
         Self {
-            v0,
-            v1,
-            v2,
-            uv0,
-            uv1,
-            uv2,
+            v,
+            uv,
+            normal,
             e01,
             e02,
-            normal,
             aabb,
         }
     }
@@ -71,7 +62,7 @@ impl Triangle {
         }
 
         let f = 1.0 / a;
-        let s = ray.orig - self.v0;
+        let s = ray.orig - self.v[0];
         let u = f * (s.dot(h));
 
         if u < 0.0 || u > 1.0 {
@@ -93,12 +84,13 @@ impl Triangle {
             return None;
         }
 
+        let w = 1.0 - u - v;
+        let uv = self.uv[0] * w + self.uv[1] * u + self.uv[2] * v;
+
         let point = ray.at(t);
         let front_face = a >= 0.0;
-        let normal = if front_face { self.normal } else { -self.normal };
-
-        let w = 1.0 - u - v;
-        let uv = self.uv0 * w + self.uv1 * u + self.uv2 * v;
+        let mut normal = u * self.normal[0] + v * self.normal[1] + w * self.normal[2];
+        normal = if front_face { normal } else { -normal };
 
         Some(HitRecord::new(point, normal, front_face, t, uv[0], uv[1]))
     }

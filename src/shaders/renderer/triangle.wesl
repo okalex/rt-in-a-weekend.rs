@@ -35,15 +35,16 @@ fn hit_triangle(triangle: types::GpuPrimitive_Triangle, ray: Ray, ray_t: Interva
         return no_hit();
     }
 
+    let w = 1.0 - u - v;
+    let uv = triangle.uv0 * w + triangle.uv1 * u + triangle.uv2 * v;
+
     let point = ray_at(ray, t);
     let is_outward = a >= 0.0;
-    var normal = triangle.normal;
+
+    var normal = u * triangle.normal0 + v * triangle.normal1 + w * triangle.normal2;
     if !is_outward {
         normal = -normal;
     }
-
-    let w = 1.0 - u - v;
-    let uv = triangle.uv0 * w + triangle.uv1 * u + triangle.uv2 * v;
 
     return HitRecord(
         true,

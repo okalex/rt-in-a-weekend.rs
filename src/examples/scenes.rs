@@ -322,6 +322,7 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
     // Add materials
     let checkered_id = scene_builder.add_material(materials.checkered);
     let material_id = scene_builder.add_material(materials::dielectric([0.6, 0.1, 0.2], 1.5));
+    let material_id = scene_builder.add_material(materials.default);
     let diffuse_light_id = scene_builder.add_material(materials.diffuse_light);
 
     // Add ground

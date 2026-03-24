@@ -165,7 +165,9 @@ pub enum GpuPrimitive {
         uv2: Vec2,
         e01: Vec3,
         e02: Vec3,
-        normal: Vec3,
+        normal0: Vec3,
+        normal1: Vec3,
+        normal2: Vec3,
     },
 
     Quad {
@@ -191,15 +193,17 @@ pub enum GpuPrimitive {
 impl GpuPrimitive {
     fn triangle(tri: &Triangle) -> Self {
         GpuPrimitive::Triangle {
-            v0: tri.v0,
-            v1: tri.v1,
-            v2: tri.v2,
-            uv0: tri.uv0,
-            uv1: tri.uv1,
-            uv2: tri.uv2,
+            v0: tri.v[0],
+            v1: tri.v[1],
+            v2: tri.v[2],
+            uv0: tri.uv[0],
+            uv1: tri.uv[1],
+            uv2: tri.uv[2],
             e01: tri.e01,
             e02: tri.e02,
-            normal: tri.normal,
+            normal0: tri.normal[0],
+            normal1: tri.normal[1],
+            normal2: tri.normal[2],
         }
     }
 }
@@ -208,7 +212,7 @@ impl From<&Primitive> for GpuPrimitive {
     fn from(primitive: &Primitive) -> Self {
         match primitive {
             Primitive::Sphere(sphere) => GpuPrimitive::Sphere {
-                center: sphere.center.orig, // TODO: support moving later
+                center: sphere.center.orig,
                 radius: sphere.radius,
                 radius_sqrd: sphere.radius * sphere.radius,
             },
@@ -223,17 +227,7 @@ impl From<&Primitive> for GpuPrimitive {
                 area: quad.area,
             },
 
-            Primitive::Triangle(triangle) => GpuPrimitive::Triangle {
-                v0: triangle.v0,
-                v1: triangle.v1,
-                v2: triangle.v2,
-                uv0: triangle.uv0,
-                uv1: triangle.uv1,
-                uv2: triangle.uv2,
-                e01: triangle.e01,
-                e02: triangle.e02,
-                normal: triangle.normal,
-            },
+            Primitive::Triangle(triangle) => GpuPrimitive::triangle(triangle),
 
             Primitive::Medium(medium) => GpuPrimitive::Medium {
                 boundary_primitive_id: medium.boundary_id.id as u32,

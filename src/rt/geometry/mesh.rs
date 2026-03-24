@@ -61,6 +61,12 @@ impl Mesh {
             .map(|vt| Vec2::new(vt[0] as Float, vt[1] as Float))
             .collect();
 
+        let normals: Vec<Vector> = obj
+            .normals
+            .chunks_exact(3)
+            .map(|vn| Vector::new(vn[0] as Float, vn[1] as Float, vn[2] as Float))
+            .collect();
+
         let indices: Vec<[usize; 3]> = obj
             .indices
             .chunks_exact(3)
@@ -70,17 +76,21 @@ impl Mesh {
         let triangles: Vec<Triangle> = indices
             .iter()
             .map(|i| {
-                let v0 = vertices[i[0]];
-                let v1 = vertices[i[1]];
-                let v2 = vertices[i[2]];
-                if uvs.len() > 0 {
-                    let uv0 = uvs[i[0]];
-                    let uv1 = uvs[i[1]];
-                    let uv2 = uvs[i[2]];
-                    Triangle::new_with_uvs(v0, v1, v2, uv0, uv1, uv2)
+                let v = [vertices[i[0]], vertices[i[1]], vertices[i[2]]];
+                
+                let uv = if uvs.len() > 0 {
+                    Some([uvs[i[0]], uvs[i[1]], uvs[i[2]]])
                 } else {
-                    Triangle::new(v0, v1, v2) // TODO: Use planar uv-mapping instead
-                }
+                    None
+                };
+
+                let normal = if normals.len() > 0 {
+                    Some([normals[i[0]], normals[i[1]], normals[i[2]]])
+                } else {
+                    None
+                };
+
+                Triangle::new_with_uvs(v, uv, normal)
             })
             .collect();
 
