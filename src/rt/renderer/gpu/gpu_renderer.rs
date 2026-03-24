@@ -35,7 +35,8 @@ pub struct GpuRenderer {
 }
 
 impl GpuRenderer {
-    const WORKGROUP_SIZE: u32 = 16u32;
+    const WORKGROUP_SIZE_X: u32 = 64u32;
+    const WORKGROUP_SIZE_Y: u32 = 1u32;
 
     pub async fn new(
         options: Arc<RenderOptions>,
@@ -60,8 +61,8 @@ impl GpuRenderer {
         let _ = render_pipeline.warmup().await; // Warm up to try to fix dispatch timeouts (doesn't seem to work)
 
         let workgroup_dims = [
-            self.options.img_width.div_ceil(Self::WORKGROUP_SIZE),
-            self.options.img_height.div_ceil(Self::WORKGROUP_SIZE),
+            self.options.img_width.div_ceil(Self::WORKGROUP_SIZE_X),
+            self.options.img_height.div_ceil(Self::WORKGROUP_SIZE_Y),
         ];
 
         // Render progressively in smaller dispatches
@@ -97,7 +98,7 @@ impl GpuRenderer {
         }
 
         let elapsed = now.elapsed().as_millis();
-        eprintln!("Done rendering: {}.{} s", elapsed / 1000, elapsed % 1000);
+        eprintln!("Done rendering: {}.{:0>3} s", elapsed / 1000, elapsed % 1000);
     }
 
     fn setup_pipeline(&self) -> RenderPipeline<[f32; 4]> {
