@@ -5,7 +5,7 @@ import package::{
     types,
 };
 
-fn hit_triangle(triangle: types::GpuPrimitive_Triangle, ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
+fn hit(triangle: types::GpuPrimitive_Triangle, ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
     let h = cross(ray.dir, triangle.e02);
     let a = dot(triangle.e01, h);
 
@@ -31,14 +31,14 @@ fn hit_triangle(triangle: types::GpuPrimitive_Triangle, ray: ray::Ray, ray_t: in
 
     let t = f * dot(triangle.e02, q);
 
-    if !interval::interval_contains(ray_t, t) {
+    if !interval::contains(ray_t, t) {
         return hit_record::no_hit();
     }
 
     let w = 1.0 - u - v;
     let uv = triangle.uv0 * w + triangle.uv1 * u + triangle.uv2 * v;
 
-    let point = ray::ray_at(ray, t);
+    let point = ray::at(ray, t);
     let is_outward = a >= 0.0;
 
     var normal = u * triangle.normal0 + v * triangle.normal1 + w * triangle.normal2;

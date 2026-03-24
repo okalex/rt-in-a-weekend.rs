@@ -10,7 +10,7 @@ import package::{
     types,
 };
 
-fn get_material(instance_id: u32) -> types::GpuMaterial {
+fn get_for_instance(instance_id: u32) -> types::GpuMaterial {
     let instance = instances.instances[instance_id];
     return materials.materials[instance.material_id];
 }
@@ -62,11 +62,11 @@ fn skip_pdf(attenuation: vec3f, skip_pdf_ray: ray::Ray) -> ScatterRecord {
     );
 }
 
-fn scatter(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::HitRecord) -> ScatterRecord {
+fn scattered(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::HitRecord) -> ScatterRecord {
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
             let lambertian = types::unpack_GpuMaterial_Lambertian(mat);
-            let color = texture::get_texture_color(lambertian.texture, hit_record.u, hit_record.v, hit_record.point);
+            let color = texture::get_color(lambertian.texture, hit_record.u, hit_record.v, hit_record.point);
 
             let pdf = pdf::new_cosine_pdf(hit_record.normal);
             let scattered_dir = pdf::cosine_generate(pdf);
@@ -122,7 +122,7 @@ fn scatter(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::Hi
 
         case types::GPUMATERIAL_ISOTROPIC {
             let isotropic = types::unpack_GpuMaterial_Isotropic(mat);
-            let color = texture::get_texture_color(isotropic.texture, hit_record.u, hit_record.v, hit_record.point);
+            let color = texture::get_color(isotropic.texture, hit_record.u, hit_record.v, hit_record.point);
 
             let scattered_dir = pdf::sphere_generate();
             let scattered = ray::Ray(hit_record.point, scattered_dir);
@@ -131,7 +131,7 @@ fn scatter(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::Hi
                 color,
                 scattered,
                 1.0 / (4.0 * PI),
-                pdf::sphere_value(),
+                pdf::sphere_pdf_value(),
             );
         }
 
@@ -169,7 +169,7 @@ fn lambertian_scattering_pdf(hit_record: hit_record::HitRecord, scattered: ray::
     return max(0.0, cos_theta / PI);
 }
 
-fn material_scattering_pdf(mat: types::GpuMaterial, hit_record: hit_record::HitRecord, scattered: ray::Ray) -> f32 {
+fn scattering_pdf(mat: types::GpuMaterial, hit_record: hit_record::HitRecord, scattered: ray::Ray) -> f32 {
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
             return lambertian_scattering_pdf(hit_record, scattered);
@@ -183,14 +183,14 @@ fn material_scattering_pdf(mat: types::GpuMaterial, hit_record: hit_record::HitR
     }
 }
 
-fn material_pdf_value(mat: types::GpuMaterial, hit_record: hit_record::HitRecord, direction: vec3f) -> f32 {
+fn pdf_value(mat: types::GpuMaterial, hit_record: hit_record::HitRecord, direction: vec3f) -> f32 {
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
             let pdf = pdf::new_cosine_pdf(hit_record.normal);
             return pdf::cosine_pdf_value(pdf, direction);
         }
         case types::GPUMATERIAL_ISOTROPIC {
-            return pdf::sphere_value();
+            return pdf::sphere_pdf_value();
         }
         default: {
             return 0.0;

@@ -14,6 +14,6 @@ fn new_onb(n: vec3f) -> Onb {
     return Onb(mat3x3f(axis0, axis1, axis2));
 }
 
-fn transform_onb(onb: Onb, v: vec3f) -> vec3f {
+fn transform(onb: Onb, v: vec3f) -> vec3f {
     return v[0] * onb.axes[0] + v[1] * onb.axes[1] + v[2] * onb.axes[2];
 }

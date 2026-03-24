@@ -9,7 +9,7 @@ import package::{
     vector,
 };
 
-fn hit_sphere(sphere: types::GpuPrimitive_Sphere, ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
+fn hit(sphere: types::GpuPrimitive_Sphere, ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
     let oc = sphere.center - ray.orig;
     let a = vector::length_squared(ray.dir);
     let h = dot(ray.dir, oc);
@@ -30,7 +30,7 @@ fn hit_sphere(sphere: types::GpuPrimitive_Sphere, ray: ray::Ray, ray_t: interval
         }
     }
 
-    let hit_point = ray::ray_at(ray, root);
+    let hit_point = ray::at(ray, root);
     var normal = (hit_point - sphere.center) / sphere.radius;
     let is_outward = dot(ray.dir, normal) < 0.0;
     if !is_outward {
@@ -54,7 +54,7 @@ fn get_uv(sphere: types::GpuPrimitive_Sphere, normal: vec3f) -> array<f32, 2> {
     return array(u, v);
 }
 
-fn sphere_pdf_value(sphere: types::GpuPrimitive_Sphere, origin: vec3f, direction: vec3f) -> f32 {
+fn pdf_value(sphere: types::GpuPrimitive_Sphere, origin: vec3f, direction: vec3f) -> f32 {
     // Slightly optimized hit test
     let to_center = sphere.center - origin;
     let dist_sqrd = vector::length_squared(to_center);
@@ -69,11 +69,11 @@ fn sphere_pdf_value(sphere: types::GpuPrimitive_Sphere, origin: vec3f, direction
     return 1.0 / solid_angle;
 }
 
-fn sphere_random(sphere: types::GpuPrimitive_Sphere, origin: vec3f) -> vec3f {
+fn rand(sphere: types::GpuPrimitive_Sphere, origin: vec3f) -> vec3f {
     let direction = sphere.center - origin;
     let dist_sqrd = vector::length_squared(direction);
     let uvw = onb::new_onb(direction);
-    return onb::transform_onb(uvw, rand_to_sphere(sphere.radius, dist_sqrd));
+    return onb::transform(uvw, rand_to_sphere(sphere.radius, dist_sqrd));
 }
 
 fn rand_to_sphere(radius: f32, dist_sqrd: f32) -> vec3f {

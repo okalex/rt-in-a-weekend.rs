@@ -30,9 +30,9 @@ fn get_ray_color(ray: ray::Ray) -> vec3f {
 
         if hit_record.is_hit {
 
-            let material = material::get_material(hit_record.instance_id);
+            let material = material::get_for_instance(hit_record.instance_id);
             let emitted_color = material::emitted(material, hit_ray, hit_record);
-            let scatter_record = material::scatter(material, hit_ray, hit_record);
+            let scatter_record = material::scattered(material, hit_ray, hit_record);
 
             if scatter_record.is_scattered {
                 let scatter_result = scatter_ray(material, hit_record, scatter_record);
@@ -70,7 +70,7 @@ fn scatter_ray(material: types::GpuMaterial, hit_record: hit_record::HitRecord, 
             // let cosine_pdf = new_cosine_pdf(hit_record.normal);
             // pdf_value = 0.5 * lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, scattered_dir);
 
-            pdf_value = 0.5 * pdf::lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * material::material_pdf_value(material, hit_record, scattered_dir);
+            pdf_value = 0.5 * pdf::lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * material::pdf_value(material, hit_record, scattered_dir);
         } else {
             scattered_dir = scatter_record.scattered.dir;
             pdf_value = scatter_record.pdf_value;
@@ -80,7 +80,7 @@ fn scatter_ray(material: types::GpuMaterial, hit_record: hit_record::HitRecord, 
 
         // Discard NaNs
         if pdf_value > 1e-8 {
-            let scattering_pdf = material::material_scattering_pdf(material, hit_record, result.scattered_ray);
+            let scattering_pdf = material::scattering_pdf(material, hit_record, result.scattered_ray);
             result.scattered_color = scatter_record.attenuation * scattering_pdf / pdf_value;
         } else {
             result.scattered_color = vector::ZEROS;
@@ -114,10 +114,10 @@ fn hit_instances(ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRec
         } else {
             let left = instance_bvh.nodes[node.left_or_prim];
             let right = instance_bvh.nodes[node.left_or_prim + 1];
-            if bvh::intersects_bvh_node(ray, inv_dir, curr_ray_t, right) {
+            if bvh::intersects_node(ray, inv_dir, curr_ray_t, right) {
                 stack::push(&stack, node.left_or_prim + 1);
             }
-            if bvh::intersects_bvh_node(ray, inv_dir, curr_ray_t, left) {
+            if bvh::intersects_node(ray, inv_dir, curr_ray_t, left) {
                 stack::push(&stack, node.left_or_prim);
             }
         }
@@ -134,25 +134,25 @@ fn hit_instance(ray: ray::Ray, ray_t: interval::Interval, instance_id: u32) -> h
     switch primitive._type {
         case types::GPUPRIMITIVE_SPHERE: {
             let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
-            var hit_record = sphere::hit_sphere(sphere, transformed_ray, ray_t);
+            var hit_record = sphere::hit(sphere, transformed_ray, ray_t);
             return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
         }
 
         case types::GPUPRIMITIVE_TRIANGLE: {
             let triangle = types::unpack_GpuPrimitive_Triangle(primitive);
-            var hit_record = triangle::hit_triangle(triangle, transformed_ray, ray_t);
+            var hit_record = triangle::hit(triangle, transformed_ray, ray_t);
             return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
         }
 
         case types::GPUPRIMITIVE_QUAD: {
             let quad = types::unpack_GpuPrimitive_Quad(primitive);
-            var hit_record = quad::hit_quad(quad, transformed_ray, ray_t);
+            var hit_record = quad::hit(quad, transformed_ray, ray_t);
             return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
         }
 
         case types::GPUPRIMITIVE_MESH: {
             let mesh = types::unpack_GpuPrimitive_Mesh(primitive);
-            var hit_record = mesh::hit_mesh(mesh, transformed_ray, ray_t);
+            var hit_record = mesh::hit(mesh, transformed_ray, ray_t);
             return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
         }
 
@@ -168,33 +168,33 @@ fn hit_instance(ray: ray::Ray, ray_t: interval::Interval, instance_id: u32) -> h
             switch boundary._type {
                 case types::GPUPRIMITIVE_SPHERE: {
                     let sphere = types::unpack_GpuPrimitive_Sphere(boundary);
-                    entry_rec = sphere::hit_sphere(sphere, transformed_ray, interval::Interval(-INF, INF));
+                    entry_rec = sphere::hit(sphere, transformed_ray, interval::Interval(-INF, INF));
                     if entry_rec.is_hit {
-                        exit_rec = sphere::hit_sphere(sphere, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
+                        exit_rec = sphere::hit(sphere, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
                     }
                 }
 
                 case types::GPUPRIMITIVE_TRIANGLE: {
                     let triangle = types::unpack_GpuPrimitive_Triangle(boundary);
-                    entry_rec = triangle::hit_triangle(triangle, transformed_ray, interval::Interval(-INF, INF));
+                    entry_rec = triangle::hit(triangle, transformed_ray, interval::Interval(-INF, INF));
                     if entry_rec.is_hit {
-                        exit_rec = triangle::hit_triangle(triangle, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
+                        exit_rec = triangle::hit(triangle, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
                     }
                 }
 
                 case types::GPUPRIMITIVE_QUAD: {
                     let quad = types::unpack_GpuPrimitive_Quad(boundary);
-                    entry_rec = quad::hit_quad(quad, transformed_ray, interval::Interval(-INF, INF));
+                    entry_rec = quad::hit(quad, transformed_ray, interval::Interval(-INF, INF));
                     if entry_rec.is_hit {
-                        exit_rec = quad::hit_quad(quad, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
+                        exit_rec = quad::hit(quad, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
                     }
                 }
 
                 case types::GPUPRIMITIVE_MESH: {
                     let mesh = types::unpack_GpuPrimitive_Mesh(boundary);
-                    entry_rec = mesh::hit_mesh(mesh, transformed_ray, interval::Interval(-INF, INF));
+                    entry_rec = mesh::hit(mesh, transformed_ray, interval::Interval(-INF, INF));
                     if entry_rec.is_hit {
-                        exit_rec = mesh::hit_mesh(mesh, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
+                        exit_rec = mesh::hit(mesh, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
                     }
                 }
 
@@ -207,7 +207,7 @@ fn hit_instance(ray: ray::Ray, ray_t: interval::Interval, instance_id: u32) -> h
                 exit_rec = hit_record::no_hit();
             }
 
-            var hit_record = medium::hit_medium(medium, entry_rec, exit_rec, transformed_ray, ray_t);
+            var hit_record = medium::hit(medium, entry_rec, exit_rec, transformed_ray, ray_t);
             return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
         }
 

@@ -14,7 +14,7 @@ fn sphere_generate() -> vec3f {
     return random::rand_unit_vector();
 }
 
-fn sphere_value() -> f32 {
+fn sphere_pdf_value() -> f32 {
     return 1.0 / (4.0 * PI);
 }
 
@@ -43,7 +43,7 @@ fn new_cosine_pdf(w: vec3f) -> CosinePdf {
 }
 
 fn cosine_generate(pdf: CosinePdf) -> vec3f {
-    return onb::transform_onb(pdf.uvw, random::rand_cos_vector());
+    return onb::transform(pdf.uvw, random::rand_cos_vector());
 }
 
 fn cosine_pdf_value(pdf: CosinePdf, direction: vec3f) -> f32 {
@@ -88,7 +88,7 @@ fn primitive_pdf_value(primitive: types::GpuPrimitive, origin: vec3f, direction:
     switch primitive._type {
         case types::GPUPRIMITIVE_SPHERE: {
             let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
-            return sphere::sphere_pdf_value(sphere, origin, direction);
+            return sphere::pdf_value(sphere, origin, direction);
         }
 
         // case types::GPUPRIMITIVE_TRIANGLE: {
@@ -97,7 +97,7 @@ fn primitive_pdf_value(primitive: types::GpuPrimitive, origin: vec3f, direction:
 
         case types::GPUPRIMITIVE_QUAD: {
             let quad = types::unpack_GpuPrimitive_Quad(primitive);
-            return quad::quad_pdf_value(quad, origin, direction);
+            return quad::pdf_value(quad, origin, direction);
         }
 
         // case types::GPUPRIMITIVE_MESH: {
@@ -114,7 +114,7 @@ fn primitive_random(primitive: types::GpuPrimitive, origin: vec3f) -> vec3f {
     switch primitive._type {
         case types::GPUPRIMITIVE_SPHERE: {
             let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
-            return sphere::sphere_random(sphere, origin);
+            return sphere::rand(sphere, origin);
         }
 
         // case types::GPUPRIMITIVE_TRIANGLE: {
@@ -123,7 +123,7 @@ fn primitive_random(primitive: types::GpuPrimitive, origin: vec3f) -> vec3f {
 
         case types::GPUPRIMITIVE_QUAD: {
             let quad = types::unpack_GpuPrimitive_Quad(primitive);
-            return quad::quad_random(quad, origin);
+            return quad::rand(quad, origin);
         }
 
         // case types::GPUPRIMITIVE_MESH: {

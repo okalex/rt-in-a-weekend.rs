@@ -7,7 +7,7 @@ import package::{
     vector,
 };
 
-fn hit_medium(
+fn hit(
     medium: types::GpuPrimitive_Medium,
     entry_rec: hit_record::HitRecord,
     exit_rec: hit_record::HitRecord,
@@ -39,7 +39,7 @@ fn hit_medium(
     }
 
     let t = entry + hit_dist / ray_len;
-    let point = ray::ray_at(ray, t);
+    let point = ray::at(ray, t);
     let normal = vec3f(1.0, 0.0, 0.0);
 
     return hit_record::hit(point, normal, true, t, 0.0, 0.0);

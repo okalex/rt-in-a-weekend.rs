@@ -3,6 +3,6 @@ struct Ray {
     dir: vec3f,
 };
 
-fn ray_at(ray: Ray, t: f32) -> vec3f {
+fn at(ray: Ray, t: f32) -> vec3f {
     return ray.orig + ray.dir * t;
 }

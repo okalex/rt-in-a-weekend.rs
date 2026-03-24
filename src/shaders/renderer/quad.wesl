@@ -8,24 +8,24 @@ import package::{
     vector,
 };
 
-fn hit_quad(quad: types::GpuPrimitive_Quad, ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
+fn hit(quad: types::GpuPrimitive_Quad, ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
     let denom = dot(quad.normal, ray.dir);
     if abs(denom) < 1e-8 {
         return hit_record::no_hit();
     }
 
     let t = (quad.d - dot(quad.normal, ray.orig)) / denom;
-    if !interval::interval_contains(ray_t, t) {
+    if !interval::contains(ray_t, t) {
         return hit_record::no_hit();
     }
 
-    let intersection = ray::ray_at(ray, t);
+    let intersection = ray::at(ray, t);
     let planar_hit_vec = intersection - quad.q;
     let alpha = dot(quad.w, cross(planar_hit_vec, quad.v));
     let beta = dot(quad.w, cross(quad.u, planar_hit_vec));
 
     let unit_interval = interval::Interval(0.0, 1.0);
-    if !interval::interval_contains(unit_interval, alpha) || !interval::interval_contains(unit_interval, beta) {
+    if !interval::contains(unit_interval, alpha) || !interval::contains(unit_interval, beta) {
         return hit_record::no_hit();
     }
 
@@ -45,7 +45,7 @@ fn hit_quad(quad: types::GpuPrimitive_Quad, ray: ray::Ray, ray_t: interval::Inte
     );
 }
 
-fn quad_pdf_value(quad: types::GpuPrimitive_Quad, origin: vec3f, direction: vec3f) -> f32 {
+fn pdf_value(quad: types::GpuPrimitive_Quad, origin: vec3f, direction: vec3f) -> f32 {
     // Slightly optimized hit test
     let denom = dot(quad.normal, direction);
     if abs(denom) < 1e-8 { return 0.0; }
@@ -64,7 +64,7 @@ fn quad_pdf_value(quad: types::GpuPrimitive_Quad, origin: vec3f, direction: vec3
     return dist_sqrd / (cos * quad.area);
 }
 
-fn quad_random(quad: types::GpuPrimitive_Quad, origin: vec3f) -> vec3f {
+fn rand(quad: types::GpuPrimitive_Quad, origin: vec3f) -> vec3f {
     let p = quad.q + random::rand() * quad.u + random::rand() * quad.v;
     return p - origin;
 }
