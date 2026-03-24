@@ -23,7 +23,7 @@ use crate::{
     },
 };
 
-pub struct GpuCompute<O: NoUninit + AnyBitPattern> {
+pub struct RenderPipeline<O: NoUninit + AnyBitPattern> {
     gpu: Arc<Gpu>,
     pipeline: wgpu::ComputePipeline,
     bind_group: wgpu::BindGroup,
@@ -51,7 +51,7 @@ mod buffer_usages {
         wgpu::BufferUsages::from_bits_retain(wgpu::BufferUsages::UNIFORM.bits() | wgpu::BufferUsages::COPY_DST.bits());
 }
 
-impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
+impl<O: NoUninit + AnyBitPattern> RenderPipeline<O> {
     pub fn new(gpu: Arc<Gpu>, shader: &wgpu::ShaderModule, output_size: u64, meta: Arc<GpuMeta>, scene: Arc<GpuScene>) -> Self {
         let meta_size = meta.size().get();
         let meta_buf = gpu.create_buffer(meta_size, buffer_usages::UNIFORM);
@@ -124,7 +124,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
             ],
         );
 
-        let gpu_compute = Self {
+        let render_pipeline = Self {
             gpu,
             pipeline,
             bind_group,
@@ -140,12 +140,11 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
             temp_buf,
             _o: PhantomData,
         };
-        gpu_compute.init_bufs(meta, scene);
-        gpu_compute
+        render_pipeline.load_scene(scene);
+        render_pipeline
     }
 
-    pub fn init_bufs(&self, meta: Arc<GpuMeta>, scene: Arc<GpuScene>) {
-        self.init_buf(&meta, &self.meta_buf);
+    pub fn load_scene(&self, scene: Arc<GpuScene>) {
         self.init_buf(&scene.primitives, &self.primitives_buf);
         self.init_buf(&scene.instances, &self.instances_buf);
         self.init_buf(&scene.instance_bvh, &self.instance_bvh_buf);

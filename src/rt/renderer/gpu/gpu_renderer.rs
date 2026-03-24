@@ -6,16 +6,14 @@ use std::{
 use wesl::include_wesl;
 
 use crate::{
-    gpu::{
-        gpu::Gpu,
-        gpu_compute::GpuCompute,
-    },
+    gpu::gpu::Gpu,
     rt::{
         camera::Camera,
         frame_buffer::FrameBuffer,
         geometry::scene::Scene,
         renderer::{
             gpu::{
+                render_pipeline::RenderPipeline,
                 gpu_meta::GpuMeta,
                 gpu_types::GpuScene,
             },
@@ -58,8 +56,8 @@ impl GpuRenderer {
 
     pub async fn render(&self) {
         let now = Instant::now();
-        let gpu_compute = self.setup_pipeline();
-        let _ = gpu_compute.warmup().await; // Warm up to try to fix dispatch timeouts (doesn't seem to work)
+        let render_pipeline = self.setup_pipeline();
+        let _ = render_pipeline.warmup().await; // Warm up to try to fix dispatch timeouts (doesn't seem to work)
 
         let workgroup_dims = [
             self.options.img_width.div_ceil(Self::WORKGROUP_SIZE),
@@ -70,14 +68,14 @@ impl GpuRenderer {
         for samples in 1..=(self.options.samples_per_pixel / self.options.dispatch_size) {
             // Update the frame number for rng seeding
             let gpu_meta = Arc::new(GpuMeta::new(Arc::clone(&self.options), Arc::clone(&self.camera), samples));
-            gpu_compute.init_buf(&gpu_meta, &gpu_compute.meta_buf);
+            render_pipeline.init_buf(&gpu_meta, &render_pipeline.meta_buf);
 
             // Render
-            gpu_compute.dispatch(workgroup_dims);
+            render_pipeline.dispatch(workgroup_dims);
 
             // Update frame buffer
             if samples % 50 == 1 {
-                let result = gpu_compute.get_result().await;
+                let result = render_pipeline.get_result().await;
                 match result {
                     Ok(pixels) => {
                         let colors = self.collect_results(pixels);
@@ -89,7 +87,7 @@ impl GpuRenderer {
         }
 
         // Display final results
-        let result = gpu_compute.get_result().await;
+        let result = render_pipeline.get_result().await;
         match result {
             Ok(pixels) => {
                 let colors = self.collect_results(pixels);
@@ -102,7 +100,7 @@ impl GpuRenderer {
         eprintln!("Done rendering: {}.{} s", elapsed / 1000, elapsed % 1000);
     }
 
-    fn setup_pipeline(&self) -> GpuCompute<[f32; 4]> {
+    fn setup_pipeline(&self) -> RenderPipeline<[f32; 4]> {
         let compute_shader = match self.create_shader() {
             Ok(shader) => shader,
             Err(e) => {
@@ -117,7 +115,7 @@ impl GpuRenderer {
         let num_pixels = (self.options.img_height * self.options.img_width) as u32;
         let output_buf_size = (num_pixels * std::mem::size_of::<[f32; 4]>() as u32) as u64;
 
-        GpuCompute::<[f32; 4]>::new(
+        RenderPipeline::<[f32; 4]>::new(
             Arc::clone(&self.gpu),
             &compute_shader,
             output_buf_size,

@@ -37,6 +37,39 @@ use crate::{
     },
 };
 
+#[tokio::main]
+async fn main() {
+    env_logger::init();
+
+    let args = Arc::new(Args::parse());
+
+    let render_options = Arc::new(
+        RenderOptionsBuilder::new()
+            .width(args.width)
+            .samples_per_pixel(args.samples)
+            .dispatch_size(args.dispatch_size)
+            .max_depth(args.depth)
+            .use_multithreading(args.multithreading)
+            .use_importance_sampling(args.importance)
+            .background(Color::black())
+            .build(args.aspect as Float),
+    );
+
+    print_config(Arc::clone(&args), Arc::clone(&render_options));
+
+    let frame_buffer = Arc::new(FrameBuffer::new(
+        render_options.img_width as usize,
+        render_options.img_height as usize,
+    ));
+    let renderer = get_renderer(Arc::clone(&args), Arc::clone(&render_options), Arc::clone(&frame_buffer)).await;
+
+    if args.interactive {
+        let _ = run_windowed(render_options.img_width, render_options.img_height, renderer, frame_buffer);
+    } else {
+        let _ = run_headless(renderer, frame_buffer).await;
+    }
+}
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -72,39 +105,6 @@ struct Args {
 
     #[arg(long, default_value_t = 1)]
     sampler: Uint,
-}
-
-#[tokio::main]
-async fn main() {
-    env_logger::init();
-
-    let args = Arc::new(Args::parse());
-
-    let render_options = Arc::new(
-        RenderOptionsBuilder::new()
-            .width(args.width)
-            .samples_per_pixel(args.samples)
-            .dispatch_size(args.dispatch_size)
-            .max_depth(args.depth)
-            .use_multithreading(args.multithreading)
-            .use_importance_sampling(args.importance)
-            .background(Color::black())
-            .build(args.aspect as Float),
-    );
-
-    print_config(Arc::clone(&args), Arc::clone(&render_options));
-
-    let frame_buffer = Arc::new(FrameBuffer::new(
-        render_options.img_width as usize,
-        render_options.img_height as usize,
-    ));
-    let renderer = get_renderer(Arc::clone(&args), Arc::clone(&render_options), Arc::clone(&frame_buffer)).await;
-
-    if args.interactive {
-        let _ = run_windowed(render_options.img_width, render_options.img_height, renderer, frame_buffer);
-    } else {
-        let _ = run_headless(renderer, frame_buffer).await;
-    }
 }
 
 fn print_config(args: Arc<Args>, render_options: Arc<RenderOptions>) {
