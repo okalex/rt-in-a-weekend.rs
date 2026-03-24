@@ -1,7 +1,7 @@
 import package::{
     bindings::gpu_meta,
     constants::PI,
-    vector::{length_squared, ZEROS},
+    vector,
 };
 
 var<private> rng_state: u32;
@@ -45,7 +45,7 @@ fn rand_range_vector(min: f32, max: f32) -> vec3f {
 fn rand_unit_vector() -> vec3f {
     loop {
         let p = rand_range_vector(-1, 1);
-        let lensq = length_squared(p);
+        let lensq = vector::length_squared(p);
         if lensq > 1e-10 && lensq <= 1.0 {
             return p / sqrt(lensq);
         }
@@ -65,11 +65,11 @@ fn rand_vector_on_hemisphere(normal: vec3f) -> vec3f {
 fn rand_in_unit_disk() -> vec3f {
     loop {
         let p = vec3f(rand_range(-1.0, 1.0), rand_range(-1.0, 1.0), 0.0);
-        if length_squared(p) < 1.0 {
+        if vector::length_squared(p) < 1.0 {
             return p;
         }
     }
-    return ZEROS;
+    return vector::ZEROS;
 }
 
 fn rand_cos_vector() -> vec3f {

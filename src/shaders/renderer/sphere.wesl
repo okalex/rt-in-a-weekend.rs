@@ -1,23 +1,23 @@
 import package::{
     constants::{PI, INF},
-    hit_record::{HitRecord, no_hit},
-    interval::Interval,
-    onb::{new_onb, transform_onb},
-    random::rand,
-    ray::{Ray, ray_at},
+    hit_record,
+    interval,
+    onb,
+    random,
+    ray,
     types,
-    vector::length_squared,
+    vector,
 };
 
-fn hit_sphere(sphere: types::GpuPrimitive_Sphere, ray: Ray, ray_t: Interval) -> HitRecord {
+fn hit_sphere(sphere: types::GpuPrimitive_Sphere, ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
     let oc = sphere.center - ray.orig;
-    let a = length_squared(ray.dir);
+    let a = vector::length_squared(ray.dir);
     let h = dot(ray.dir, oc);
-    let c = length_squared(oc) - sphere.radius_sqrd;
+    let c = vector::length_squared(oc) - sphere.radius_sqrd;
 
     let discriminant = h * h - a * c;
     if discriminant < 0 {
-        return no_hit();
+        return hit_record::no_hit();
     }
 
     let sqrtd = sqrt(discriminant);
@@ -26,11 +26,11 @@ fn hit_sphere(sphere: types::GpuPrimitive_Sphere, ray: Ray, ray_t: Interval) -> 
     if root <= ray_t.min || ray_t.max <= root {
         root = (h + sqrtd) / a;
         if root <= ray_t.min || ray_t.max <= root {
-            return no_hit();
+            return hit_record::no_hit();
         }
     }
 
-    let hit_point = ray_at(ray, root);
+    let hit_point = ray::ray_at(ray, root);
     var normal = (hit_point - sphere.center) / sphere.radius;
     let is_outward = dot(ray.dir, normal) < 0.0;
     if !is_outward {
@@ -38,9 +38,7 @@ fn hit_sphere(sphere: types::GpuPrimitive_Sphere, ray: Ray, ray_t: Interval) -> 
     }
     let uv = get_uv(sphere, normal);
 
-    return HitRecord(
-        true,
-        0,
+    return hit_record::hit(
         hit_point,
         normal,
         is_outward,
@@ -59,7 +57,7 @@ fn get_uv(sphere: types::GpuPrimitive_Sphere, normal: vec3f) -> array<f32, 2> {
 fn sphere_pdf_value(sphere: types::GpuPrimitive_Sphere, origin: vec3f, direction: vec3f) -> f32 {
     // Slightly optimized hit test
     let to_center = sphere.center - origin;
-    let dist_sqrd = length_squared(to_center);
+    let dist_sqrd = vector::length_squared(to_center);
     if dist_sqrd <= sphere.radius_sqrd { return 0.0; } // inside sphere
 
     let cos_theta_max = sqrt(1.0 - sphere.radius_sqrd / dist_sqrd);
@@ -73,14 +71,14 @@ fn sphere_pdf_value(sphere: types::GpuPrimitive_Sphere, origin: vec3f, direction
 
 fn sphere_random(sphere: types::GpuPrimitive_Sphere, origin: vec3f) -> vec3f {
     let direction = sphere.center - origin;
-    let dist_sqrd = length_squared(direction);
-    let uvw = new_onb(direction);
-    return transform_onb(uvw, rand_to_sphere(sphere.radius, dist_sqrd));
+    let dist_sqrd = vector::length_squared(direction);
+    let uvw = onb::new_onb(direction);
+    return onb::transform_onb(uvw, rand_to_sphere(sphere.radius, dist_sqrd));
 }
 
 fn rand_to_sphere(radius: f32, dist_sqrd: f32) -> vec3f {
-    let r1 = rand();
-    let r2 = rand();
+    let r1 = random::rand();
+    let r2 = random::rand();
     let z = 1.0 + r2 * (sqrt(1.0 - radius * radius / dist_sqrd) - 1.0);
 
     let phi = 2.0 * PI * r1;

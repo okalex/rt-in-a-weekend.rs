@@ -1,18 +1,17 @@
 import package::{
     bindings::{instances, primitives, lights},
     constants::PI,
-    interval::Interval,
-    onb::{Onb, new_onb, transform_onb},
-    quad::{hit_quad, quad_pdf_value, quad_random},
-    random::{rand_vector_on_hemisphere, rand_cos_vector, rand_range_int, rand_unit_vector},
-    ray::Ray,
-    sphere::{sphere_pdf_value, sphere_random},
-    transform::{transform_point, transform_direction},
+    interval,
+    onb,
+    quad,
+    random,
+    sphere,
+    transform,
     types,
 };
 
 fn sphere_generate() -> vec3f {
-    return rand_unit_vector();
+    return random::rand_unit_vector();
 }
 
 fn sphere_value() -> f32 {
@@ -28,7 +27,7 @@ fn new_hemisphere_pdf(normal: vec3f) -> HemispherePdf {
 }
 
 fn hemisphere_generate(pdf: HemispherePdf) -> vec3f {
-    return rand_vector_on_hemisphere(pdf.normal);
+    return random::rand_vector_on_hemisphere(pdf.normal);
 }
 
 fn hemisphere_pdf_value(pdf: HemispherePdf) -> f32 {
@@ -36,15 +35,15 @@ fn hemisphere_pdf_value(pdf: HemispherePdf) -> f32 {
 }
 
 struct CosinePdf {
-    uvw: Onb,
+    uvw: onb::Onb,
 };
 
 fn new_cosine_pdf(w: vec3f) -> CosinePdf {
-    return CosinePdf(new_onb(w));
+    return CosinePdf(onb::new_onb(w));
 }
 
 fn cosine_generate(pdf: CosinePdf) -> vec3f {
-    return transform_onb(pdf.uvw, rand_cos_vector());
+    return onb::transform_onb(pdf.uvw, random::rand_cos_vector());
 }
 
 fn cosine_pdf_value(pdf: CosinePdf, direction: vec3f) -> f32 {
@@ -65,8 +64,8 @@ fn lights_pdf_value(pdf: LightsPdf, direction: vec3f) -> f32 {
         let light_instance_id = lights.lights[i];
         let light_instance = instances.instances[light_instance_id];
         let light_primitive = primitives.primitives[light_instance.primitive_id];
-        let local_origin = transform_point(pdf.origin, light_instance.inv_transform);
-        let local_dir = transform_direction(direction, light_instance.inv_transform);
+        let local_origin = transform::transform_point(pdf.origin, light_instance.inv_transform);
+        let local_dir = transform::transform_direction(direction, light_instance.inv_transform);
         sum += weight * primitive_pdf_value(light_primitive, local_origin, local_dir);
     }
 
@@ -75,21 +74,21 @@ fn lights_pdf_value(pdf: LightsPdf, direction: vec3f) -> f32 {
 
 fn lights_pdf_generate(pdf: LightsPdf) -> vec3f {
     let num_lights = arrayLength(&lights.lights);
-    let light_id = rand_range_int(i32(0), i32(num_lights - 1));
+    let light_id = random::rand_range_int(i32(0), i32(num_lights - 1));
     let light_instance_id = lights.lights[light_id];
     let light_instance = instances.instances[light_instance_id];
     let light_primitive = primitives.primitives[light_instance.primitive_id];
 
-    let local_origin = transform_point(pdf.origin, light_instance.inv_transform);
+    let local_origin = transform::transform_point(pdf.origin, light_instance.inv_transform);
     let local_dir = primitive_random(light_primitive, local_origin);
-    return normalize(transform_direction(local_dir, light_instance.transform));
+    return normalize(transform::transform_direction(local_dir, light_instance.transform));
 }
 
 fn primitive_pdf_value(primitive: types::GpuPrimitive, origin: vec3f, direction: vec3f) -> f32 {
     switch primitive._type {
         case types::GPUPRIMITIVE_SPHERE: {
             let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
-            return sphere_pdf_value(sphere, origin, direction);
+            return sphere::sphere_pdf_value(sphere, origin, direction);
         }
 
         // case types::GPUPRIMITIVE_TRIANGLE: {
@@ -98,7 +97,7 @@ fn primitive_pdf_value(primitive: types::GpuPrimitive, origin: vec3f, direction:
 
         case types::GPUPRIMITIVE_QUAD: {
             let quad = types::unpack_GpuPrimitive_Quad(primitive);
-            return quad_pdf_value(quad, origin, direction);
+            return quad::quad_pdf_value(quad, origin, direction);
         }
 
         // case types::GPUPRIMITIVE_MESH: {
@@ -115,7 +114,7 @@ fn primitive_random(primitive: types::GpuPrimitive, origin: vec3f) -> vec3f {
     switch primitive._type {
         case types::GPUPRIMITIVE_SPHERE: {
             let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
-            return sphere_random(sphere, origin);
+            return sphere::sphere_random(sphere, origin);
         }
 
         // case types::GPUPRIMITIVE_TRIANGLE: {
@@ -124,7 +123,7 @@ fn primitive_random(primitive: types::GpuPrimitive, origin: vec3f) -> vec3f {
 
         case types::GPUPRIMITIVE_QUAD: {
             let quad = types::unpack_GpuPrimitive_Quad(primitive);
-            return quad_random(quad, origin);
+            return quad::quad_random(quad, origin);
         }
 
         // case types::GPUPRIMITIVE_MESH: {

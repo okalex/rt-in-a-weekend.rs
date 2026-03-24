@@ -1,32 +1,32 @@
 import package::{
     constants::INF,
-    hit_record::{HitRecord, no_hit},
-    interval::{Interval, interval_contains},
-    random::rand,
-    ray::{Ray, ray_at},
+    hit_record,
+    interval,
+    random,
+    ray,
     types,
-    vector::length_squared,
+    vector,
 };
 
-fn hit_quad(quad: types::GpuPrimitive_Quad, ray: Ray, ray_t: Interval) -> HitRecord {
+fn hit_quad(quad: types::GpuPrimitive_Quad, ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
     let denom = dot(quad.normal, ray.dir);
     if abs(denom) < 1e-8 {
-        return no_hit();
+        return hit_record::no_hit();
     }
 
     let t = (quad.d - dot(quad.normal, ray.orig)) / denom;
-    if !interval_contains(ray_t, t) {
-        return no_hit();
+    if !interval::interval_contains(ray_t, t) {
+        return hit_record::no_hit();
     }
 
-    let intersection = ray_at(ray, t);
+    let intersection = ray::ray_at(ray, t);
     let planar_hit_vec = intersection - quad.q;
     let alpha = dot(quad.w, cross(planar_hit_vec, quad.v));
     let beta = dot(quad.w, cross(quad.u, planar_hit_vec));
 
-    let unit_interval = Interval(0.0, 1.0);
-    if !interval_contains(unit_interval, alpha) || !interval_contains(unit_interval, beta) {
-        return no_hit();
+    let unit_interval = interval::Interval(0.0, 1.0);
+    if !interval::interval_contains(unit_interval, alpha) || !interval::interval_contains(unit_interval, beta) {
+        return hit_record::no_hit();
     }
 
     var normal = quad.normal;
@@ -35,9 +35,7 @@ fn hit_quad(quad: types::GpuPrimitive_Quad, ray: Ray, ray_t: Interval) -> HitRec
         normal = -normal;
     }
 
-    return HitRecord(
-        true,
-        0,
+    return hit_record::hit(
         intersection,
         normal,
         is_outward,
@@ -61,12 +59,12 @@ fn quad_pdf_value(quad: types::GpuPrimitive_Quad, origin: vec3f, direction: vec3
     let beta = dot(quad.w, cross(quad.u, hit_vec));
     if alpha < 0.0 || alpha > 1.0 || beta < 0.0 || beta > 1.0 { return 0.0; }
 
-    let dist_sqrd = t * t * length_squared(direction);
+    let dist_sqrd = t * t * vector::length_squared(direction);
     let cos = abs(denom) / length(direction); // reuses denom!
     return dist_sqrd / (cos * quad.area);
 }
 
 fn quad_random(quad: types::GpuPrimitive_Quad, origin: vec3f) -> vec3f {
-    let p = quad.q + rand() * quad.u + rand() * quad.v;
+    let p = quad.q + random::rand() * quad.u + random::rand() * quad.v;
     return p - origin;
 }

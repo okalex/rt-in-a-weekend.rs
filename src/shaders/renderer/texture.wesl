@@ -1,5 +1,4 @@
 import package::{
-    color::{Rgba, to_rgba},
     types
 };
 

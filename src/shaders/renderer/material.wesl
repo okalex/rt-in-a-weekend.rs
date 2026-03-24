@@ -1,13 +1,12 @@
 import package::{
     bindings::{instances, materials},
-    color::Rgba,
     constants::{PI},
-    hit_record::HitRecord,
+    hit_record,
     pdf,
-    random::{rand, rand_unit_vector},
-    ray::Ray,
-    texture::get_texture_color,
-    vector::{reflect, refract, ZEROS, ONES},
+    random,
+    ray,
+    texture,
+    vector,
     types,
 };
 
@@ -19,7 +18,7 @@ fn get_material(instance_id: u32) -> types::GpuMaterial {
 struct ScatterRecord {
     is_scattered: bool,
     attenuation: vec3f,
-    scattered: Ray,
+    scattered: ray::Ray,
     scattering_pdf: f32,
     pdf_value: f32,
     skip_pdf: bool,
@@ -29,7 +28,7 @@ fn no_scatter() -> ScatterRecord {
     return ScatterRecord(
         false,
         vec3f(0, 0, 0),
-        Ray(ZEROS, ZEROS),
+        ray::Ray(vector::ZEROS, vector::ZEROS),
         0.0,
         0.0,
         false,
@@ -38,7 +37,7 @@ fn no_scatter() -> ScatterRecord {
 
 fn scatter_with_pdf(
     attenuation: vec3f,
-    scattered: Ray,
+    scattered: ray::Ray,
     scattering_pdf: f32,
     pdf_value: f32
 ) -> ScatterRecord {
@@ -52,7 +51,7 @@ fn scatter_with_pdf(
     );
 }
 
-fn skip_pdf(attenuation: vec3f, skip_pdf_ray: Ray) -> ScatterRecord {
+fn skip_pdf(attenuation: vec3f, skip_pdf_ray: ray::Ray) -> ScatterRecord {
     return ScatterRecord(
         true,
         attenuation,
@@ -63,15 +62,15 @@ fn skip_pdf(attenuation: vec3f, skip_pdf_ray: Ray) -> ScatterRecord {
     );
 }
 
-fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> ScatterRecord {
+fn scatter(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::HitRecord) -> ScatterRecord {
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
             let lambertian = types::unpack_GpuMaterial_Lambertian(mat);
-            let color = get_texture_color(lambertian.texture, hit_record.u, hit_record.v, hit_record.point);
+            let color = texture::get_texture_color(lambertian.texture, hit_record.u, hit_record.v, hit_record.point);
 
             let pdf = pdf::new_cosine_pdf(hit_record.normal);
             let scattered_dir = pdf::cosine_generate(pdf);
-            let scattered = Ray(hit_record.point, scattered_dir);
+            let scattered = ray::Ray(hit_record.point, scattered_dir);
 
             return scatter_with_pdf(
                 color,
@@ -83,10 +82,10 @@ fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> Scatt
 
         case types::GPUMATERIAL_METAL {
             let metal = types::unpack_GpuMaterial_Metal(mat);
-            let reflected = normalize(reflect(ray_in.dir, hit_record.normal)) + rand_unit_vector() * metal.fuzz;
+            let reflected = normalize(reflect(ray_in.dir, hit_record.normal)) + random::rand_unit_vector() * metal.fuzz;
             return skip_pdf(
                 metal.albedo,
-                Ray(hit_record.point, reflected)
+                ray::Ray(hit_record.point, reflected)
             );
         }
 
@@ -107,8 +106,8 @@ fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> Scatt
 
             var attenuation: vec3f;
             var dir: vec3f;
-            if cannot_refract || reflectance > rand() {
-                attenuation = ONES;
+            if cannot_refract || reflectance > random::rand() {
+                attenuation = vector::ONES;
                 dir = reflect(unit_dir, hit_record.normal);
             } else {
                 attenuation = dielectric.albedo;
@@ -117,16 +116,16 @@ fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> Scatt
 
             return skip_pdf(
                 attenuation,
-                Ray(hit_record.point, dir),
+                ray::Ray(hit_record.point, dir),
             );
         }
 
         case types::GPUMATERIAL_ISOTROPIC {
             let isotropic = types::unpack_GpuMaterial_Isotropic(mat);
-            let color = get_texture_color(isotropic.texture, hit_record.u, hit_record.v, hit_record.point);
+            let color = texture::get_texture_color(isotropic.texture, hit_record.u, hit_record.v, hit_record.point);
 
             let scattered_dir = pdf::sphere_generate();
-            let scattered = Ray(hit_record.point, scattered_dir);
+            let scattered = ray::Ray(hit_record.point, scattered_dir);
 
             return scatter_with_pdf(
                 color,
@@ -142,19 +141,19 @@ fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> Scatt
     }
 }
 
-fn emitted(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> vec3f {
+fn emitted(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::HitRecord) -> vec3f {
     switch mat._type {
         case types::GPUMATERIAL_EMISSIVE {
             if hit_record.is_outward {
                 let emissive = types::unpack_GpuMaterial_Emissive(mat);
                 return emissive.color;
             } else {
-                return ZEROS;
+                return vector::ZEROS;
             }
         }
 
         default: {
-            return ZEROS;
+            return vector::ZEROS;
         }
     }
 }
@@ -165,12 +164,12 @@ fn reflectance(cosine: f32, refraction_idx: f32) -> f32 {
     return r0 + (1.0 - r0) * pow(1.0 - cosine, 5.0);
 }
 
-fn lambertian_scattering_pdf(hit_record: HitRecord, scattered: Ray) -> f32 {
+fn lambertian_scattering_pdf(hit_record: hit_record::HitRecord, scattered: ray::Ray) -> f32 {
     let cos_theta = dot(hit_record.normal, normalize(scattered.dir));
     return max(0.0, cos_theta / PI);
 }
 
-fn material_scattering_pdf(mat: types::GpuMaterial, hit_record: HitRecord, scattered: Ray) -> f32 {
+fn material_scattering_pdf(mat: types::GpuMaterial, hit_record: hit_record::HitRecord, scattered: ray::Ray) -> f32 {
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
             return lambertian_scattering_pdf(hit_record, scattered);
@@ -184,7 +183,7 @@ fn material_scattering_pdf(mat: types::GpuMaterial, hit_record: HitRecord, scatt
     }
 }
 
-fn material_pdf_value(mat: types::GpuMaterial, hit_record: HitRecord, direction: vec3f) -> f32 {
+fn material_pdf_value(mat: types::GpuMaterial, hit_record: hit_record::HitRecord, direction: vec3f) -> f32 {
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
             let pdf = pdf::new_cosine_pdf(hit_record.normal);

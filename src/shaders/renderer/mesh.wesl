@@ -1,41 +1,41 @@
 import package::{
     bindings::{meshes, mesh_bvhs},
-    bvh::{is_leaf, intersects_bvh_node},
-    hit_record::{HitRecord, no_hit},
-    interval::{Interval, interval_contains},
-    ray::{Ray, ray_at},
-    stack::{new_stack, push, pop, is_empty},
-    triangle::{hit_triangle},
+    bvh,
+    hit_record,
+    interval,
+    ray,
+    stack,
+    triangle,
     types,
 };
 
-fn hit_mesh(mesh: types::GpuPrimitive_Mesh, ray: Ray, ray_t: Interval) -> HitRecord {
+fn hit_mesh(mesh: types::GpuPrimitive_Mesh, ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
     var curr_ray_t = ray_t;
-    var curr_hit = no_hit();
-    var stack = new_stack();
+    var curr_hit = hit_record::no_hit();
+    var stack = stack::new_stack();
     let inv_dir = 1.0 / ray.dir;
-    push(&stack, mesh.mesh_bvh_id);
+    stack::push(&stack, mesh.mesh_bvh_id);
 
-    while !is_empty(&stack) {
-        let node_idx = pop(&stack);
+    while !stack::is_empty(&stack) {
+        let node_idx = stack::pop(&stack);
         let node = mesh_bvhs.nodes[node_idx];
 
-        if is_leaf(node) {
+        if bvh::is_leaf(node) {
             let triangle_id = node.left_or_prim;
             let triangle = types::unpack_GpuPrimitive_Triangle(meshes.triangles[triangle_id]);
-            let test_hit = hit_triangle(triangle, ray, curr_ray_t);
+            let test_hit = triangle::hit_triangle(triangle, ray, curr_ray_t);
             if test_hit.is_hit && test_hit.t < curr_hit.t {
                 curr_hit = test_hit;
-                curr_ray_t = Interval(ray_t.min, curr_hit.t);
+                curr_ray_t = interval::Interval(ray_t.min, curr_hit.t);
             }
         } else {
             let left = mesh_bvhs.nodes[node.left_or_prim];
             let right = mesh_bvhs.nodes[node.left_or_prim + 1];
-            if intersects_bvh_node(ray, inv_dir, curr_ray_t, right) {
-                push(&stack, node.left_or_prim + 1);
+            if bvh::intersects_bvh_node(ray, inv_dir, curr_ray_t, right) {
+                stack::push(&stack, node.left_or_prim + 1);
             }
-            if intersects_bvh_node(ray, inv_dir, curr_ray_t, left) {
-                push(&stack, node.left_or_prim);
+            if bvh::intersects_bvh_node(ray, inv_dir, curr_ray_t, left) {
+                stack::push(&stack, node.left_or_prim);
             }
         }
     }
