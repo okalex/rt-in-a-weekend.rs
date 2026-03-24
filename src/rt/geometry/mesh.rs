@@ -2,30 +2,19 @@ use std::time::Duration;
 
 use glam::Vec2;
 use obvhs::{
-    bvh2::{
-        builder::build_bvh2,
-        Bvh2,
-    },
-    ray::RayHit,
     BvhBuildParams,
+    bvh2::{Bvh2, builder::build_bvh2},
+    ray::RayHit,
 };
 
 use crate::{
     rt::{
-        geometry::{
-            aabb::Aabb,
-            hit_record::HitRecord,
-            triangle::Triangle,
-        },
+        geometry::{aabb::Aabb, hit_record::HitRecord, triangle::Triangle},
         ray::Ray,
     },
     util::{
         interval::Interval,
-        types::{
-            Float,
-            Vector,
-            INFINITY,
-        },
+        types::{Float, INFINITY, Vector},
     },
 };
 
@@ -77,7 +66,7 @@ impl Mesh {
             .iter()
             .map(|i| {
                 let v = [vertices[i[0]], vertices[i[1]], vertices[i[2]]];
-                
+
                 let uv = if uvs.len() > 0 {
                     Some([uvs[i[0]], uvs[i[1]], uvs[i[2]]])
                 } else {

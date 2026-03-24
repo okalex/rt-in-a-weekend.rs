@@ -12,10 +12,7 @@ use winit::event_loop::EventLoop;
 use crate::util::{
     color::Color,
     ppm_writer::PpmWriter,
-    types::{
-        Float,
-        Uint,
-    },
+    types::{Float, Uint},
 };
 #[allow(unused)]
 use crate::{
@@ -26,10 +23,7 @@ use crate::{
         frame_buffer::FrameBuffer,
         renderer::{
             cpu::line_server::LineServer,
-            render_options::{
-                RenderOptions,
-                RenderOptionsBuilder,
-            },
+            render_options::{RenderOptions, RenderOptionsBuilder},
             renderer::Renderer,
         },
         sampler::Sampler,

@@ -3,24 +3,15 @@ use std::sync::Arc;
 use winit::{
     application::ApplicationHandler,
     dpi::LogicalSize,
-    event::{
-        KeyEvent,
-        WindowEvent,
-    },
+    event::{KeyEvent, WindowEvent},
     event_loop::ActiveEventLoop,
     keyboard::PhysicalKey,
-    window::{
-        Window,
-        WindowId,
-    },
+    window::{Window, WindowId},
 };
 
 use crate::{
     app::state::State,
-    rt::{
-        frame_buffer::FrameBuffer,
-        renderer::renderer::Renderer,
-    },
+    rt::{frame_buffer::FrameBuffer, renderer::renderer::Renderer},
     util::types::Uint,
 };
 

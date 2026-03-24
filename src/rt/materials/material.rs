@@ -4,17 +4,16 @@ use crate::{
     rt::{
         geometry::hit_record::HitRecord,
         materials::{
-            dielectric::Dielectric,
-            emissive::Emissive,
-            isotropic::Isotropic,
-            lambertian::Lambertian,
-            metal::Metal,
+            dielectric::Dielectric, emissive::Emissive, isotropic::Isotropic, lambertian::Lambertian, metal::Metal,
             pbr_material::PbrMaterial,
         },
         pdf::Pdf,
         ray::Ray,
     },
-    util::{color::Color, types::{Float, Vector}},
+    util::{
+        color::Color,
+        types::{Float, Vector},
+    },
 };
 
 pub struct ScatterRecord {

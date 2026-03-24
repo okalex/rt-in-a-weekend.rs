@@ -1,9 +1,6 @@
 use crate::util::{
     color::Color,
-    types::{
-        Float,
-        Point,
-    },
+    types::{Float, Point},
 };
 
 pub struct SolidColor {

@@ -1,7 +1,4 @@
-use std::f64::{
-    consts::PI as PI64,
-    INFINITY as INF64,
-};
+use std::f64::{INFINITY as INF64, consts::PI as PI64};
 
 pub type Float = f32;
 pub type Int = i32;

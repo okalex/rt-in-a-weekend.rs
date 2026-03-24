@@ -1,15 +1,12 @@
 use crate::{
     rt::geometry::{
-        constant_medium::ConstantMedium, quad::Quad, scene::{
-            MeshDescriptor,
-            MeshId,
-        }, sphere::Sphere, triangle::Triangle
+        constant_medium::ConstantMedium,
+        quad::Quad,
+        scene::{MeshDescriptor, MeshId},
+        sphere::Sphere,
+        triangle::Triangle,
     },
-    util::types::{
-        Float,
-        Point,
-        Vector,
-    },
+    util::types::{Float, Point, Vector},
 };
 
 #[derive(Clone)]
@@ -46,7 +43,7 @@ impl Primitive {
             Self::Quad(obj) => obj.pdf_value(origin, direction),
             Self::Sphere(obj) => obj.pdf_value(origin, direction),
             Self::Triangle(_) => default, // TODO
-            Self::Medium(_) => default, // TODO
+            Self::Medium(_) => default,   // TODO
         }
     }
 
@@ -58,7 +55,7 @@ impl Primitive {
             Self::Quad(obj) => obj.random(origin),
             Self::Sphere(obj) => obj.random(origin),
             Self::Triangle(_) => default, // TODO
-            Self::Medium(_) => default, // TODO
+            Self::Medium(_) => default,   // TODO
         }
     }
 }

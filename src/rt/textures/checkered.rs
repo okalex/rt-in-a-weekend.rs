@@ -4,11 +4,7 @@ use crate::{
     rt::textures::solid_color::SolidColor,
     util::{
         color::Color,
-        types::{
-            Float,
-            Int,
-            Point,
-        },
+        types::{Float, Int, Point},
     },
 };
 

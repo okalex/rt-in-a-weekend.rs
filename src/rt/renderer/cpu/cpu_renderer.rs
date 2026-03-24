@@ -1,38 +1,19 @@
-use std::{
-    sync::Arc,
-    time::Instant,
-};
+use std::{sync::Arc, time::Instant};
 
 use crate::{
     rt::{
         camera::Camera,
         frame_buffer::FrameBuffer,
-        geometry::{
-            hit_record::HitRecord,
-            scene::Scene,
-        },
-        materials::material::{
-            Material,
-            ScatterRecord,
-        },
-        pdf::{
-            CosinePdf,
-            Pdf,
-            TransformedPrimitive,
-        },
+        geometry::{hit_record::HitRecord, scene::Scene},
+        materials::material::{Material, ScatterRecord},
+        pdf::{CosinePdf, Pdf, TransformedPrimitive},
         ray::Ray,
-        renderer::{
-            cpu::line_server::LineServer,
-            render_options::RenderOptions,
-        },
+        renderer::{cpu::line_server::LineServer, render_options::RenderOptions},
     },
     util::{
         color::Color,
         interval::Interval,
-        types::{
-            Uint,
-            INFINITY,
-        },
+        types::{INFINITY, Uint},
     },
 };
 

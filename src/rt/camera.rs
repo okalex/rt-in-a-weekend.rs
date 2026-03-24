@@ -1,21 +1,9 @@
 use crate::{
-    rt::{
-        ray::Ray,
-        sampler::Sampler,
-        viewport::Viewport,
-    },
+    rt::{ray::Ray, sampler::Sampler, viewport::Viewport},
     util::{
-        random::{
-            rand,
-            rand_in_unit_disk,
-        },
+        random::{rand, rand_in_unit_disk},
         trig::degrees_to_radians,
-        types::{
-            Float,
-            Point,
-            Uint,
-            Vector,
-        },
+        types::{Float, Point, Uint, Vector},
     },
 };
 

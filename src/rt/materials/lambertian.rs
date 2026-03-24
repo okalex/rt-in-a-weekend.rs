@@ -4,17 +4,14 @@ use crate::{
     rt::{
         geometry::hit_record::HitRecord,
         materials::material::ScatterRecord,
-        pdf::{
-            CosinePdf,
-            Pdf,
-        },
+        pdf::{CosinePdf, Pdf},
         ray::Ray,
-        textures::{
-            solid_color::SolidColor,
-            texture::Texture,
-        },
+        textures::{solid_color::SolidColor, texture::Texture},
     },
-    util::{color::Color, types::{Float, PI, Vector}},
+    util::{
+        color::Color,
+        types::{Float, PI, Vector},
+    },
 };
 
 pub struct Lambertian {
@@ -43,11 +40,7 @@ impl Lambertian {
     #[allow(unused)]
     pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> Float {
         let cos_theta = rec.normal.dot(scattered.dir.normalize());
-        if cos_theta >= 0.0 {
-            cos_theta / PI
-        } else {
-            0.0
-        }
+        if cos_theta >= 0.0 { cos_theta / PI } else { 0.0 }
     }
 }
 

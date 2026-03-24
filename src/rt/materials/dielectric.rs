@@ -1,25 +1,13 @@
 use std::sync::Arc;
 
-use super::material::{
-    reflect,
-    reflectance,
-    refract,
-    ScatterRecord,
-};
+use super::material::{ScatterRecord, reflect, reflectance, refract};
 use crate::{
     rt::{
         geometry::hit_record::HitRecord,
-        pdf::{
-            Pdf,
-            SpherePdf,
-        },
+        pdf::{Pdf, SpherePdf},
         ray::Ray,
     },
-    util::{
-        color::Color,
-        random::rand,
-        types::Float,
-    },
+    util::{color::Color, random::rand, types::Float},
 };
 
 pub struct Dielectric {

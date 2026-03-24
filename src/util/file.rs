@@ -1,9 +1,6 @@
 use std::{
     fs,
-    io::{
-        BufReader,
-        Cursor,
-    },
+    io::{BufReader, Cursor},
     path::Path,
 };
 

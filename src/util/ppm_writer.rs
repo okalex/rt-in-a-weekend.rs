@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    rt::frame_buffer::FrameBuffer,
-    util::types::Uint,
-};
+use crate::{rt::frame_buffer::FrameBuffer, util::types::Uint};
 
 pub struct PpmWriter {
     max_color_val: Uint,

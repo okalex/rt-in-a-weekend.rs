@@ -2,11 +2,7 @@ use crate::{
     rt::perlin::Perlin,
     util::{
         color::Color,
-        types::{
-            Float,
-            Point,
-            Vector,
-        },
+        types::{Float, Point, Vector},
     },
 };
 
@@ -28,7 +24,7 @@ impl PerlinNoise {
         let scaled = *point * self.scale;
         // let noise = 0.5 * (1.0 + self.noise.noise(&point.scale(self.scale))); // Perlin noise
         let noise = self.noise.turb(&scaled, 7); // Turbulent noise
-                                                 // let noise = 0.5 * (1.0 + (self.scale * point.z() + 10.0 * self.noise.turb(point, 7)).sin());
+        // let noise = 0.5 * (1.0 + (self.scale * point.z() + 10.0 * self.noise.turb(point, 7)).sin());
         Color::wrap_vec(Vector::splat(1.0) * noise)
     }
 }

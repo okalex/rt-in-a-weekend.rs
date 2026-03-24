@@ -1,23 +1,13 @@
 use std::sync::Arc;
 
-use super::material::{
-    reflect,
-    ScatterRecord,
-};
+use super::material::{ScatterRecord, reflect};
 use crate::{
     rt::{
         geometry::hit_record::HitRecord,
-        pdf::{
-            Pdf,
-            SpherePdf,
-        },
+        pdf::{Pdf, SpherePdf},
         ray::Ray,
     },
-    util::{
-        color::Color,
-        random::rand_unit_vector,
-        types::Float,
-    },
+    util::{color::Color, random::rand_unit_vector, types::Float},
 };
 
 pub struct Metal {

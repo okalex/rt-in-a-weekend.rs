@@ -32,11 +32,7 @@ impl GpuTexture {
             ..Default::default()
         });
 
-        Self {
-            texture,
-            view,
-            sampler,
-        }
+        Self { texture, view, sampler }
     }
 
     pub fn bind_group_layout_entries(&self, binding_idx: u32) -> [wgpu::BindGroupLayoutEntry; 2] {

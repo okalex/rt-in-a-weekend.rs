@@ -1,37 +1,18 @@
-use crate::util::{
-    random::rand,
-    types::Float,
-};
+use crate::util::{random::rand, types::Float};
 
 pub mod materials {
     use std::sync::Arc;
 
     use crate::{
-        examples::helpers::{
-            rand_arr3,
-            textures,
-        },
+        examples::helpers::{rand_arr3, textures},
         rt::{
             materials::{
-                dielectric::Dielectric,
-                emissive::Emissive,
-                isotropic::Isotropic,
-                lambertian::Lambertian,
-                material::Material,
-                metal::Metal,
+                dielectric::Dielectric, emissive::Emissive, isotropic::Isotropic, lambertian::Lambertian, material::Material, metal::Metal,
                 pbr_material::PbrMaterial,
             },
-            textures::{
-                image_map::ImageMap,
-                perlin_noise::PerlinNoise,
-                texture::Texture,
-            },
+            textures::{image_map::ImageMap, perlin_noise::PerlinNoise, texture::Texture},
         },
-        util::{
-            color::Color,
-            random::rand_range,
-            types::Float,
-        },
+        util::{color::Color, random::rand_range, types::Float},
     };
 
     #[allow(unused)]
@@ -130,10 +111,7 @@ pub mod materials {
 pub mod textures {
     use std::sync::Arc;
 
-    use crate::rt::textures::{
-        checkered::Checkered,
-        texture::Texture,
-    };
+    use crate::rt::textures::{checkered::Checkered, texture::Texture};
 
     pub fn checkers() -> Arc<Texture> {
         Arc::new(Texture::Checkered(Checkered::from_color_values(
@@ -151,16 +129,8 @@ fn rand_arr3() -> [Float; 3] {
 pub mod primitives {
 
     use crate::{
-        rt::geometry::{
-            constant_medium::ConstantMedium,
-            primitive::Primitive,
-            scene::PrimitiveId,
-        },
-        util::types::{
-            Float,
-            Point,
-            Vector,
-        },
+        rt::geometry::{constant_medium::ConstantMedium, primitive::Primitive, scene::PrimitiveId},
+        util::types::{Float, Point, Vector},
     };
 
     pub struct Defaults {
@@ -192,15 +162,8 @@ pub mod primitives {
 
 pub mod meshes {
     use crate::{
-        rt::geometry::{
-            mesh::Mesh,
-            triangle::Triangle,
-        },
-        util::types::{
-            Float,
-            Point,
-            Vector,
-        },
+        rt::geometry::{mesh::Mesh, triangle::Triangle},
+        util::types::{Float, Point, Vector},
     };
 
     fn rect(q: Point, u: Vector, v: Vector) -> Vec<Triangle> {
@@ -235,16 +198,10 @@ pub mod meshes {
 
 pub mod cornell_room {
     use crate::{
-        examples::helpers::{
-            materials,
-            primitives,
-        },
+        examples::helpers::{materials, primitives},
         rt::{
             camera::CameraOptions,
-            geometry::scene::{
-                Instance,
-                SceneBuilder,
-            },
+            geometry::scene::{Instance, SceneBuilder},
         },
         util::trig::degrees_to_radians,
     };

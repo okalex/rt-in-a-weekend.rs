@@ -3,11 +3,7 @@ use std::sync::Arc;
 use encase::ShaderType;
 use glam::Vec3;
 
-use crate::rt::{
-    camera::Camera,
-    renderer::render_options::RenderOptions,
-    viewport::Viewport,
-};
+use crate::rt::{camera::Camera, renderer::render_options::RenderOptions, viewport::Viewport};
 
 #[derive(ShaderType, Debug)]
 pub struct GpuMeta {

@@ -4,11 +4,7 @@ use crate::util::{
     color::Color,
     image::Image,
     interval::Interval,
-    types::{
-        Float,
-        Point,
-        Uint,
-    },
+    types::{Float, Point, Uint},
 };
 
 pub struct ImageMap {

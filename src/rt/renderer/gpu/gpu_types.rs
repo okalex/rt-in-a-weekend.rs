@@ -2,21 +2,13 @@ use std::sync::Arc;
 
 use encase::ShaderType;
 use encase_enum::ShaderEnum;
-use glam::{
-    Mat4,
-    Vec2,
-    Vec3,
-};
+use glam::{Mat4, Vec2, Vec3};
 use obvhs::bvh2::Bvh2;
 
 use crate::rt::{
     geometry::{
         primitive::Primitive,
-        scene::{
-            Instance,
-            InstanceId,
-            Scene,
-        },
+        scene::{Instance, InstanceId, Scene},
         triangle::Triangle,
     },
     materials::material::Material,

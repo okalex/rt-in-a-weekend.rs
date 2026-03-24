@@ -1,26 +1,14 @@
 use std::{
     marker::PhantomData,
-    sync::{
-        mpsc::channel,
-        Arc,
-    },
+    sync::{Arc, mpsc::channel},
 };
 
-use bytemuck::{
-    AnyBitPattern,
-    NoUninit,
-};
-use encase::{
-    internal::WriteInto,
-    ShaderType,
-};
+use bytemuck::{AnyBitPattern, NoUninit};
+use encase::{ShaderType, internal::WriteInto};
 
 use crate::{
     gpu::gpu::Gpu,
-    rt::renderer::gpu::{
-        gpu_meta::GpuMeta,
-        gpu_types::GpuScene,
-    },
+    rt::renderer::gpu::{gpu_meta::GpuMeta, gpu_types::GpuScene},
 };
 
 pub struct RenderPipeline<O: NoUninit + AnyBitPattern> {

@@ -2,18 +2,12 @@ use glam::Vec2;
 
 use crate::{
     rt::{
-        geometry::{
-            aabb::Aabb,
-            hit_record::HitRecord,
-        },
+        geometry::{aabb::Aabb, hit_record::HitRecord},
         ray::Ray,
     },
     util::{
         interval::Interval,
-        types::{
-            Point,
-            Vector,
-        },
+        types::{Point, Vector},
     },
 };
 

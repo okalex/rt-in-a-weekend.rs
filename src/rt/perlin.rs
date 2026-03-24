@@ -1,14 +1,6 @@
 use crate::util::{
-    random::{
-        rand_int,
-        rand_range_vector,
-    },
-    types::{
-        Float,
-        Int,
-        Point,
-        Vector,
-    },
+    random::{rand_int, rand_range_vector},
+    types::{Float, Int, Point, Vector},
 };
 
 pub struct Perlin {

@@ -3,23 +3,14 @@ use std::sync::Arc;
 use crate::{
     rt::{
         geometry::hit_record::HitRecord,
-        materials::material::{
-            reflect,
-            ScatterRecord,
-        },
-        pdf::{
-            Pdf,
-            SpherePdf,
-        },
+        materials::material::{ScatterRecord, reflect},
+        pdf::{Pdf, SpherePdf},
         ray::Ray,
     },
     util::{
         color::Color,
         random::rand_on_hemisphere,
-        types::{
-            Float,
-            Vector,
-        },
+        types::{Float, Vector},
     },
 };
 

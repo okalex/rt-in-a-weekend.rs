@@ -1,7 +1,4 @@
-use std::sync::{
-    Arc,
-    Mutex,
-};
+use std::sync::{Arc, Mutex};
 
 use crate::util::types::Uint;
 

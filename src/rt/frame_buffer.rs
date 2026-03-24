@@ -30,7 +30,7 @@ impl FrameBuffer {
         assert_eq!(line.len(), self.width as usize);
         let mut buffer = self.data.lock().unwrap();
         let start = (y * self.width * PIXEL_SIZE) as usize;
-        
+
         for (i, color) in line.iter().enumerate() {
             let rgba = Self::to_rgba(color);
             let pixel_idx = start + i * PIXEL_SIZE;

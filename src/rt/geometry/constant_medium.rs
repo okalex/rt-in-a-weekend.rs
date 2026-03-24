@@ -1,19 +1,12 @@
 use crate::{
     rt::{
-        geometry::{
-            hit_record::HitRecord,
-            scene::PrimitiveId,
-        },
+        geometry::{hit_record::HitRecord, scene::PrimitiveId},
         ray::Ray,
     },
     util::{
         interval::Interval,
         random::rand,
-        types::{
-            Float,
-            Vector,
-            INFINITY,
-        },
+        types::{Float, INFINITY, Vector},
     },
 };
 

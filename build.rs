@@ -1,13 +1,7 @@
-use std::{
-    env,
-    path::PathBuf,
-};
+use std::{env, path::PathBuf};
 
 use anyhow::*;
-use fs_extra::{
-    copy_items,
-    dir::CopyOptions,
-};
+use fs_extra::{copy_items, dir::CopyOptions};
 
 fn main() -> Result<()> {
     let _ = copy_assets();

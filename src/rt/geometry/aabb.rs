@@ -1,14 +1,6 @@
-use glam::{
-    Mat4,
-    Vec3,
-    Vec3A,
-};
+use glam::{Mat4, Vec3, Vec3A};
 
-use crate::util::types::{
-    Float,
-    Point,
-    Vector,
-};
+use crate::util::types::{Float, Point, Vector};
 
 #[derive(Clone, Copy)]
 pub struct Aabb {

@@ -4,22 +4,13 @@ use super::material::ScatterRecord;
 use crate::{
     rt::{
         geometry::hit_record::HitRecord,
-        pdf::{
-            Pdf,
-            SpherePdf,
-        },
+        pdf::{Pdf, SpherePdf},
         ray::Ray,
-        textures::{
-            solid_color::SolidColor,
-            texture::Texture,
-        },
+        textures::{solid_color::SolidColor, texture::Texture},
     },
     util::{
         color::Color,
-        types::{
-            Float,
-            PI,
-        },
+        types::{Float, PI},
     },
 };
 

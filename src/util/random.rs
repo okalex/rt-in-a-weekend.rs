@@ -1,16 +1,8 @@
 use std::cell::RefCell;
 
-use rand::{
-    rngs::SmallRng,
-    RngExt,
-};
+use rand::{RngExt, rngs::SmallRng};
 
-use crate::util::types::{
-    Float,
-    Int,
-    Vector,
-    PI,
-};
+use crate::util::types::{Float, Int, PI, Vector};
 
 thread_local! {
     static RNG: RefCell<SmallRng> = RefCell::new(rand::make_rng());

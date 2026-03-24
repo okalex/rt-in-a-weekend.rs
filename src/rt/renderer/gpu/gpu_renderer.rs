@@ -1,7 +1,4 @@
-use std::{
-    sync::Arc,
-    time::Instant,
-};
+use std::{sync::Arc, time::Instant};
 
 use wesl::include_wesl;
 
@@ -12,18 +9,11 @@ use crate::{
         frame_buffer::FrameBuffer,
         geometry::scene::Scene,
         renderer::{
-            gpu::{
-                render_pipeline::RenderPipeline,
-                gpu_meta::GpuMeta,
-                gpu_types::GpuScene,
-            },
+            gpu::{gpu_meta::GpuMeta, gpu_types::GpuScene, render_pipeline::RenderPipeline},
             render_options::RenderOptions,
         },
     },
-    util::{
-        color::Color,
-        types::Float,
-    },
+    util::{color::Color, types::Float},
 };
 
 pub struct GpuRenderer {

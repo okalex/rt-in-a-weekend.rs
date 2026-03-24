@@ -1,34 +1,17 @@
 use crate::{
-    examples::helpers::{
-        cornell_room,
-        materials,
-        meshes::box3d,
-        primitives,
-    },
+    examples::helpers::{cornell_room, materials, meshes::box3d, primitives},
     rt::{
         camera::CameraOptions,
         geometry::{
             primitive::Primitive,
-            scene::{
-                Instance,
-                Scene,
-                SceneBuilder,
-            },
+            scene::{Instance, Scene, SceneBuilder},
         },
     },
     util::{
         file::load_model,
-        random::{
-            rand,
-            rand_range,
-            rand_range_vector,
-        },
+        random::{rand, rand_range, rand_range_vector},
         trig::degrees_to_radians,
-        types::{
-            Float,
-            Point,
-            Vector,
-        },
+        types::{Float, Point, Vector},
     },
 };
 
@@ -321,9 +304,11 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
 
     // Add materials
     let checkered_id = scene_builder.add_material(materials.checkered);
-    let material_id = scene_builder.add_material(materials::dielectric([0.6, 0.1, 0.2], 1.5));
-    let material_id = scene_builder.add_material(materials.default);
+    // let material_id = scene_builder.add_material(materials::dielectric([0.6, 0.1, 0.2], 1.5));
+    // let material_id = scene_builder.add_material(materials.default);
     let diffuse_light_id = scene_builder.add_material(materials.diffuse_light);
+    // let iso_id = scene_builder.add_material(materials::isotropic([0.3, 0.9, 0.9]));
+    // let glass_id = scene_builder.add_material(materials.glass);
 
     // Add ground
     let ground_id = scene_builder.add_primitive(primitives.ground);
@@ -343,7 +328,7 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
     }
 
     // Add meshes
-    let model = match load_model("bunny.obj") {
+    let model = match load_model("lada.obj") {
         Ok(meshes) => meshes,
         _ => vec![],
     };
@@ -351,11 +336,19 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
         let mesh_id = scene_builder.add_mesh(mesh);
         let primitive = Primitive::mesh(mesh_id);
         let primitive_id = scene_builder.add_primitive(primitive);
-        let instance = Instance::new(primitive_id, material_id)
-            .scale_uniform(10.0)
-            .rotate_y(degrees_to_radians(20.0))
-            .translate([0.0, -0.36, 0.0]);
+        let instance = Instance::new(primitive_id, checkered_id)
+            .scale_uniform(0.15)
+            .rotate_y(degrees_to_radians(30.0))
+            .translate([-0.50, -0.0, 0.0]);
         let _ = scene_builder.add_instance(instance);
+
+        // let medium_id = scene_builder.add_primitive(primitives::medium(primitive_id, 0.001));
+        // let _ = scene_builder.add_instance(
+        //     Instance::new(medium_id, iso_id)
+        //         .scale_uniform(0.15)
+        //         .rotate_y(degrees_to_radians(30.0))
+        //         .translate([-0.50, -0.0, 0.0]),
+        // );
     }
 
     (camera_options, scene_builder.build())

@@ -1,15 +1,8 @@
-use glam::{
-    Mat4,
-    Vec3A,
-};
+use glam::{Mat4, Vec3A};
 
 use crate::util::{
     interval::Interval,
-    types::{
-        Float,
-        Point,
-        Vector,
-    },
+    types::{Float, Point, Vector},
 };
 
 #[derive(Clone)]

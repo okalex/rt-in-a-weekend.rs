@@ -1,36 +1,21 @@
 use std::time::Duration;
 
-use glam::{
-    Mat3,
-    Mat4,
-    Vec3,
-};
+use glam::{Mat3, Mat4, Vec3};
 use obvhs::{
-    bvh2::{
-        builder::build_bvh2,
-        Bvh2,
-    },
-    ray::RayHit,
     BvhBuildParams,
+    bvh2::{Bvh2, builder::build_bvh2},
+    ray::RayHit,
 };
 
 use crate::{
     rt::{
-        geometry::{
-            aabb::Aabb,
-            hit_record::HitRecord,
-            mesh::Mesh,
-            primitive::Primitive,
-        },
+        geometry::{aabb::Aabb, hit_record::HitRecord, mesh::Mesh, primitive::Primitive},
         materials::material::Material,
         ray::Ray,
     },
     util::{
         interval::Interval,
-        types::{
-            Float,
-            INFINITY,
-        },
+        types::{Float, INFINITY},
     },
 };
 

@@ -4,15 +4,9 @@ use crate::{
     rt::{
         geometry::hit_record::HitRecord,
         ray::Ray,
-        textures::{
-            solid_color::SolidColor,
-            texture::Texture,
-        },
+        textures::{solid_color::SolidColor, texture::Texture},
     },
-    util::{
-        color::Color,
-        types::Float,
-    },
+    util::{color::Color, types::Float},
 };
 
 pub struct Emissive {

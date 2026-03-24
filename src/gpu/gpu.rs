@@ -2,15 +2,9 @@ use std::sync::Arc;
 
 use bytemuck::NoUninit;
 use wgpu::util::DeviceExt;
-use winit::{
-    dpi::PhysicalSize,
-    window::Window,
-};
+use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{
-    gpu::gpu_texture::GpuTexture,
-    rt::frame_buffer::FrameBuffer, util::types::Uint,
-};
+use crate::{gpu::gpu_texture::GpuTexture, rt::frame_buffer::FrameBuffer, util::types::Uint};
 
 pub enum Gpu {
     Windowed(GpuWindowed),

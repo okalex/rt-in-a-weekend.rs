@@ -1,16 +1,10 @@
 use std::path::Path;
 
-use image::{
-    metadata::CicpColorPrimaries as ColorSpace,
-    ImageReader,
-};
+use image::{ImageReader, metadata::CicpColorPrimaries as ColorSpace};
 
 use crate::util::{
     color::Color,
-    types::{
-        Float,
-        Uint,
-    },
+    types::{Float, Uint},
 };
 
 pub struct Image {

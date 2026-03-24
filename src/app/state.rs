@@ -1,16 +1,9 @@
 use std::sync::Arc;
 
-use winit::{
-    event_loop::ActiveEventLoop,
-    keyboard::KeyCode,
-    window::Window,
-};
+use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 
 use crate::{
-    gpu::{
-        gpu::Gpu,
-        gpu_texture::GpuTexture,
-    },
+    gpu::{gpu::Gpu, gpu_texture::GpuTexture},
     rt::frame_buffer::FrameBuffer,
     util::types::Uint,
 };

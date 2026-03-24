@@ -1,16 +1,8 @@
 use crate::{
-    rt::textures::{
-        checkered::Checkered,
-        image_map::ImageMap,
-        perlin_noise::PerlinNoise,
-        solid_color::SolidColor,
-    },
+    rt::textures::{checkered::Checkered, image_map::ImageMap, perlin_noise::PerlinNoise, solid_color::SolidColor},
     util::{
         color::Color,
-        types::{
-            Float,
-            Point,
-        },
+        types::{Float, Point},
     },
 };
 

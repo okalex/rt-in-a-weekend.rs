@@ -1,17 +1,9 @@
-use std::ops::{
-    Add,
-    Div,
-    Mul,
-    Sub,
-};
+use std::ops::{Add, Div, Mul, Sub};
 
 use crate::util::{
     interval::Interval,
     random::rand,
-    types::{
-        Float,
-        Vector,
-    },
+    types::{Float, Vector},
 };
 
 #[derive(Clone, Copy, Debug)]

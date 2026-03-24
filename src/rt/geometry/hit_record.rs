@@ -1,10 +1,6 @@
 use crate::{
     rt::ray::Ray,
-    util::types::{
-        Float,
-        Point,
-        Vector,
-    },
+    util::types::{Float, Point, Vector},
 };
 
 pub struct HitRecord {

@@ -2,12 +2,7 @@ use crate::{
     rt::camera::CameraOptions,
     util::{
         trig::degrees_to_radians,
-        types::{
-            Float,
-            Point,
-            Uint,
-            Vector,
-        },
+        types::{Float, Point, Uint, Vector},
     },
 };
 

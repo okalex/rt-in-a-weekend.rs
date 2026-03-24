@@ -1,9 +1,6 @@
 use std::ops::Add;
 
-use crate::util::types::{
-    Float,
-    INFINITY,
-};
+use crate::util::types::{Float, INFINITY};
 
 #[derive(Clone, Copy)]
 pub struct Interval {
