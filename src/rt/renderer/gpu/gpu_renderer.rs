@@ -66,26 +66,36 @@ impl GpuRenderer {
             self.options.img_height.div_ceil(Self::WORKGROUP_SIZE),
         ];
 
-        let num_pixels = (self.options.img_width * self.options.img_height) as usize;
-        let mut accum = vec![Color::black(); num_pixels];
-
         // Render progressively in smaller dispatches
         for samples in 1..=(self.options.samples_per_pixel / self.options.dispatch_size) {
+            // Update the frame number for rng seeding
             let gpu_meta = Arc::new(GpuMeta::new(Arc::clone(&self.options), Arc::clone(&self.camera), samples));
             gpu_compute.init_buf(&gpu_meta, &gpu_compute.meta_buf);
 
-            let result = gpu_compute.dispatch(workgroup_dims).await;
+            // Render
+            gpu_compute.dispatch(workgroup_dims);
 
-            match result {
-                Ok(pixels) => {
-                    let colors = self.collect_results(pixels);
-                    for idx in 0..num_pixels {
-                        accum[idx] = (accum[idx] * (samples as f32 - 1.0) + colors[idx]) / (samples as f32);
+            // Update frame buffer
+            if samples % 50 == 1 {
+                let result = gpu_compute.get_result().await;
+                match result {
+                    Ok(pixels) => {
+                        let colors = self.collect_results(pixels);
+                        self.write_result_to_frame(&colors)
                     }
-                    self.write_result_to_frame(&accum)
+                    _ => panic!(),
                 }
-                _ => panic!(),
             }
+        }
+
+        // Display final results
+        let result = gpu_compute.get_result().await;
+        match result {
+            Ok(pixels) => {
+                let colors = self.collect_results(pixels);
+                self.write_result_to_frame(&colors)
+            }
+            _ => panic!(),
         }
 
         let elapsed = now.elapsed().as_millis();

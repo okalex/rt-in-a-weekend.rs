@@ -8,7 +8,6 @@ use crate::{
     rt::{
         camera::CameraOptions,
         geometry::{
-            constant_medium::ConstantMedium,
             primitive::Primitive,
             scene::{
                 Instance,
@@ -364,7 +363,6 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
 pub fn scene_book2() -> (CameraOptions, Scene) {
     let mut scene_builder = SceneBuilder::new();
     let materials = materials::defaults();
-    let primitives = primitives::defaults();
 
     // Setup camera
     let camera_options = CameraOptions::new()

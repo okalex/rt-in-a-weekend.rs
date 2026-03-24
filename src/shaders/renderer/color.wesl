@@ -1,10 +1,4 @@
-struct Rgba {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: f32,
-};
-
-fn to_rgba(color: vec3<f32>) -> Rgba {
-    return Rgba(color[0], color[1], color[2], 1.0);
+fn to_rgba(color: vec3<f32>) -> vec4<f32> {
+    let clamped = clamp(color, vec3(0.0), vec3(1.0));
+    return vec4<f32>(clamped, 1.0);
 }

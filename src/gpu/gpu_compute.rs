@@ -161,6 +161,8 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
         self.gpu.queue().write_buffer(buf, 0, buffer.as_ref());
     }
 
+    // Warm up the pipeline - this was meant to prevent dropped dispatches, but it
+    // didn't work. Need to investigate
     pub async fn warmup(&self) -> anyhow::Result<()> {
         let mut encoder = self.gpu.device().create_command_encoder(&Default::default());
         {
@@ -175,7 +177,8 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
         Ok(())
     }
 
-    pub async fn dispatch(&self, workgroup_dims: [u32; 2]) -> anyhow::Result<Vec<O>> {
+    // Run the renderer
+    pub fn dispatch(&self, workgroup_dims: [u32; 2]) {
         let mut encoder = self.gpu.device().create_command_encoder(&Default::default());
 
         {
@@ -187,7 +190,10 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
 
         encoder.copy_buffer_to_buffer(&self.output_buf, 0, &self.temp_buf, 0, self.output_buf.size());
         self.gpu.queue().submit([encoder.finish()]);
+    }
 
+    // Read the output buffer
+    pub async fn get_result(&self) -> anyhow::Result<Vec<O>> {
         let output_data: Vec<O> = {
             let (tx, rx) = channel();
 
@@ -200,7 +206,7 @@ impl<O: NoUninit + AnyBitPattern> GpuCompute<O> {
             bytemuck::cast_slice(&output_view).to_vec()
         };
 
-        // We need to unmap the buffer to be able to use it again
+        // Unmap the buffer to be able to use it again
         self.temp_buf.unmap();
 
         Ok(output_data)

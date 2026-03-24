@@ -67,7 +67,7 @@ struct Args {
     #[arg(long, default_value_t = false)]
     gpu: bool,
 
-    #[arg(long, default_value_t = 20)]
+    #[arg(long, default_value_t = 1)]
     dispatch_size: u32,
 
     #[arg(long, default_value_t = 1)]
@@ -114,7 +114,9 @@ fn print_config(args: Arc<Args>, render_options: Arc<RenderOptions>) {
     eprintln!("  image width         = {}", args.width);
     eprintln!("  image height        = {}", render_options.img_height);
     eprintln!("  aspect ratio        = {}", args.aspect);
+    eprintln!("  samples-per-pixel   = {}", args.samples);
     eprintln!("  max depth           = {}", args.depth);
+    eprintln!("  dispatch size       = {}", args.dispatch_size);
     eprintln!("  multithreading      = {}", args.multithreading);
     eprintln!("  importance sampling = {}", args.importance);
     eprintln!("  GPU rendering       = {}", args.gpu);
