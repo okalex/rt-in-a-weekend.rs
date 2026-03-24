@@ -4,7 +4,8 @@ import package::{
     constants::INF,
     hit_record::{HitRecord, no_hit},
     interval::Interval,
-    material::{ScatterRecord, get_material, scatter, emitted, material_scattering_pdf},
+    material::{ScatterRecord, get_material, scatter, emitted, material_scattering_pdf, material_pdf_value},
+    medium::hit_medium,
     mesh::hit_mesh,
     pdf::{LightsPdf, lights_pdf_value, lights_pdf_generate, new_cosine_pdf, cosine_pdf_value},
     quad::hit_quad,
@@ -66,8 +67,10 @@ fn scatter_ray(material: types::GpuMaterial, hit_record: HitRecord, scatter_reco
             let chance = f32(rand() < 0.5);
             scattered_dir = chance * scatter_record.scattered.dir + (1.0 - chance) * lights_pdf_generate(lights_pdf);
 
-            let cosine_pdf = new_cosine_pdf(hit_record.normal);
-            pdf_value = 0.5 * lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, scattered_dir);
+            // let cosine_pdf = new_cosine_pdf(hit_record.normal);
+            // pdf_value = 0.5 * lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, scattered_dir);
+
+            pdf_value = 0.5 * lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * material_pdf_value(material, hit_record, scattered_dir);
         } else {
             scattered_dir = scatter_record.scattered.dir;
             pdf_value = scatter_record.pdf_value;
@@ -150,6 +153,61 @@ fn hit_instance(ray: Ray, ray_t: Interval, instance_id: u32) -> HitRecord {
         case types::GPUPRIMITIVE_MESH: {
             let mesh = types::unpack_GpuPrimitive_Mesh(primitive);
             var hit_record = hit_mesh(mesh, transformed_ray, ray_t);
+            return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
+        }
+
+        case types::GPUPRIMITIVE_MEDIUM: {
+            let medium = types::unpack_GpuPrimitive_Medium(primitive);
+            let boundary_id = medium.boundary_primitive_id;
+            let boundary = primitives.primitives[boundary_id];
+
+            var entry_rec: HitRecord;
+            var exit_rec: HitRecord;
+
+            // Can't recurse :/
+            switch boundary._type {
+                case types::GPUPRIMITIVE_SPHERE: {
+                    let sphere = types::unpack_GpuPrimitive_Sphere(boundary);
+                    entry_rec = hit_sphere(sphere, transformed_ray, Interval(-INF, INF));
+                    if entry_rec.is_hit {
+                        exit_rec = hit_sphere(sphere, transformed_ray, Interval(entry_rec.t + 0.001, INF));
+                    }
+                }
+
+                case types::GPUPRIMITIVE_TRIANGLE: {
+                    let triangle = types::unpack_GpuPrimitive_Triangle(boundary);
+                    entry_rec = hit_triangle(triangle, transformed_ray, Interval(-INF, INF));
+                    if entry_rec.is_hit {
+                        exit_rec = hit_triangle(triangle, transformed_ray, Interval(entry_rec.t + 0.001, INF));
+                    }
+                }
+
+                case types::GPUPRIMITIVE_QUAD: {
+                    let quad = types::unpack_GpuPrimitive_Quad(boundary);
+                    entry_rec = hit_quad(quad, transformed_ray, Interval(-INF, INF));
+                    if entry_rec.is_hit {
+                        exit_rec = hit_quad(quad, transformed_ray, Interval(entry_rec.t + 0.001, INF));
+                    }
+                }
+
+                case types::GPUPRIMITIVE_MESH: {
+                    let mesh = types::unpack_GpuPrimitive_Mesh(boundary);
+                    entry_rec = hit_mesh(mesh, transformed_ray, Interval(-INF, INF));
+                    if entry_rec.is_hit {
+                        exit_rec = hit_mesh(mesh, transformed_ray, Interval(entry_rec.t + 0.001, INF));
+                    }
+                }
+
+                default: {
+                    return no_hit();
+                }
+            }
+
+            if !entry_rec.is_hit {
+                exit_rec = no_hit();
+            }
+
+            var hit_record = hit_medium(medium, entry_rec, exit_rec, transformed_ray, ray_t);
             return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
         }
 

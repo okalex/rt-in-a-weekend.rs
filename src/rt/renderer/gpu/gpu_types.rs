@@ -13,7 +13,9 @@ use crate::rt::{
     geometry::{
         primitive::Primitive,
         scene::{
-            Instance, InstanceId, Scene
+            Instance,
+            InstanceId,
+            Scene,
         },
         triangle::Triangle,
     },
@@ -179,6 +181,11 @@ pub enum GpuPrimitive {
     Mesh {
         mesh_bvh_id: u32,
     },
+
+    Medium {
+        boundary_primitive_id: u32,
+        neg_inv_density: f32,
+    },
 }
 
 impl GpuPrimitive {
@@ -228,7 +235,10 @@ impl From<&Primitive> for GpuPrimitive {
                 normal: triangle.normal,
             },
 
-            Primitive::Medium(_) => todo!(),
+            Primitive::Medium(medium) => GpuPrimitive::Medium {
+                boundary_primitive_id: medium.boundary_id.id as u32,
+                neg_inv_density: medium.neg_inv_density,
+            },
 
             Primitive::Mesh(_) => panic!(), // This is added in scene construction
         }
@@ -286,6 +296,7 @@ pub enum GpuMaterial {
     Metal { albedo: Vec3, fuzz: f32 },
     Dielectric { refraction_idx: f32 },
     Emissive { color: Vec3 },
+    Isotropic { texture: GpuTexture },
 }
 
 impl From<&Material> for GpuMaterial {
@@ -307,6 +318,10 @@ impl From<&Material> for GpuMaterial {
             Material::Emissive(mat) => match mat.texture.as_ref() {
                 Texture::Solid(color) => Self::Emissive { color: color.albedo.base },
                 _ => panic!(),
+            },
+
+            Material::Isotropic(mat) => Self::Isotropic {
+                texture: GpuTexture::from(&mat.texture),
             },
 
             // TODO: Handle other materials properly
@@ -383,7 +398,7 @@ pub struct GpuLights {
 impl GpuLights {
     pub fn new(lights: &Vec<InstanceId>) -> Self {
         Self {
-            lights: lights.iter().map(|id| id.id as u32 ).collect()
+            lights: lights.iter().map(|id| id.id as u32).collect(),
         }
     }
 }

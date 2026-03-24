@@ -24,7 +24,7 @@ use crate::{
 };
 
 pub struct Isotropic {
-    texture: Arc<Texture>,
+    pub texture: Arc<Texture>,
 }
 
 impl Isotropic {
@@ -32,7 +32,6 @@ impl Isotropic {
         Self { texture }
     }
 
-    #[allow(unused)]
     pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
         Some(ScatterRecord {
             attenuation: self.texture.value(rec.u, rec.v, &rec.point),
@@ -41,7 +40,6 @@ impl Isotropic {
         })
     }
 
-    #[allow(unused)]
     pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> Float {
         1.0 / (4.0 * PI)
     }

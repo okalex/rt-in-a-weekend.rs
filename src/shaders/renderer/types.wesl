@@ -58,10 +58,16 @@ struct GpuPrimitive_Mesh {
     mesh_bvh_id: u32,
 }
 
+struct GpuPrimitive_Medium {
+    boundary_primitive_id: u32,
+    neg_inv_density: f32,
+}
+
 const GPUPRIMITIVE_SPHERE: u32 = 0u;
 const GPUPRIMITIVE_TRIANGLE: u32 = 1u;
 const GPUPRIMITIVE_QUAD: u32 = 2u;
 const GPUPRIMITIVE_MESH: u32 = 3u;
+const GPUPRIMITIVE_MEDIUM: u32 = 4u;
 
 struct GpuPrimitive {
     _type: u32,
@@ -133,10 +139,15 @@ struct GpuMaterial_Emissive {
     color: vec3<f32>,
 }
 
+struct GpuMaterial_Isotropic {
+    texture: GpuTexture,
+}
+
 const GPUMATERIAL_LAMBERTIAN: u32 = 0u;
 const GPUMATERIAL_METAL: u32 = 1u;
 const GPUMATERIAL_DIELECTRIC: u32 = 2u;
 const GPUMATERIAL_EMISSIVE: u32 = 3u;
+const GPUMATERIAL_ISOTROPIC: u32 = 4u;
 
 struct GpuMaterial {
     _type: u32,
@@ -187,6 +198,10 @@ fn unpack_GpuPrimitive_Mesh(v: GpuPrimitive) -> GpuPrimitive_Mesh {
     return GpuPrimitive_Mesh(bitcast<u32>(v.data[0].x));
 }
 
+fn unpack_GpuPrimitive_Medium(v: GpuPrimitive) -> GpuPrimitive_Medium {
+    return GpuPrimitive_Medium(bitcast<u32>(v.data[0].x), v.data[0].y);
+}
+
 fn unpack_GpuMaterial_Lambertian(v: GpuMaterial) -> GpuMaterial_Lambertian {
     return GpuMaterial_Lambertian(GpuTexture(bitcast<u32>(v.data[0].x), array<vec4<f32>, 3>(v.data[1], v.data[2], v.data[3])));
 }
@@ -201,6 +216,10 @@ fn unpack_GpuMaterial_Dielectric(v: GpuMaterial) -> GpuMaterial_Dielectric {
 
 fn unpack_GpuMaterial_Emissive(v: GpuMaterial) -> GpuMaterial_Emissive {
     return GpuMaterial_Emissive(v.data[0].xyz);
+}
+
+fn unpack_GpuMaterial_Isotropic(v: GpuMaterial) -> GpuMaterial_Isotropic {
+    return GpuMaterial_Isotropic(GpuTexture(bitcast<u32>(v.data[0].x), array<vec4<f32>, 3>(v.data[1], v.data[2], v.data[3])));
 }
 
 fn unpack_GpuTexture_SolidColor(v: GpuTexture) -> GpuTexture_SolidColor {

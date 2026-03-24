@@ -41,6 +41,7 @@ pub fn get_scene(scene_idx: u32) -> (CameraOptions, Scene) {
         4 => scene_cornell_smoke(),
         5 => scene_triangles(),
         6 => scene_mesh(),
+        7 => scene_book2(),
         _ => panic!(),
     }
 }
@@ -230,7 +231,7 @@ fn scene_cornell_smoke() -> (CameraOptions, Scene) {
         let mesh = box3d(300.0, 300.0, 300.0);
         let mesh_id = scene_builder.add_mesh(mesh);
         let boundary_id = scene_builder.add_primitive(Primitive::mesh(mesh_id));
-        let primitive_id = scene_builder.add_primitive(Primitive::Medium(ConstantMedium::new(boundary_id, 0.006)));
+        let primitive_id = scene_builder.add_primitive(primitives::medium(boundary_id, 0.006));
         let _ = scene_builder.add_instance(
             Instance::new(primitive_id, light_smoke_id)
                 .rotate_y(degrees_to_radians(-18.0))
@@ -243,7 +244,7 @@ fn scene_cornell_smoke() -> (CameraOptions, Scene) {
         let mesh = box3d(300.0, 600.0, 300.0);
         let mesh_id = scene_builder.add_mesh(mesh);
         let boundary_id = scene_builder.add_primitive(Primitive::mesh(mesh_id));
-        let primitive_id = scene_builder.add_primitive(Primitive::Medium(ConstantMedium::new(boundary_id, 0.003)));
+        let primitive_id = scene_builder.add_primitive(primitives::medium(boundary_id, 0.003));
         let _ = scene_builder.add_instance(
             Instance::new(primitive_id, dark_smoke_id)
                 .rotate_y(degrees_to_radians(15.0))
@@ -355,6 +356,105 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
             .rotate_y(degrees_to_radians(20.0))
             .translate([0.0, -0.36, 0.0]);
         let _ = scene_builder.add_instance(instance);
+    }
+
+    (camera_options, scene_builder.build())
+}
+
+pub fn scene_book2() -> (CameraOptions, Scene) {
+    let mut scene_builder = SceneBuilder::new();
+    let materials = materials::defaults();
+    let primitives = primitives::defaults();
+
+    // Setup camera
+    let camera_options = CameraOptions::new()
+        .vfov(40.0)
+        .position([478.0, 278.0, -600.0])
+        .target([278.0, 278.0, 0.0]);
+
+    // Materials
+    let mat_light = scene_builder.add_material(materials::emissive([7.0, 7.0, 7.0]));
+    let mat_floor = scene_builder.add_material(materials::lambertian([0.48, 0.83, 0.53]));
+    let mat_orange = scene_builder.add_material(materials::lambertian([0.7, 0.3, 0.1]));
+    let mat_glass = scene_builder.add_material(materials.glass);
+    let mat_metal = scene_builder.add_material(materials::metal([0.8, 0.8, 0.9], 1.0));
+    let mat_white = scene_builder.add_material(materials.white);
+
+    // Ceiling light
+    {
+        let prim_id = scene_builder.add_primitive(primitives::quad([123.0, 554.0, 147.0], [300.0, 0.0, 0.0], [0.0, 0.0, 265.0]));
+        let instance_id = scene_builder.add_instance(Instance::new(prim_id, mat_light));
+        let _ = scene_builder.add_light(instance_id);
+    }
+
+    // Floor
+    {
+        let mesh = box3d(100.0, 100.0, 100.0);
+        let mesh_id = scene_builder.add_mesh(mesh);
+        let prim_id = scene_builder.add_primitive(Primitive::mesh(mesh_id));
+
+        let boxes_per_side = 20;
+        for i in 0..boxes_per_side {
+            for j in 0..boxes_per_side {
+                let w = 100.0;
+                let x = -1000.0 + w * i as Float;
+                let y = rand_range(-99.0, 1.0);
+                let z = -1000.0 + w * j as Float;
+                let _ = scene_builder.add_instance(Instance::new(prim_id, mat_floor).translate([x, y, z]));
+            }
+        }
+    }
+
+    // Orange sphere
+    {
+        let prim_id = scene_builder.add_primitive(primitives::sphere([400.0, 400.0, 200.0], 50.0));
+        let _ = scene_builder.add_instance(Instance::new(prim_id, mat_orange));
+    }
+
+    // Glass sphere
+    {
+        let prim_id = scene_builder.add_primitive(primitives::sphere([260.0, 150.0, 45.0], 50.0));
+        let _ = scene_builder.add_instance(Instance::new(prim_id, mat_glass));
+    }
+
+    // Metal sphere
+    {
+        let prim_id = scene_builder.add_primitive(primitives::sphere([0.0, 150.0, 145.0], 50.0));
+        let _ = scene_builder.add_instance(Instance::new(prim_id, mat_metal));
+    }
+
+    // Blue glass sphere
+    {
+        let mat_inner = scene_builder.add_material(materials::isotropic([0.2, 0.4, 0.9]));
+        let boundary_id = scene_builder.add_primitive(primitives::sphere([360.0, 150.0, 145.0], 70.0));
+        let _ = scene_builder.add_instance(Instance::new(boundary_id, mat_glass));
+        let inner_id = scene_builder.add_primitive(primitives::medium(boundary_id, 0.2));
+        let _ = scene_builder.add_instance(Instance::new(inner_id, mat_inner));
+    }
+
+    // Globe
+    // let globe = Shapes::sphere([400.0, 200.0, 400.0], 100.0, materials.get("earth"));
+    // scene.add(globe);
+
+    // Perlin sphere
+    // let sphere = Shapes::sphere([220.0, 280.0, 300.0], 80.0, materials.get("marble"));
+    // scene.add(sphere);
+
+    // Bubbles
+    {
+        let prim_id = scene_builder.add_primitive(primitives::sphere([0.0, 0.0, 0.0], 10.0));
+        for _ in 0..1000 {
+            let translation = Vector::new(-100.0, 270.0, 395.0) + rand_range_vector(0.0, 165.0);
+            let _ = scene_builder.add_instance(Instance::new(prim_id, mat_white).translate(translation.to_array()));
+        }
+    }
+
+    // Haze
+    {
+        let mat_haze = scene_builder.add_material(materials::isotropic([1.0, 1.0, 1.0]));
+        let boundary_id = scene_builder.add_primitive(primitives::sphere([0.0, 0.0, 0.0], 5000.0));
+        let medium = scene_builder.add_primitive(primitives::medium(boundary_id, 0.0001));
+        let _ = scene_builder.add_instance(Instance::new(medium, mat_haze));
     }
 
     (camera_options, scene_builder.build())

@@ -4,12 +4,20 @@ import package::{
     interval::Interval,
     onb::{Onb, new_onb, transform_onb},
     quad::{hit_quad, quad_pdf_value, quad_random},
-    random::{rand_vector_on_hemisphere, rand_cos_vector, rand_range_int},
+    random::{rand_vector_on_hemisphere, rand_cos_vector, rand_range_int, rand_unit_vector},
     ray::Ray,
     sphere::{sphere_pdf_value, sphere_random},
     transform::{transform_point, transform_direction},
     types,
 };
+
+fn sphere_generate() -> vec3<f32> {
+    return rand_unit_vector();
+}
+
+fn sphere_value() -> f32 {
+    return 1.0 / (4.0 * PI);
+}
 
 struct HemispherePdf {
     normal: vec3<f32>,

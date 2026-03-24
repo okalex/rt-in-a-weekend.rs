@@ -36,7 +36,12 @@ fn no_scatter() -> ScatterRecord {
     );
 }
 
-fn scatter_with_pdf(attenuation: vec3<f32>, scattered: Ray, scattering_pdf: f32, pdf_value: f32) -> ScatterRecord {
+fn scatter_with_pdf(
+    attenuation: vec3<f32>,
+    scattered: Ray,
+    scattering_pdf: f32,
+    pdf_value: f32
+) -> ScatterRecord {
     return ScatterRecord(
         true,
         attenuation,
@@ -113,6 +118,21 @@ fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> Scatt
             );
         }
 
+        case types::GPUMATERIAL_ISOTROPIC {
+            let isotropic = types::unpack_GpuMaterial_Isotropic(mat);
+            let color = get_texture_color(isotropic.texture, hit_record.u, hit_record.v, hit_record.point);
+
+            let scattered_dir = pdf::sphere_generate();
+            let scattered = Ray(hit_record.point, scattered_dir);
+
+            return scatter_with_pdf(
+                color,
+                scattered,
+                1.0 / (4.0 * PI),
+                pdf::sphere_value(),
+            );
+        }
+
         default: {
             return no_scatter();
         }
@@ -151,6 +171,24 @@ fn material_scattering_pdf(mat: types::GpuMaterial, hit_record: HitRecord, scatt
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
             return lambertian_scattering_pdf(hit_record, scattered);
+        }
+        case types::GPUMATERIAL_ISOTROPIC {
+            return 1.0 / (4.0 * PI);
+        }
+        default: {
+            return 0.0;
+        }
+    }
+}
+
+fn material_pdf_value(mat: types::GpuMaterial, hit_record: HitRecord, direction: vec3<f32>) -> f32 {
+    switch mat._type {
+        case types::GPUMATERIAL_LAMBERTIAN {
+            let pdf = pdf::new_cosine_pdf(hit_record.normal);
+            return pdf::cosine_pdf_value(pdf, direction);
+        }
+        case types::GPUMATERIAL_ISOTROPIC {
+            return pdf::sphere_value();
         }
         default: {
             return 0.0;

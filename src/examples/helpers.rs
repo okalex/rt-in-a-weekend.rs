@@ -151,7 +151,11 @@ fn rand_arr3() -> [Float; 3] {
 pub mod primitives {
 
     use crate::{
-        rt::geometry::primitive::Primitive,
+        rt::geometry::{
+            constant_medium::ConstantMedium,
+            primitive::Primitive,
+            scene::PrimitiveId,
+        },
         util::types::{
             Float,
             Point,
@@ -181,20 +185,9 @@ pub mod primitives {
         Primitive::triangle(Point::from_array(a), Point::from_array(b), Point::from_array(c))
     }
 
-    // pub fn box3d(a: [Float; 3], b: [Float; 3], mat_idx: usize) -> Primitive {
-    //     Hittable::HittableList(Box3d::new(Vector::from(a), Vector::from(b), mat_idx))
-    // }
-
-    // pub fn constant_medium(
-    //     materials: &mut Materials,
-    //     boundary: Arc<Hittable>,
-    //     color: [Float; 3],
-    //     density: Float,
-    // ) -> Hittable {
-    //     let mat = Materials::isotropic(color);
-    //     let mat_idx = materials.add(mat);
-    //     Hittable::ConstantMedium(ConstantMedium::new(boundary, density, mat_idx))
-    // }
+    pub fn medium(boundary_id: PrimitiveId, density: Float) -> Primitive {
+        Primitive::Medium(ConstantMedium::new(boundary_id, density))
+    }
 }
 
 pub mod meshes {
