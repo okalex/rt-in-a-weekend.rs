@@ -294,7 +294,7 @@ impl GpuMaterials {
 pub enum GpuMaterial {
     Lambertian { texture: GpuTexture },
     Metal { albedo: Vec3, fuzz: f32 },
-    Dielectric { refraction_idx: f32 },
+    Dielectric { albedo: Vec3, refraction_idx: f32 },
     Emissive { color: Vec3 },
     Isotropic { texture: GpuTexture },
 }
@@ -312,6 +312,7 @@ impl From<&Material> for GpuMaterial {
             },
 
             Material::Dielectric(mat) => Self::Dielectric {
+                albedo: mat.albedo.base,
                 refraction_idx: mat.refraction_idx,
             },
 

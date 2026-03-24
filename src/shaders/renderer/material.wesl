@@ -105,15 +105,18 @@ fn scatter(mat: types::GpuMaterial, ray_in: Ray, hit_record: HitRecord) -> Scatt
             let cannot_refract = (ri * sin_theta) > 1.0;
             let reflectance = reflectance(cos_theta, ri);
 
+            var attenuation: vec3<f32>;
             var dir: vec3<f32>;
             if cannot_refract || reflectance > rand() {
+                attenuation = ONES;
                 dir = reflect(unit_dir, hit_record.normal);
             } else {
+                attenuation = dielectric.albedo;
                 dir = refract(unit_dir, hit_record.normal, ri);
             }
 
             return skip_pdf(
-                ONES,
+                attenuation,
                 Ray(hit_record.point, dir),
             );
         }

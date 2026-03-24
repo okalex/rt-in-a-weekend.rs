@@ -67,8 +67,8 @@ pub mod materials {
             teal: lambertian([0.2, 0.8, 0.8]),
             diffuse_light: emissive([15.0, 15.0, 15.0]),
             checkered: from_texture(textures::checkers()),
-            glass: dielectric(1.5),
-            air: dielectric(1.0 / 1.5),
+            glass: dielectric([1.0, 1.0, 1.0], 1.5),
+            air: dielectric([1.0, 1.0, 1.0], 1.0 / 1.5),
             mirror: metal([0.8, 0.85, 0.88], 0.0),
             gold: metal([0.8, 0.6, 0.2], 0.2),
             stone: image_map("assets/cube-diffuse.jpg", 1.0),
@@ -93,8 +93,8 @@ pub mod materials {
         lambertian(albedo)
     }
 
-    pub fn dielectric(refraction_idx: Float) -> Material {
-        Material::Dielectric(Dielectric::new(refraction_idx))
+    pub fn dielectric(albedo: [Float; 3], refraction_idx: Float) -> Material {
+        Material::Dielectric(Dielectric::new(Color::from(albedo), refraction_idx))
     }
 
     pub fn metal(color: [Float; 3], fuzz: Float) -> Material {

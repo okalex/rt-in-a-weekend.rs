@@ -316,12 +316,12 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
         .vfov(50.0)
         .position([0.0, 1.0, 3.0])
         .target([0.0, 0.5, 0.0])
-        .defocus_angle(0.0)
+        .defocus_angle(0.1)
         .focus_dist(3.4);
 
     // Add materials
     let checkered_id = scene_builder.add_material(materials.checkered);
-    let material_id = scene_builder.add_material(materials.gold);
+    let material_id = scene_builder.add_material(materials::dielectric([0.6, 0.1, 0.2], 1.5));
     let diffuse_light_id = scene_builder.add_material(materials.diffuse_light);
 
     // Add ground

@@ -16,19 +16,20 @@ use crate::{
         ray::Ray,
     },
     util::{
-        color::Color, random::rand, types::Float
+        color::Color,
+        random::rand,
+        types::Float,
     },
 };
 
 pub struct Dielectric {
+    pub albedo: Color,
     pub refraction_idx: Float,
 }
 
 impl Dielectric {
-    pub fn new(refraction_idx: Float) -> Self {
-        Self {
-            refraction_idx: refraction_idx,
-        }
+    pub fn new(albedo: Color, refraction_idx: Float) -> Self {
+        Self { albedo, refraction_idx }
     }
 
     pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
@@ -43,14 +44,14 @@ impl Dielectric {
         let sin_theta = (1.0 - cos_theta * cos_theta).sqrt();
 
         let cannot_refract = (ri * sin_theta) > 1.0;
-        let direction = if cannot_refract || reflectance(cos_theta, ri) > rand() {
-            reflect(unit_dir, rec.normal)
+        let (attenuation, direction) = if cannot_refract || reflectance(cos_theta, ri) > rand() {
+            (Color::white(), reflect(unit_dir, rec.normal))
         } else {
-            refract(unit_dir, rec.normal, ri)
+            (self.albedo, refract(unit_dir, rec.normal, ri))
         };
 
         Some(ScatterRecord {
-            attenuation: Color::white(),
+            attenuation: attenuation,
             pdf: Arc::new(Pdf::Sphere(SpherePdf::new())), // TODO
             skip_pdf_ray: Some(Ray::new(rec.point, direction, r_in.time)),
         })

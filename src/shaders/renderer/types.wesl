@@ -132,6 +132,7 @@ struct GpuMaterial_Metal {
 }
 
 struct GpuMaterial_Dielectric {
+    albedo: vec3<f32>,
     refraction_idx: f32,
 }
 
@@ -211,7 +212,7 @@ fn unpack_GpuMaterial_Metal(v: GpuMaterial) -> GpuMaterial_Metal {
 }
 
 fn unpack_GpuMaterial_Dielectric(v: GpuMaterial) -> GpuMaterial_Dielectric {
-    return GpuMaterial_Dielectric(v.data[0].x);
+    return GpuMaterial_Dielectric(v.data[0].xyz, v.data[0].w);
 }
 
 fn unpack_GpuMaterial_Emissive(v: GpuMaterial) -> GpuMaterial_Emissive {
