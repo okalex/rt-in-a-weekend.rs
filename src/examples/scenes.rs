@@ -302,25 +302,15 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
         .defocus_angle(0.1)
         .focus_dist(3.4);
 
-    // Add materials
-    let checkered_id = scene_builder.add_material(materials.checkered);
-    // let material_id = scene_builder.add_material(materials::dielectric([0.6, 0.1, 0.2], 1.5));
-    // let material_id = scene_builder.add_material(materials.default);
-    let diffuse_light_id = scene_builder.add_material(materials.diffuse_light);
-    // let iso_id = scene_builder.add_material(materials::isotropic([0.3, 0.9, 0.9]));
-    // let glass_id = scene_builder.add_material(materials.glass);
-
     // Add ground
+    let checkered_id = scene_builder.add_material(materials.checkered);
     let ground_id = scene_builder.add_primitive(primitives.ground);
     scene_builder.create_instance(ground_id, checkered_id);
 
-    // Make primitives
-    let sphere_prim = primitives::sphere([0.0, 0.0, 0.0], 0.2);
-
-    // Add primitives
-    let sphere_id = scene_builder.add_primitive(sphere_prim);
-
     // Add lights
+    let diffuse_light_id = scene_builder.add_material(materials.diffuse_light);
+    let sphere_prim = primitives::sphere([0.0, 0.0, 0.0], 0.2);
+    let sphere_id = scene_builder.add_primitive(sphere_prim);
     for _ in -9..=9 {
         let light = Instance::new(sphere_id, diffuse_light_id).translate([rand_range(-3.0, 3.0), 3.0, rand_range(-3.0, 3.0)]);
         let instance_id = scene_builder.add_instance(light);
@@ -328,27 +318,17 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
     }
 
     // Add meshes
-    let model = match load_model("lada.obj") {
-        Ok(meshes) => meshes,
-        _ => vec![],
-    };
+    let mesh_mat_id = scene_builder.add_material(materials::checkered(0.05, [0.8, 0.3, 0.2], [0.9, 0.9, 0.9]));
+    let model = load_model("lada.obj").unwrap();
     for mesh in model {
         let mesh_id = scene_builder.add_mesh(mesh);
         let primitive = Primitive::mesh(mesh_id);
         let primitive_id = scene_builder.add_primitive(primitive);
-        let instance = Instance::new(primitive_id, checkered_id)
+        let instance = Instance::new(primitive_id, mesh_mat_id)
             .scale_uniform(0.15)
             .rotate_y(degrees_to_radians(30.0))
             .translate([-0.50, -0.0, 0.0]);
         let _ = scene_builder.add_instance(instance);
-
-        // let medium_id = scene_builder.add_primitive(primitives::medium(primitive_id, 0.001));
-        // let _ = scene_builder.add_instance(
-        //     Instance::new(medium_id, iso_id)
-        //         .scale_uniform(0.15)
-        //         .rotate_y(degrees_to_radians(30.0))
-        //         .translate([-0.50, -0.0, 0.0]),
-        // );
     }
 
     (camera_options, scene_builder.build())

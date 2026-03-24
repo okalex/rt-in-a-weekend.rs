@@ -47,7 +47,7 @@ pub mod materials {
             orange: lambertian([1.0, 0.5, 0.0]),
             teal: lambertian([0.2, 0.8, 0.8]),
             diffuse_light: emissive([15.0, 15.0, 15.0]),
-            checkered: from_texture(textures::checkers()),
+            checkered: checkered(0.32, [0.2, 0.3, 0.1], [0.9, 0.9, 0.9]),
             glass: dielectric([1.0, 1.0, 1.0], 1.5),
             air: dielectric([1.0, 1.0, 1.0], 1.0 / 1.5),
             mirror: metal([0.8, 0.85, 0.88], 0.0),
@@ -66,6 +66,10 @@ pub mod materials {
 
     pub fn from_texture(texture: Arc<Texture>) -> Material {
         Material::Lambertian(Lambertian::new(texture))
+    }
+
+    pub fn checkered(scale: Float, even: [Float; 3], odd: [Float; 3]) -> Material {
+        from_texture(textures::checkers(scale, even, odd))
     }
 
     #[allow(dead_code)]
@@ -111,14 +115,13 @@ pub mod materials {
 pub mod textures {
     use std::sync::Arc;
 
-    use crate::rt::textures::{checkered::Checkered, texture::Texture};
+    use crate::{
+        rt::textures::{checkered::Checkered, texture::Texture},
+        util::types::Float,
+    };
 
-    pub fn checkers() -> Arc<Texture> {
-        Arc::new(Texture::Checkered(Checkered::from_color_values(
-            0.32,
-            [0.2, 0.3, 0.1],
-            [0.9, 0.9, 0.9],
-        )))
+    pub fn checkers(scale: Float, even: [Float; 3], odd: [Float; 3]) -> Arc<Texture> {
+        Arc::new(Texture::Checkered(Checkered::from_color_values(scale, even, odd)))
     }
 }
 
