@@ -20,7 +20,7 @@ fn main(
 
     init_rng(x, y, gpu_meta.frame_num);
 
-    var color = vec3<f32>(0, 0, 0);
+    var color = vec3f(0, 0, 0);
     for (var i = 0u; i < gpu_meta.num_samples; i = i + 1) {
         let camera_ray = get_ray(x, y);
         // let sample_color = clamp(get_ray_color(camera_ray), vec3(0.0), vec3(f32(gpu_meta.num_samples)));

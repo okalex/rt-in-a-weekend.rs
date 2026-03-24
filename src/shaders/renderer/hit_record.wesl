@@ -5,8 +5,8 @@ import package::{
 struct HitRecord {
     is_hit: bool,
     instance_id: u32,
-    point: vec3<f32>,
-    normal: vec3<f32>,
+    point: vec3f,
+    normal: vec3f,
     is_outward: bool,
     t: f32,
     u: f32,
@@ -18,8 +18,8 @@ fn no_hit() -> HitRecord {
 }
 
 fn hit(
-    point: vec3<f32>,
-    normal: vec3<f32>,
+    point: vec3f,
+    normal: vec3f,
     is_outward: bool,
     t: f32,
     u: f32,

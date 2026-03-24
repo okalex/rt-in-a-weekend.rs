@@ -11,7 +11,7 @@ import package::{
     types,
 };
 
-fn sphere_generate() -> vec3<f32> {
+fn sphere_generate() -> vec3f {
     return rand_unit_vector();
 }
 
@@ -20,14 +20,14 @@ fn sphere_value() -> f32 {
 }
 
 struct HemispherePdf {
-    normal: vec3<f32>,
+    normal: vec3f,
 };
 
-fn new_hemisphere_pdf(normal: vec3<f32>) -> HemispherePdf {
+fn new_hemisphere_pdf(normal: vec3f) -> HemispherePdf {
     return HemispherePdf(normal);
 }
 
-fn hemisphere_generate(pdf: HemispherePdf) -> vec3<f32> {
+fn hemisphere_generate(pdf: HemispherePdf) -> vec3f {
     return rand_vector_on_hemisphere(pdf.normal);
 }
 
@@ -39,24 +39,24 @@ struct CosinePdf {
     uvw: Onb,
 };
 
-fn new_cosine_pdf(w: vec3<f32>) -> CosinePdf {
+fn new_cosine_pdf(w: vec3f) -> CosinePdf {
     return CosinePdf(new_onb(w));
 }
 
-fn cosine_generate(pdf: CosinePdf) -> vec3<f32> {
+fn cosine_generate(pdf: CosinePdf) -> vec3f {
     return transform_onb(pdf.uvw, rand_cos_vector());
 }
 
-fn cosine_pdf_value(pdf: CosinePdf, direction: vec3<f32>) -> f32 {
+fn cosine_pdf_value(pdf: CosinePdf, direction: vec3f) -> f32 {
     let cos_theta = dot(normalize(direction), pdf.uvw.axes[2]);
     return max(0.0, cos_theta / PI);
 }
 
 struct LightsPdf {
-    origin: vec3<f32>,
+    origin: vec3f,
 };
 
-fn lights_pdf_value(pdf: LightsPdf, direction: vec3<f32>) -> f32 {
+fn lights_pdf_value(pdf: LightsPdf, direction: vec3f) -> f32 {
     let num_lights = arrayLength(&lights.lights);
     let weight = 1.0 / f32(num_lights);
     var sum = 0.0;
@@ -73,7 +73,7 @@ fn lights_pdf_value(pdf: LightsPdf, direction: vec3<f32>) -> f32 {
     return sum;
 }
 
-fn lights_pdf_generate(pdf: LightsPdf) -> vec3<f32> {
+fn lights_pdf_generate(pdf: LightsPdf) -> vec3f {
     let num_lights = arrayLength(&lights.lights);
     let light_id = rand_range_int(i32(0), i32(num_lights - 1));
     let light_instance_id = lights.lights[light_id];
@@ -85,7 +85,7 @@ fn lights_pdf_generate(pdf: LightsPdf) -> vec3<f32> {
     return normalize(transform_direction(local_dir, light_instance.transform));
 }
 
-fn primitive_pdf_value(primitive: types::GpuPrimitive, origin: vec3<f32>, direction: vec3<f32>) -> f32 {
+fn primitive_pdf_value(primitive: types::GpuPrimitive, origin: vec3f, direction: vec3f) -> f32 {
     switch primitive._type {
         case types::GPUPRIMITIVE_SPHERE: {
             let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
@@ -111,7 +111,7 @@ fn primitive_pdf_value(primitive: types::GpuPrimitive, origin: vec3<f32>, direct
     }
 }
 
-fn primitive_random(primitive: types::GpuPrimitive, origin: vec3<f32>) -> vec3<f32> {
+fn primitive_random(primitive: types::GpuPrimitive, origin: vec3f) -> vec3f {
     switch primitive._type {
         case types::GPUPRIMITIVE_SPHERE: {
             let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
@@ -132,7 +132,7 @@ fn primitive_random(primitive: types::GpuPrimitive, origin: vec3<f32>) -> vec3<f
         // }
 
         default: {
-            return vec3<f32>(1.0, 0.0, 0.0);
+            return vec3f(1.0, 0.0, 0.0);
         }
     }
 }

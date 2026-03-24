@@ -47,7 +47,7 @@ fn hit_quad(quad: types::GpuPrimitive_Quad, ray: Ray, ray_t: Interval) -> HitRec
     );
 }
 
-fn quad_pdf_value(quad: types::GpuPrimitive_Quad, origin: vec3<f32>, direction: vec3<f32>) -> f32 {
+fn quad_pdf_value(quad: types::GpuPrimitive_Quad, origin: vec3f, direction: vec3f) -> f32 {
     // Slightly optimized hit test
     let denom = dot(quad.normal, direction);
     if abs(denom) < 1e-8 { return 0.0; }
@@ -66,7 +66,7 @@ fn quad_pdf_value(quad: types::GpuPrimitive_Quad, origin: vec3<f32>, direction: 
     return dist_sqrd / (cos * quad.area);
 }
 
-fn quad_random(quad: types::GpuPrimitive_Quad, origin: vec3<f32>) -> vec3<f32> {
+fn quad_random(quad: types::GpuPrimitive_Quad, origin: vec3f) -> vec3f {
     let p = quad.q + rand() * quad.u + rand() * quad.v;
     return p - origin;
 }

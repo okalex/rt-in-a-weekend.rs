@@ -19,8 +19,8 @@ import package::{
     vector::{ZEROS, ONES},
 };
 
-fn get_ray_color(ray: Ray) -> vec3<f32> {
-    var color = vec3<f32>(1, 1, 1);
+fn get_ray_color(ray: Ray) -> vec3f {
+    var color = vec3f(1, 1, 1);
     var hit_ray = ray;
     let ray_t = Interval(0.001, INF);
 
@@ -51,7 +51,7 @@ fn get_ray_color(ray: Ray) -> vec3<f32> {
 
 struct ScatterResult {
     scattered_ray: Ray,
-    scattered_color: vec3<f32>,
+    scattered_color: vec3f,
 };
 
 fn scatter_ray(material: types::GpuMaterial, hit_record: HitRecord, scatter_record: ScatterRecord) -> ScatterResult {
@@ -59,7 +59,7 @@ fn scatter_ray(material: types::GpuMaterial, hit_record: HitRecord, scatter_reco
 
     if !scatter_record.skip_pdf {
         var pdf_value: f32;
-        var scattered_dir: vec3<f32>;
+        var scattered_dir: vec3f;
 
         if gpu_meta.importance_sampling > 0 && arrayLength(&lights.lights) > 0 {
             let lights_pdf = LightsPdf(hit_record.point);
@@ -217,7 +217,7 @@ fn hit_instance(ray: Ray, ray_t: Interval, instance_id: u32) -> HitRecord {
     }
 }
 
-fn transform_ray(ray: Ray, transform: mat4x4<f32>) -> Ray {
+fn transform_ray(ray: Ray, transform: mat4x4f) -> Ray {
     let orig = transform_point(ray.orig, transform);
     let dir = transform_direction(ray.dir, transform);
     return Ray(orig, dir);
@@ -226,8 +226,8 @@ fn transform_ray(ray: Ray, transform: mat4x4<f32>) -> Ray {
 fn transform_hit_record(
     hit_record: HitRecord,
     instance_id: u32,
-    transform: mat4x4<f32>,
-    inv_transform: mat4x4<f32>
+    transform: mat4x4f,
+    inv_transform: mat4x4f
 ) -> HitRecord {
     var new_record = hit_record;
 
@@ -238,6 +238,6 @@ fn transform_hit_record(
     return new_record;
 }
 
-fn transform_normal(normal: vec3<f32>, inv_transform: mat4x4<f32>) -> vec3<f32> {
-    return normalize((transpose(inv_transform) * vec4<f32>(normal, 0.0)).xyz);
+fn transform_normal(normal: vec3f, inv_transform: mat4x4f) -> vec3f {
+    return normalize((transpose(inv_transform) * vec4f(normal, 0.0)).xyz);
 }

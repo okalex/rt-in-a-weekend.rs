@@ -40,7 +40,7 @@ fn hit_medium(
 
     let t = entry + hit_dist / ray_len;
     let point = ray_at(ray, t);
-    let normal = vec3<f32>(1.0, 0.0, 0.0);
+    let normal = vec3f(1.0, 0.0, 0.0);
 
     return hit(point, normal, true, t, 0.0, 0.0);
 }

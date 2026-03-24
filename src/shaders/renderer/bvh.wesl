@@ -4,7 +4,7 @@ import package::{
     types,
 };
 
-fn intersects_bvh_node(ray: Ray, inv_dir: vec3<f32>, ray_t: Interval, node: types::GpuBvhNode) -> bool {
+fn intersects_bvh_node(ray: Ray, inv_dir: vec3f, ray_t: Interval, node: types::GpuBvhNode) -> bool {
     let t0s = (node.aabb_min - ray.orig) * inv_dir;
     let t1s = (node.aabb_max - ray.orig) * inv_dir;
 

@@ -30,19 +30,19 @@ fn rand_range_int(min: i32, max: i32) -> i32 {
     return min + i32(u32(rand() * f32(range)));
 }
 
-fn rand_vector() -> vec3<f32> {
-    return vec3<f32>(rand(), rand(), rand());
+fn rand_vector() -> vec3f {
+    return vec3f(rand(), rand(), rand());
 }
 
-fn rand_range_vector(min: f32, max: f32) -> vec3<f32> {
-    return vec3<f32>(
+fn rand_range_vector(min: f32, max: f32) -> vec3f {
+    return vec3f(
         rand_range(min, max),
         rand_range(min, max),
         rand_range(min, max),
     );
 }
 
-fn rand_unit_vector() -> vec3<f32> {
+fn rand_unit_vector() -> vec3f {
     loop {
         let p = rand_range_vector(-1, 1);
         let lensq = length_squared(p);
@@ -50,10 +50,10 @@ fn rand_unit_vector() -> vec3<f32> {
             return p / sqrt(lensq);
         }
     }
-    return vec3<f32>(0, 1, 0); // unreachable, satisfies naga validator
+    return vec3f(0, 1, 0); // unreachable, satisfies naga validator
 }
 
-fn rand_vector_on_hemisphere(normal: vec3<f32>) -> vec3<f32> {
+fn rand_vector_on_hemisphere(normal: vec3f) -> vec3f {
     let on_unit_sphere = rand_unit_vector();
     if dot(on_unit_sphere, normal) > 0.0 {
         return on_unit_sphere;
@@ -62,9 +62,9 @@ fn rand_vector_on_hemisphere(normal: vec3<f32>) -> vec3<f32> {
     }
 }
 
-fn rand_in_unit_disk() -> vec3<f32> {
+fn rand_in_unit_disk() -> vec3f {
     loop {
-        let p = vec3<f32>(rand_range(-1.0, 1.0), rand_range(-1.0, 1.0), 0.0);
+        let p = vec3f(rand_range(-1.0, 1.0), rand_range(-1.0, 1.0), 0.0);
         if length_squared(p) < 1.0 {
             return p;
         }
@@ -72,7 +72,7 @@ fn rand_in_unit_disk() -> vec3<f32> {
     return ZEROS;
 }
 
-fn rand_cos_vector() -> vec3<f32> {
+fn rand_cos_vector() -> vec3f {
     let r1 = rand();
     let r2 = rand();
     let sqrt_r2 = sqrt(r2);
@@ -82,5 +82,5 @@ fn rand_cos_vector() -> vec3<f32> {
     let y = sin(phi) * sqrt_r2;
     let z = sqrt(1.0 - r2);
 
-    return vec3<f32>(x, y, z);
+    return vec3f(x, y, z);
 }

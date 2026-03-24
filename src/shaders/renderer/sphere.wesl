@@ -50,13 +50,13 @@ fn hit_sphere(sphere: types::GpuPrimitive_Sphere, ray: Ray, ray_t: Interval) -> 
     );
 }
 
-fn get_uv(sphere: types::GpuPrimitive_Sphere, normal: vec3<f32>) -> array<f32, 2> {
+fn get_uv(sphere: types::GpuPrimitive_Sphere, normal: vec3f) -> array<f32, 2> {
     let u = 0.5 + atan2(-normal.z, normal.x) / (2.0 * PI);
     let v = 0.5 + asin(normal.y) / PI;
     return array(u, v);
 }
 
-fn sphere_pdf_value(sphere: types::GpuPrimitive_Sphere, origin: vec3<f32>, direction: vec3<f32>) -> f32 {
+fn sphere_pdf_value(sphere: types::GpuPrimitive_Sphere, origin: vec3f, direction: vec3f) -> f32 {
     // Slightly optimized hit test
     let to_center = sphere.center - origin;
     let dist_sqrd = length_squared(to_center);
@@ -71,14 +71,14 @@ fn sphere_pdf_value(sphere: types::GpuPrimitive_Sphere, origin: vec3<f32>, direc
     return 1.0 / solid_angle;
 }
 
-fn sphere_random(sphere: types::GpuPrimitive_Sphere, origin: vec3<f32>) -> vec3<f32> {
+fn sphere_random(sphere: types::GpuPrimitive_Sphere, origin: vec3f) -> vec3f {
     let direction = sphere.center - origin;
     let dist_sqrd = length_squared(direction);
     let uvw = new_onb(direction);
     return transform_onb(uvw, rand_to_sphere(sphere.radius, dist_sqrd));
 }
 
-fn rand_to_sphere(radius: f32, dist_sqrd: f32) -> vec3<f32> {
+fn rand_to_sphere(radius: f32, dist_sqrd: f32) -> vec3f {
     let r1 = rand();
     let r2 = rand();
     let z = 1.0 + r2 * (sqrt(1.0 - radius * radius / dist_sqrd) - 1.0);
@@ -88,5 +88,5 @@ fn rand_to_sphere(radius: f32, dist_sqrd: f32) -> vec3<f32> {
     let x = cos(phi) * tmp;
     let y = sin(phi) * tmp;
 
-    return vec3<f32>(x, y, z);
+    return vec3f(x, y, z);
 }

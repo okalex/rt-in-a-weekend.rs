@@ -4,7 +4,7 @@ import package::{
 };
 
 // TODO: uv mapping
-fn get_texture_color(texture: types::GpuTexture, u: f32, v: f32, point: vec3<f32>) -> vec3<f32> {
+fn get_texture_color(texture: types::GpuTexture, u: f32, v: f32, point: vec3f) -> vec3f {
     switch texture._type {
         case types::GPUTEXTURE_SOLIDCOLOR: {
             let solid_color = types::unpack_GpuTexture_SolidColor(texture);
@@ -25,7 +25,7 @@ fn get_texture_color(texture: types::GpuTexture, u: f32, v: f32, point: vec3<f32
         }
 
         default: {
-            return vec3<f32>(0, 0, 0);
+            return vec3f(0, 0, 0);
         }
     }
 }

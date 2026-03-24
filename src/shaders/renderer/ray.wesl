@@ -1,8 +1,8 @@
 struct Ray {
-    orig: vec3<f32>,
-    dir: vec3<f32>,
+    orig: vec3f,
+    dir: vec3f,
 };
 
-fn ray_at(ray: Ray, t: f32) -> vec3<f32> {
+fn ray_at(ray: Ray, t: f32) -> vec3f {
     return ray.orig + ray.dir * t;
 }
