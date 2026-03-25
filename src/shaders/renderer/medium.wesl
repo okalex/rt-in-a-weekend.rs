@@ -62,7 +62,7 @@ fn hit_boundary(boundary: types::GpuPrimitive, ray: ray::Ray) -> HitBoundaryResu
         hit_record::no_hit(),
     );
 
-    // Can't recurse :/
+    // No recursion allowed, so can't call primitive::hit()
     switch boundary._type {
         case types::GPUPRIMITIVE_SPHERE: {
             let sphere = types::unpack_GpuPrimitive_Sphere(boundary);

@@ -1,13 +1,10 @@
 import package::{
     bindings::{instances, primitives, lights},
     constants::PI,
-    interval,
     onb,
-    quad,
+    primitive,
     random,
-    sphere,
     transform,
-    types,
 };
 
 fn sphere_generate() -> vec3f {
@@ -66,7 +63,7 @@ fn lights_pdf_value(pdf: LightsPdf, direction: vec3f) -> f32 {
         let light_primitive = primitives.primitives[light_instance.primitive_id];
         let local_origin = transform::transform_point(pdf.origin, light_instance.inv_transform);
         let local_dir = transform::transform_direction(direction, light_instance.inv_transform);
-        sum += weight * primitive_pdf_value(light_primitive, local_origin, local_dir);
+        sum += weight * primitive::pdf_value(light_primitive, local_origin, local_dir);
     }
 
     return sum;
@@ -80,58 +77,6 @@ fn lights_pdf_generate(pdf: LightsPdf) -> vec3f {
     let light_primitive = primitives.primitives[light_instance.primitive_id];
 
     let local_origin = transform::transform_point(pdf.origin, light_instance.inv_transform);
-    let local_dir = primitive_random(light_primitive, local_origin);
+    let local_dir = primitive::rand(light_primitive, local_origin);
     return normalize(transform::transform_direction(local_dir, light_instance.transform));
-}
-
-fn primitive_pdf_value(primitive: types::GpuPrimitive, origin: vec3f, direction: vec3f) -> f32 {
-    switch primitive._type {
-        case types::GPUPRIMITIVE_SPHERE: {
-            let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
-            return sphere::pdf_value(sphere, origin, direction);
-        }
-
-        // case types::GPUPRIMITIVE_TRIANGLE: {
-        //     let triangle = types::unpack_GpuPrimitive_Triangle(primitive);
-        // }
-
-        case types::GPUPRIMITIVE_QUAD: {
-            let quad = types::unpack_GpuPrimitive_Quad(primitive);
-            return quad::pdf_value(quad, origin, direction);
-        }
-
-        // case types::GPUPRIMITIVE_MESH: {
-        //     let mesh = types::unpack_GpuPrimitive_Mesh(primitive);
-        // }
-
-        default: {
-            return 0.0;
-        }
-    }
-}
-
-fn primitive_random(primitive: types::GpuPrimitive, origin: vec3f) -> vec3f {
-    switch primitive._type {
-        case types::GPUPRIMITIVE_SPHERE: {
-            let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
-            return sphere::rand(sphere, origin);
-        }
-
-        // case types::GPUPRIMITIVE_TRIANGLE: {
-        //     let triangle = types::unpack_GpuPrimitive_Triangle(primitive);
-        // }
-
-        case types::GPUPRIMITIVE_QUAD: {
-            let quad = types::unpack_GpuPrimitive_Quad(primitive);
-            return quad::rand(quad, origin);
-        }
-
-        // case types::GPUPRIMITIVE_MESH: {
-        //     let mesh = types::unpack_GpuPrimitive_Mesh(primitive);
-        // }
-
-        default: {
-            return vec3f(1.0, 0.0, 0.0);
-        }
-    }
 }

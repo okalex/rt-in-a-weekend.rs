@@ -3,15 +3,9 @@ import package::{
     bvh,
     hit_record,
     interval,
-    medium,
-    mesh,
-    quad,
+    primitive,
     ray,
-    sphere,
     stack,
-    transform,
-    triangle,
-    types,
 };
 
 fn has_lights() -> bool {
@@ -63,74 +57,7 @@ fn hit_instance(
 
     let instance = instances.instances[instance_id];
     let primitive = primitives.primitives[instance.primitive_id];
-    let transformed_ray = transform_ray(ray, instance.inv_transform);
-
-    switch primitive._type {
-        case types::GPUPRIMITIVE_SPHERE: {
-            let sphere = types::unpack_GpuPrimitive_Sphere(primitive);
-            var hit_record = sphere::hit(sphere, transformed_ray, ray_t);
-            return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
-        }
-
-        case types::GPUPRIMITIVE_TRIANGLE: {
-            let triangle = types::unpack_GpuPrimitive_Triangle(primitive);
-            var hit_record = triangle::hit(triangle, transformed_ray, ray_t);
-            return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
-        }
-
-        case types::GPUPRIMITIVE_QUAD: {
-            let quad = types::unpack_GpuPrimitive_Quad(primitive);
-            var hit_record = quad::hit(quad, transformed_ray, ray_t);
-            return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
-        }
-
-        case types::GPUPRIMITIVE_MESH: {
-            let mesh = types::unpack_GpuPrimitive_Mesh(primitive);
-            var hit_record = mesh::hit(mesh, transformed_ray, ray_t);
-            return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
-        }
-
-        case types::GPUPRIMITIVE_MEDIUM: {
-            let medium = types::unpack_GpuPrimitive_Medium(primitive);
-            let boundary_id = medium.boundary_primitive_id;
-            let boundary = primitives.primitives[boundary_id];
-            var hit_record = medium::hit(medium, boundary, transformed_ray, ray_t);
-            return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
-        }
-
-        default: {
-            return hit_record::no_hit();
-        }
-    }
-}
-
-fn transform_ray(
-    ray: ray::Ray,
-    transform: mat4x4f
-) -> ray::Ray {
-    let orig = transform::transform_point(ray.orig, transform);
-    let dir = transform::transform_direction(ray.dir, transform);
-    return ray::Ray(orig, dir);
-}
-
-fn transform_hit_record(
-    hit_record: hit_record::HitRecord,
-    instance_id: u32,
-    transform: mat4x4f,
-    inv_transform: mat4x4f
-) -> hit_record::HitRecord {
-    var new_record = hit_record;
-
-    new_record.instance_id = instance_id;
-    new_record.point = transform::transform_point(hit_record.point, transform);
-    new_record.normal = transform_normal(hit_record.normal, inv_transform);
-
-    return new_record;
-}
-
-fn transform_normal(
-    normal: vec3f,
-    inv_transform: mat4x4f
-) -> vec3f {
-    return normalize((transpose(inv_transform) * vec4f(normal, 0.0)).xyz);
+    let transformed_ray = ray::transform(ray, instance.inv_transform);
+    let hit_record = primitive::hit(primitive, transformed_ray, ray_t);
+    return hit_record::transform(hit_record, instance_id, instance.transform, instance.inv_transform);
 }
