@@ -55,42 +55,47 @@ struct ScatterResult {
 };
 
 fn scatter_ray(material: types::GpuMaterial, hit_record: hit_record::HitRecord, scatter_record: material::ScatterRecord) -> ScatterResult {
-    var result: ScatterResult;
 
-    if !scatter_record.skip_pdf {
-        var pdf_value: f32;
-        var scattered_dir: vec3f;
-
-        if gpu_meta.importance_sampling > 0 && arrayLength(&lights.lights) > 0 {
-            let lights_pdf = pdf::LightsPdf(hit_record.point);
-
-            let chance = f32(random::rand() < 0.5);
-            scattered_dir = chance * scatter_record.scattered.dir + (1.0 - chance) * pdf::lights_pdf_generate(lights_pdf);
-
-            // let cosine_pdf = new_cosine_pdf(hit_record.normal);
-            // pdf_value = 0.5 * lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, scattered_dir);
-
-            pdf_value = 0.5 * pdf::lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * material::pdf_value(material, hit_record, scattered_dir);
-        } else {
-            scattered_dir = scatter_record.scattered.dir;
-            pdf_value = scatter_record.pdf_value;
-        }
-
-        result.scattered_ray = ray::Ray(scatter_record.scattered.orig, scattered_dir);
-
-        // Discard NaNs
-        if pdf_value > 1e-8 {
-            let scattering_pdf = material::scattering_pdf(material, hit_record, result.scattered_ray);
-            result.scattered_color = scatter_record.attenuation * scattering_pdf / pdf_value;
-        } else {
-            result.scattered_color = vector::ZEROS;
-        }
-    } else {
-        result.scattered_color = scatter_record.attenuation;
-        result.scattered_ray = scatter_record.scattered;
+    if scatter_record.skip_pdf {
+        return ScatterResult(
+            scatter_record.scattered,
+            scatter_record.attenuation
+        );
     }
 
-    return result;
+    var pdf_value: f32;
+    var scattered_dir: vec3f;
+    var scattered_color: vec3f;
+
+    if gpu_meta.importance_sampling > 0 && arrayLength(&lights.lights) > 0 {
+        let lights_pdf = pdf::LightsPdf(hit_record.point);
+
+        let chance = f32(random::rand() < 0.5);
+        scattered_dir = chance * scatter_record.scattered.dir + (1.0 - chance) * pdf::lights_pdf_generate(lights_pdf);
+
+        // let cosine_pdf = new_cosine_pdf(hit_record.normal);
+        // pdf_value = 0.5 * lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * cosine_pdf_value(cosine_pdf, scattered_dir);
+
+        pdf_value = 0.5 * pdf::lights_pdf_value(lights_pdf, scattered_dir) + 0.5 * material::pdf_value(material, hit_record, scattered_dir);
+    } else {
+        scattered_dir = scatter_record.scattered.dir;
+        pdf_value = scatter_record.pdf_value;
+    }
+
+    let scattered_ray = ray::Ray(scatter_record.scattered.orig, scattered_dir);
+
+    // Discard NaNs
+    if pdf_value > 1e-8 {
+        let scattering_pdf = material::scattering_pdf(material, hit_record, scattered_ray);
+        scattered_color = scatter_record.attenuation * scattering_pdf / pdf_value;
+    } else {
+        scattered_color = vector::ZEROS;
+    }
+
+    return ScatterResult(
+        scattered_ray,
+        scattered_color
+    );
 }
 
 fn hit_instances(ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
@@ -160,54 +165,7 @@ fn hit_instance(ray: ray::Ray, ray_t: interval::Interval, instance_id: u32) -> h
             let medium = types::unpack_GpuPrimitive_Medium(primitive);
             let boundary_id = medium.boundary_primitive_id;
             let boundary = primitives.primitives[boundary_id];
-
-            var entry_rec: hit_record::HitRecord;
-            var exit_rec: hit_record::HitRecord;
-
-            // Can't recurse :/
-            switch boundary._type {
-                case types::GPUPRIMITIVE_SPHERE: {
-                    let sphere = types::unpack_GpuPrimitive_Sphere(boundary);
-                    entry_rec = sphere::hit(sphere, transformed_ray, interval::Interval(-INF, INF));
-                    if entry_rec.is_hit {
-                        exit_rec = sphere::hit(sphere, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
-                    }
-                }
-
-                case types::GPUPRIMITIVE_TRIANGLE: {
-                    let triangle = types::unpack_GpuPrimitive_Triangle(boundary);
-                    entry_rec = triangle::hit(triangle, transformed_ray, interval::Interval(-INF, INF));
-                    if entry_rec.is_hit {
-                        exit_rec = triangle::hit(triangle, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
-                    }
-                }
-
-                case types::GPUPRIMITIVE_QUAD: {
-                    let quad = types::unpack_GpuPrimitive_Quad(boundary);
-                    entry_rec = quad::hit(quad, transformed_ray, interval::Interval(-INF, INF));
-                    if entry_rec.is_hit {
-                        exit_rec = quad::hit(quad, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
-                    }
-                }
-
-                case types::GPUPRIMITIVE_MESH: {
-                    let mesh = types::unpack_GpuPrimitive_Mesh(boundary);
-                    entry_rec = mesh::hit(mesh, transformed_ray, interval::Interval(-INF, INF));
-                    if entry_rec.is_hit {
-                        exit_rec = mesh::hit(mesh, transformed_ray, interval::Interval(entry_rec.t + 0.001, INF));
-                    }
-                }
-
-                default: {
-                    return hit_record::no_hit();
-                }
-            }
-
-            if !entry_rec.is_hit {
-                exit_rec = hit_record::no_hit();
-            }
-
-            var hit_record = medium::hit(medium, entry_rec, exit_rec, transformed_ray, ray_t);
+            var hit_record = medium::hit(medium, boundary, transformed_ray, ray_t);
             return transform_hit_record(hit_record, instance_id, instance.transform, instance.inv_transform);
         }
 
