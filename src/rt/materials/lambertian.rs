@@ -10,7 +10,7 @@ use crate::{
     },
     util::{
         color::Color,
-        types::{Float, PI, Vector},
+        types::{Float, Vector},
     },
 };
 
@@ -30,17 +30,16 @@ impl Lambertian {
 
     #[allow(unused)]
     pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
-        Some(ScatterRecord {
-            attenuation: self.texture.value(rec.u, rec.v, &rec.point),
-            pdf: Arc::new(Pdf::Cosine(CosinePdf::new(&rec.normal))),
-            skip_pdf_ray: None,
-        })
+        Some(ScatterRecord::with_pdf(
+            self.texture.value(rec.u, rec.v, &rec.point),
+            Arc::new(Pdf::Cosine(CosinePdf::new(&rec.normal))),
+        ))
     }
 
     #[allow(unused)]
-    pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> Float {
-        let cos_theta = rec.normal.dot(scattered.dir.normalize());
-        if cos_theta >= 0.0 { cos_theta / PI } else { 0.0 }
+    pub fn pdf_value(&self, r_in: &Ray, rec: &HitRecord, scattered_dir: &Vector) -> Float {
+        let pdf = CosinePdf::new(&rec.normal);
+        return pdf.value(scattered_dir);
     }
 }
 

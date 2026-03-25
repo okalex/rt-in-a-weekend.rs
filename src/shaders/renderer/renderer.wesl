@@ -1,5 +1,6 @@
 import package::{
     bindings::gpu_meta,
+    color,
     constants::INF,
     hit_record,
     interval,
@@ -37,6 +38,11 @@ fn get_ray_color(ray: ray::Ray) -> vec3f {
         } else {
             return color * gpu_meta.background;
         }
+
+        // Return if ray isn't contributing
+        // if color::is_black(color) {
+        //     return vector::ZEROS;
+        // }
     }
 
     return vector::ZEROS;

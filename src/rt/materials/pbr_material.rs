@@ -1,10 +1,7 @@
-use std::sync::Arc;
-
 use crate::{
     rt::{
         geometry::hit_record::HitRecord,
-        materials::material::{ScatterRecord, reflect},
-        pdf::{Pdf, SpherePdf},
+        materials::material::{reflect, ScatterRecord},
         ray::Ray,
     },
     util::{
@@ -57,11 +54,7 @@ impl PbrMaterial {
             scatter_dir = rec.normal;
         }
 
-        Some(ScatterRecord {
-            attenuation: self.albedo,
-            pdf: Arc::new(Pdf::Sphere(SpherePdf::new())), // TODO
-            skip_pdf_ray: Some(Ray::new(rec.point, scatter_dir, r_in.time)),
-        })
+        Some(ScatterRecord::skip_pdf(self.albedo, Ray::new(rec.point, scatter_dir, r_in.time)))
     }
 }
 

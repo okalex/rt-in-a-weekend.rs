@@ -74,7 +74,8 @@ pub fn scene_spheres() -> (CameraOptions, Scene) {
     scene_builder.add_instance(sphere_glass);
     scene_builder.add_instance(sphere_air);
     scene_builder.add_instance(sphere_gold);
-    scene_builder.add_instance(sphere_light);
+    let light_id = scene_builder.add_instance(sphere_light);
+    scene_builder.add_light(light_id);
 
     (camera_options, scene_builder.build())
 }

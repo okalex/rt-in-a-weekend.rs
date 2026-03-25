@@ -68,6 +68,11 @@ impl Color {
     pub fn to_u8(&self) -> [u8; 3] {
         return [to_u8(self.r()), to_u8(self.g()), to_u8(self.b())];
     }
+
+    #[allow(dead_code)]
+    pub fn is_black(&self) -> bool {
+        to_u8(self.r()) == 0 && to_u8(self.g()) == 0 && to_u8(self.b()) == 0
+    }
 }
 
 impl From<[Float; 3]> for Color {

@@ -6,14 +6,14 @@ use crate::{
         frame_buffer::FrameBuffer,
         geometry::{hit_record::HitRecord, scene::Scene},
         materials::material::{Material, ScatterRecord},
-        pdf::{CosinePdf, Pdf, TransformedPrimitive},
+        pdf::{Pdf, TransformedPrimitive},
         ray::Ray,
         renderer::{cpu::line_server::LineServer, render_options::RenderOptions},
     },
     util::{
         color::Color,
         interval::Interval,
-        types::{INFINITY, Uint},
+        types::{Uint, INFINITY},
     },
 };
 
@@ -135,24 +135,24 @@ impl CpuRenderWorker {
             return Color::black();
         }
 
-        match self.scene.hit(ray, Interval::new(0.001, INFINITY)) {
-            Some((instance_id, hit_record)) => match self.scene.get_material_for(&instance_id) {
-                None => Color::black(),
+        let (instance_id, hit_record) = match self.scene.hit(ray, Interval::new(0.001, INFINITY)) {
+            Some((instance_id, hit_record)) => (instance_id, hit_record),
+            None => return self.options.background,
+        };
 
-                Some(mat) => {
-                    let emitted = mat.emitted(ray, &hit_record);
+        let material = match self.scene.get_material_for(&instance_id) {
+            Some(mat) => mat,
+            None => return Color::black(),
+        };
 
-                    let scattered_color = match mat.scatter(ray, &hit_record) {
-                        Some(scatter_record) => self.scatter_color(ray, depth, &hit_record, &scatter_record, mat),
-                        None => Color::black(),
-                    };
+        let emitted = material.emitted(ray, &hit_record);
 
-                    emitted + scattered_color
-                }
-            },
+        let scattered_color = match material.scatter(ray, &hit_record) {
+            Some(scatter_record) => self.scatter_color(ray, depth, &hit_record, &scatter_record, material),
+            None => Color::black(),
+        };
 
-            None => self.options.background,
-        }
+        emitted + scattered_color
     }
 
     fn scatter_color(&self, ray: &Ray, depth: Uint, hit_record: &HitRecord, scatter_record: &ScatterRecord, mat: &Material) -> Color {
@@ -160,50 +160,50 @@ impl CpuRenderWorker {
             Some(skip_pdf_ray) => scatter_record.attenuation * self.ray_color(&skip_pdf_ray, depth + 1),
 
             None => {
-                let pdf = self.get_pdf(hit_record, scatter_record);
+                let material_pdf = scatter_record.pdf.as_ref().unwrap(); // TODO: guard against None
+                let pdf = self.get_pdf(hit_record, material_pdf);
                 let scattered_dir = pdf.generate();
-                let pdf_value = pdf.value(&scattered_dir);
+                let material_pdf_value = mat.pdf_value(ray, hit_record, &scattered_dir);
 
-                if pdf_value < 1e-10 {
+                let scattered_ray = Ray::new(hit_record.point, scattered_dir, ray.time);
+                let sample_color = self.ray_color(&scattered_ray, depth + 1);
+
+                // Abort before pdf calculation if ray isn't contributing
+                if sample_color.is_black() {
                     return Color::black();
                 }
 
-                let scattered_ray = Ray::new(hit_record.point, scattered_dir, ray.time);
-                let scattering_pdf = mat.scattering_pdf(ray, hit_record, &scattered_ray);
-                let sample_color = self.ray_color(&scattered_ray, depth + 1);
+                let pdf_value = pdf.value(&scattered_dir);
+                if pdf_value < 1e-8 {
+                    return Color::black();
+                }
 
-                scatter_record.attenuation * scattering_pdf * sample_color / pdf_value
+                scatter_record.attenuation * sample_color * material_pdf_value / pdf_value
             }
         }
     }
 
-    fn get_pdf(&self, hit_record: &HitRecord, scatter_record: &ScatterRecord) -> Arc<Pdf> {
-        if self.options.use_importance_sampling {
-            if self.scene.lights.len() > 0 {
-                let primitives: Vec<_> = self
-                    .scene
-                    .lights
-                    .iter()
-                    .flat_map(|instance_id| {
-                        let instance = self.scene.get_instance(instance_id)?;
-                        let primitive = self.scene.get_primitive_for(instance_id)?.clone();
-                        Some(TransformedPrimitive {
-                            primitive,
-                            transform: instance.transform,
-                            inv_transform: instance.inv_transform,
-                        })
+    fn get_pdf(&self, hit_record: &HitRecord, material_pdf: &Arc<Pdf>) -> Arc<Pdf> {
+        if self.options.use_importance_sampling && self.scene.lights.len() > 0 {
+            let primitives: Vec<_> = self
+                .scene
+                .lights
+                .iter()
+                .flat_map(|instance_id| {
+                    let instance = self.scene.get_instance(instance_id)?;
+                    let primitive = self.scene.get_primitive_for(instance_id)?.clone();
+                    Some(TransformedPrimitive {
+                        primitive,
+                        transform: instance.transform,
+                        inv_transform: instance.inv_transform,
                     })
-                    .collect();
+                })
+                .collect();
 
-                let light_pdf = Arc::new(Pdf::multi(hit_record.point, primitives));
-                Arc::new(Pdf::mixture(light_pdf, Arc::clone(&scatter_record.pdf)))
-            } else {
-                Arc::clone(&scatter_record.pdf)
-            }
+            let light_pdf = Arc::new(Pdf::multi(hit_record.point, primitives));
+            Arc::new(Pdf::mixture(light_pdf, Arc::clone(&material_pdf)))
         } else {
-            // Arc::new(Pdf::Hemisphere(HemispherePdf::new(hit_record.normal)))
-            Arc::new(Pdf::Cosine(CosinePdf::new(&hit_record.normal)))
-            // Arc::new(SpherePdf::new())
+            Arc::clone(&material_pdf)
         }
     }
 }

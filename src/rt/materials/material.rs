@@ -18,8 +18,26 @@ use crate::{
 
 pub struct ScatterRecord {
     pub attenuation: Color,
-    pub pdf: Arc<Pdf>,
+    pub pdf: Option<Arc<Pdf>>,
     pub skip_pdf_ray: Option<Ray>,
+}
+
+impl ScatterRecord {
+    pub fn with_pdf(attenuation: Color, pdf: Arc<Pdf>) -> Self {
+        Self {
+            attenuation,
+            pdf: Some(pdf),
+            skip_pdf_ray: None,
+        }
+    }
+
+    pub fn skip_pdf(attenuation: Color, skip_pdf_ray: Ray) -> Self {
+        Self {
+            attenuation,
+            pdf: None,
+            skip_pdf_ray: Some(skip_pdf_ray),
+        }
+    }
 }
 
 pub enum Material {
@@ -44,13 +62,13 @@ impl Material {
         }
     }
 
-    pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> Float {
+    pub fn pdf_value(&self, r_in: &Ray, rec: &HitRecord, scattered_dir: &Vector) -> Float {
         let default = 0.0;
         match self {
             Self::Dielectric(_) => default,
             Self::Emissive(_) => default,
-            Self::Isotropic(mat) => mat.scattering_pdf(r_in, rec, scattered),
-            Self::Lambertian(mat) => mat.scattering_pdf(r_in, rec, scattered),
+            Self::Isotropic(mat) => mat.pdf_value(r_in, rec, scattered_dir),
+            Self::Lambertian(mat) => mat.pdf_value(r_in, rec, scattered_dir),
             Self::Metal(_) => default,
             Self::PbrMaterial(_) => default,
         }

@@ -1,13 +1,7 @@
-use std::sync::Arc;
-
-use super::material::{ScatterRecord, reflect};
+use super::material::{reflect, ScatterRecord};
 use crate::{
-    rt::{
-        geometry::hit_record::HitRecord,
-        pdf::{Pdf, SpherePdf},
-        ray::Ray,
-    },
-    util::{color::Color, random::rand_unit_vector, types::Float},
+    rt::{geometry::hit_record::HitRecord, ray::Ray},
+    util::{color::Color, random::rand_on_hemisphere, types::Float},
 };
 
 pub struct Metal {
@@ -24,12 +18,8 @@ impl Metal {
     }
 
     pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
-        let reflected = reflect(r_in.dir, rec.normal).normalize() + rand_unit_vector() * self.fuzz;
+        let reflected = reflect(r_in.dir, rec.normal).normalize() + rand_on_hemisphere(rec.normal) * self.fuzz;
 
-        Some(ScatterRecord {
-            attenuation: self.albedo,
-            pdf: Arc::new(Pdf::Sphere(SpherePdf::new())), // This isn't actually used - this field should probably be an option
-            skip_pdf_ray: Some(Ray::new(rec.point, reflected, r_in.time)),
-        })
+        Some(ScatterRecord::skip_pdf(self.albedo, Ray::new(rec.point, reflected, r_in.time)))
     }
 }

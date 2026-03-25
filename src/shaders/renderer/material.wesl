@@ -70,7 +70,7 @@ fn scattered(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::
 
         case types::GPUMATERIAL_METAL {
             let metal = types::unpack_GpuMaterial_Metal(mat);
-            let scattered_dir = normalize(reflect(ray_in.dir, hit_record.normal)) + random::rand_unit_vector() * metal.fuzz;
+            let scattered_dir = normalize(reflect(ray_in.dir, hit_record.normal)) + random::rand_vector_on_hemisphere(hit_record.normal) * metal.fuzz;
 
             return skip_pdf(
                 metal.albedo,

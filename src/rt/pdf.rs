@@ -6,7 +6,7 @@ use crate::{
     rt::{geometry::primitive::Primitive, onb::Onb},
     util::{
         random::{rand, rand_cos_dir, rand_int, rand_on_hemisphere, rand_unit_vector},
-        types::{Float, Int, PI, Point, Vector},
+        types::{Float, Int, Point, Vector, PI},
     },
 };
 
@@ -57,11 +57,11 @@ impl SpherePdf {
     }
 
     #[allow(unused)]
-    fn value(&self, direction: &Vector) -> Float {
+    pub fn value(&self, direction: &Vector) -> Float {
         1.0 / (4.0 * PI)
     }
 
-    fn generate(&self) -> Vector {
+    pub fn generate(&self) -> Vector {
         rand_unit_vector()
     }
 }
@@ -77,11 +77,11 @@ impl HemispherePdf {
     }
 
     #[allow(unused)]
-    fn value(&self, direction: &Vector) -> Float {
+    pub fn value(&self, direction: &Vector) -> Float {
         1.0 / (2.0 * PI)
     }
 
-    fn generate(&self) -> Vector {
+    pub fn generate(&self) -> Vector {
         rand_on_hemisphere(self.normal)
     }
 }
@@ -95,12 +95,12 @@ impl CosinePdf {
         Self { uvw: Onb::new(w) }
     }
 
-    fn value(&self, direction: &Vector) -> Float {
+    pub fn value(&self, direction: &Vector) -> Float {
         let cos_theta = direction.normalize().dot(self.uvw.w());
         Float::max(0.0, cos_theta / PI)
     }
 
-    fn generate(&self) -> Vector {
+    pub fn generate(&self) -> Vector {
         self.uvw.transform(rand_cos_dir())
     }
 }
@@ -122,7 +122,7 @@ impl MultiPdf {
         Self { origin, primitives }
     }
 
-    fn value(&self, direction: &Vector) -> Float {
+    pub fn value(&self, direction: &Vector) -> Float {
         let weight = 1.0 / self.primitives.len() as Float;
         let mut sum = 0.0;
         for tp in &self.primitives {
@@ -135,7 +135,7 @@ impl MultiPdf {
         sum
     }
 
-    fn generate(&self) -> Vector {
+    pub fn generate(&self) -> Vector {
         let count = self.primitives.len() as Int;
         let tp = &self.primitives[rand_int(0, count - 1) as usize];
         // Generate direction in local space, then transform to world space
@@ -155,11 +155,15 @@ impl MixturePdf {
         Self { p0, p1 }
     }
 
-    fn value(&self, direction: &Vector) -> Float {
+    pub fn value(&self, direction: &Vector) -> Float {
         0.5 * self.p0.value(direction) + 0.5 * self.p1.value(direction)
     }
 
-    fn generate(&self) -> Vector {
-        if rand() < 0.5 { self.p0.generate() } else { self.p1.generate() }
+    pub fn generate(&self) -> Vector {
+        if rand() < 0.5 {
+            self.p0.generate()
+        } else {
+            self.p1.generate()
+        }
     }
 }

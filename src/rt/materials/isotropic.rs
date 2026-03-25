@@ -10,7 +10,7 @@ use crate::{
     },
     util::{
         color::Color,
-        types::{Float, PI},
+        types::{Float, Vector},
     },
 };
 
@@ -25,16 +25,16 @@ impl Isotropic {
 
     #[allow(unused_variables)]
     pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
-        Some(ScatterRecord {
-            attenuation: self.texture.value(rec.u, rec.v, &rec.point),
-            pdf: Arc::new(Pdf::Sphere(SpherePdf::new())),
-            skip_pdf_ray: None,
-        })
+        Some(ScatterRecord::with_pdf(
+            self.texture.value(rec.u, rec.v, &rec.point),
+            Arc::new(Pdf::Sphere(SpherePdf::new())),
+        ))
     }
 
     #[allow(unused_variables)]
-    pub fn scattering_pdf(&self, r_in: &Ray, rec: &HitRecord, scattered: &Ray) -> Float {
-        1.0 / (4.0 * PI)
+    pub fn pdf_value(&self, r_in: &Ray, rec: &HitRecord, scattered_dir: &Vector) -> Float {
+        let pdf = SpherePdf::new();
+        pdf.value(scattered_dir)
     }
 }
 

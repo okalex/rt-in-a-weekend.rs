@@ -1,12 +1,6 @@
-use std::sync::Arc;
-
-use super::material::{ScatterRecord, reflect, reflectance, refract};
+use super::material::{reflect, reflectance, refract, ScatterRecord};
 use crate::{
-    rt::{
-        geometry::hit_record::HitRecord,
-        pdf::{Pdf, SpherePdf},
-        ray::Ray,
-    },
+    rt::{geometry::hit_record::HitRecord, ray::Ray},
     util::{color::Color, random::rand, types::Float},
 };
 
@@ -38,10 +32,6 @@ impl Dielectric {
             (self.albedo, refract(unit_dir, rec.normal, ri))
         };
 
-        Some(ScatterRecord {
-            attenuation: attenuation,
-            pdf: Arc::new(Pdf::Sphere(SpherePdf::new())), // TODO
-            skip_pdf_ray: Some(Ray::new(rec.point, direction, r_in.time)),
-        })
+        Some(ScatterRecord::skip_pdf(attenuation, Ray::new(rec.point, direction, r_in.time)))
     }
 }

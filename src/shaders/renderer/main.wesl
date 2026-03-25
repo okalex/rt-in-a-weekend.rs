@@ -24,8 +24,8 @@ fn main(
     for (var i = 0u; i < gpu_meta.num_samples; i = i + 1) {
         let camera_ray = camera::get_ray(x, y);
         // let sample_color = clamp(get_ray_color(camera_ray), vec3(0.0), vec3(f32(gpu_meta.num_samples)));
-        let sample_color = clamp(renderer::get_ray_color(camera_ray), vec3(0.0), vec3(10.0));
-        // let sample_color = renderer::get_ray_color(camera_ray);
+        // let sample_color = clamp(renderer::get_ray_color(camera_ray), vec3(0.0), vec3(10.0));
+        let sample_color = renderer::get_ray_color(camera_ray);
         color = color + sample_color / f32(gpu_meta.num_samples);
     }
 
