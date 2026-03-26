@@ -1,63 +1,71 @@
 use crate::{
     rt::{
         geometry::hit_record::HitRecord,
-        materials::material::{reflect, ScatterRecord},
+        materials::material::{ScatterRecord, reflect},
+        pdf::CosinePdf,
         ray::Ray,
     },
     util::{
         color::Color,
-        random::rand_on_hemisphere,
+        random::{rand, rand_on_hemisphere},
         types::{Float, Vector},
     },
 };
 
+pub struct PbrMaterialProperties {
+    pub roughness: Float,
+    pub specular: Float,
+    pub metallic: Float,
+    pub fresnel: Float,
+}
+
 pub struct PbrMaterial {
     pub albedo: Color,
-    // pub roughness: f64,
-    // pub opacity: f64,
-    pub metallicity: Float,
-    // pub color_map: Option<ImageMap>,
-    // pub normal_map: Option<ImageMap>,
-    // pub roughness_map: Option<ImageMap>,
-    // pub metallicity_map: Option<ImageMap>,
+    pub roughness: Float,
+    pub specular: Float,
+    pub metallic: Float,
+    pub fresnel: Float,
+    pub diffuse: Float,
 }
 
 impl PbrMaterial {
-    pub fn new(albedo: Color, metallicity: Float) -> Self {
-        Self { albedo, metallicity }
-    }
-
-    #[allow(unused)]
-    fn diffuse_scatter(&self, in_dir: Vector, normal: Vector) -> Vector {
-        let diffuse_scale = 1.0 - self.metallicity;
-        if diffuse_scale > 0.0 {
-            normal + rand_on_hemisphere(normal)
-        } else {
-            Vector::ZERO
+    pub fn new(albedo: Color, props: PbrMaterialProperties) -> Self {
+        let diffuse = (1.0 - props.specular) * (1.0 - props.metallic);
+        Self {
+            albedo,
+            roughness: props.roughness,
+            specular: props.specular,
+            metallic: props.metallic,
+            fresnel: props.fresnel,
+            diffuse,
         }
     }
 
-    fn metallic_scatter(&self, in_dir: Vector, normal: Vector) -> Vector {
-        if self.metallicity > 0.0 {
-            reflect(in_dir, normal).normalize()
-        } else {
-            Vector::ZERO
-        }
+    pub fn mix_colors(a: Color, b: Color, control: Float) -> Color {
+        a * control + b * (1.0 - control)
     }
 
-    #[allow(unused)]
-    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+    pub fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
+        let alpha = self.roughness * self.roughness;
+
+        let f0 = Self::mix_colors(Color::fill(0.08 * self.specular), self.albedo, self.metallic);
+        let cos_theta = r_in.dir.dot(hit_record.normal);
+        // let fresnel = schlick(f0, cos_theta);
+
+        // TODO: use luminance to determine which lobe to evaluate
+        if rand() < 0.5 {
+            // Specular lobe
+        } else {
+            // Diffuse lobe
+        }
+
         // Diffuse scatter
-        let mut scatter_dir = self.diffuse_scatter(r_in.dir, rec.normal) + self.metallic_scatter(r_in.dir, rec.normal);
+        let cosine_pdf = CosinePdf::new(&hit_record.normal);
+        let scatter_dir = (1.0 - self.roughness) * reflect(r_in.dir, hit_record.normal) + self.roughness * cosine_pdf.generate();
 
-        if all_are_less_than(scatter_dir, 1e-8) {
-            scatter_dir = rec.normal;
-        }
-
-        Some(ScatterRecord::skip_pdf(self.albedo, Ray::new(rec.point, scatter_dir, r_in.time)))
+        Some(ScatterRecord::skip_pdf(
+            self.albedo,
+            Ray::new(hit_record.point, scatter_dir, r_in.time),
+        ))
     }
-}
-
-fn all_are_less_than(vec: Vector, limit: Float) -> bool {
-    (vec.x.abs() < limit) && (vec.y.abs() < limit) && (vec.z.abs() < limit)
 }

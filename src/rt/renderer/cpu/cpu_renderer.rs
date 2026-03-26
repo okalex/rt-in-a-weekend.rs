@@ -147,63 +147,66 @@ impl CpuRenderWorker {
 
         let emitted = material.emitted(ray, &hit_record);
 
-        let scattered_color = match material.scatter(ray, &hit_record) {
-            Some(scatter_record) => self.scatter_color(ray, depth, &hit_record, &scatter_record, material),
-            None => Color::black(),
+        let scattered_color = if let Some(scatter_record) = material.scatter(ray, &hit_record) {
+            self.scatter_color(ray, depth, &hit_record, &scatter_record, material)
+        } else {
+            Color::black()
         };
 
         emitted + scattered_color
     }
 
     fn scatter_color(&self, ray: &Ray, depth: Uint, hit_record: &HitRecord, scatter_record: &ScatterRecord, mat: &Material) -> Color {
-        match &scatter_record.skip_pdf_ray {
-            Some(skip_pdf_ray) => scatter_record.attenuation * self.ray_color(&skip_pdf_ray, depth + 1),
-
-            None => {
-                let material_pdf = scatter_record.pdf.as_ref().unwrap(); // TODO: guard against None
-                let pdf = self.get_pdf(hit_record, material_pdf);
-                let scattered_dir = pdf.generate();
-                let material_pdf_value = mat.pdf_value(ray, hit_record, &scattered_dir);
-
-                let scattered_ray = Ray::new(hit_record.point, scattered_dir, ray.time);
-                let sample_color = self.ray_color(&scattered_ray, depth + 1);
-
-                // Abort before pdf calculation if ray isn't contributing
-                if sample_color.is_black() {
-                    return Color::black();
-                }
-
-                let pdf_value = pdf.value(&scattered_dir);
-                if pdf_value < 1e-8 {
-                    return Color::black();
-                }
-
-                scatter_record.attenuation * sample_color * material_pdf_value / pdf_value
-            }
+        if let Some(skip_pdf_ray) = &scatter_record.skip_pdf_ray {
+            return scatter_record.attenuation * self.ray_color(&skip_pdf_ray, depth + 1);
         }
+
+        let material_pdf = scatter_record.pdf.as_ref().unwrap(); // TODO: guard against None
+        let pdf = self.get_pdf(hit_record, material_pdf);
+        let scattered_dir = pdf.generate();
+
+        let scattered_ray = Ray::new(hit_record.point, scattered_dir, ray.time); // Should time = ray.time + hit_record.t?
+        let sample_color = self.ray_color(&scattered_ray, depth + 1);
+
+        // Abort before pdf calculation if ray isn't contributing
+        if sample_color.is_black() {
+            return Color::black();
+        }
+
+        let pdf_value = pdf.value(&scattered_dir);
+        if pdf_value < 1e-8 {
+            return Color::black();
+        }
+
+        let cos_theta = hit_record.normal.dot(scattered_dir.normalize()).max(0.0);
+        let brdf = mat.brdf(ray, hit_record, &scattered_dir);
+
+        brdf * sample_color * cos_theta / pdf_value
     }
 
     fn get_pdf(&self, hit_record: &HitRecord, material_pdf: &Arc<Pdf>) -> Arc<Pdf> {
-        if self.options.use_importance_sampling && self.scene.lights.len() > 0 {
-            let primitives: Vec<_> = self
-                .scene
-                .lights
-                .iter()
-                .flat_map(|instance_id| {
-                    let instance = self.scene.get_instance(instance_id)?;
-                    let primitive = self.scene.get_primitive_for(instance_id)?.clone();
-                    Some(TransformedPrimitive {
-                        primitive,
-                        transform: instance.transform,
-                        inv_transform: instance.inv_transform,
-                    })
-                })
-                .collect();
+        let use_importance_sampling = self.options.use_importance_sampling && self.scene.lights.len() > 0;
 
-            let light_pdf = Arc::new(Pdf::multi(hit_record.point, primitives));
-            Arc::new(Pdf::mixture(light_pdf, Arc::clone(&material_pdf)))
-        } else {
-            Arc::clone(&material_pdf)
+        if !use_importance_sampling {
+            return Arc::clone(&material_pdf);
         }
+
+        let primitives: Vec<_> = self
+            .scene
+            .lights
+            .iter()
+            .flat_map(|instance_id| {
+                let instance = self.scene.get_instance(instance_id)?;
+                let primitive = self.scene.get_primitive_for(instance_id)?.clone();
+                Some(TransformedPrimitive {
+                    primitive,
+                    transform: instance.transform,
+                    inv_transform: instance.inv_transform,
+                })
+            })
+            .collect();
+
+        let light_pdf = Arc::new(Pdf::multi(hit_record.point, primitives));
+        Arc::new(Pdf::mixture(light_pdf, Arc::clone(&material_pdf)))
     }
 }

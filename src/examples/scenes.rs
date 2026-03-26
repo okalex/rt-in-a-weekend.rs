@@ -6,6 +6,7 @@ use crate::{
             primitive::Primitive,
             scene::{Instance, Scene, SceneBuilder},
         },
+        materials::pbr_material::PbrMaterialProperties,
     },
     util::{
         file::load_model,
@@ -24,6 +25,7 @@ pub fn get_scene(scene_idx: u32) -> (CameraOptions, Scene) {
         5 => scene_triangles(),
         6 => scene_mesh(),
         7 => scene_book2(),
+        8 => scene_pbr(),
         _ => panic!(),
     }
 }
@@ -37,7 +39,7 @@ pub fn scene_spheres() -> (CameraOptions, Scene) {
     // Setup camera
     let camera_options = CameraOptions::new()
         .vfov(50.0)
-        .position([0.0, 1.5, 4.0])
+        .position([0.0, 1.5, 2.0])
         .target([0.0, 0.5, 0.0])
         .defocus_angle(0.5)
         .focus_dist(3.4);
@@ -62,9 +64,9 @@ pub fn scene_spheres() -> (CameraOptions, Scene) {
 
     // Make instances
     let sphere_blue = Instance::new(sphere_id, blue_id).translate([0.0, 0.5, 0.0]);
-    let sphere_glass = Instance::new(sphere_id, glass_id).translate([-1.0, 0.5, 0.0]);
-    let sphere_air = Instance::new(sphere_id, air_id).scale_uniform(0.6).translate([-1.0, 0.5, 0.0]);
-    let sphere_gold = Instance::new(sphere_id, gold_id).translate([1.0, 0.5, 0.0]);
+    let sphere_glass = Instance::new(sphere_id, glass_id).translate([-1.1, 0.5, 0.0]);
+    let sphere_air = Instance::new(sphere_id, air_id).scale_uniform(0.6).translate([-1.1, 0.5, 0.0]);
+    let sphere_gold = Instance::new(sphere_id, gold_id).translate([1.1, 0.5, 0.0]);
     let sphere_light = Instance::new(sphere_id, diffuse_light_id)
         .scale_uniform(0.6)
         .translate([0.0, 2.5, 0.0]);
@@ -428,6 +430,43 @@ pub fn scene_book2() -> (CameraOptions, Scene) {
         let boundary_id = scene_builder.add_primitive(primitives::sphere([0.0, 0.0, 0.0], 5000.0));
         let medium = scene_builder.add_primitive(primitives::medium(boundary_id, 0.0001));
         let _ = scene_builder.add_instance(Instance::new(medium, mat_haze));
+    }
+
+    (camera_options, scene_builder.build())
+}
+
+// Test PBR material rendering
+pub fn scene_pbr() -> (CameraOptions, Scene) {
+    let mut scene_builder = SceneBuilder::new();
+    let materials = materials::defaults();
+    let primitives = primitives::defaults();
+
+    // Setup camera
+    let camera_options = CameraOptions::new()
+        .vfov(20.0)
+        .position([0.0, 1.5, 4.0])
+        .target([0.0, 0.5, 0.0])
+        .defocus_angle(0.0)
+        .focus_dist(3.4);
+
+    // Add primitives
+    let sphere_id = scene_builder.add_primitive(primitives::sphere([0.0, 0.0, 0.0], 0.5));
+
+    // Add ground
+    let checkered_id = scene_builder.add_material(materials.checkered);
+    let ground_id = scene_builder.add_primitive(primitives.ground);
+    scene_builder.create_instance(ground_id, checkered_id);
+
+    // Add sphere
+    for i in 0..=5 {
+        let props = PbrMaterialProperties {
+            roughness: 0.2 * i as Float,
+            specular: 0.0,
+            metallic: 0.0,
+            fresnel: 0.0,
+        };
+        let mat_id = scene_builder.add_material(materials::pbr_metal([0.3, 0.2, 0.8], props));
+        scene_builder.add_instance(Instance::new(sphere_id, mat_id).translate([1.1 * i as Float - 2.75, 0.5, 0.0]));
     }
 
     (camera_options, scene_builder.build())

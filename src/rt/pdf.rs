@@ -6,7 +6,7 @@ use crate::{
     rt::{geometry::primitive::Primitive, onb::Onb},
     util::{
         random::{rand, rand_cos_dir, rand_int, rand_on_hemisphere, rand_unit_vector},
-        types::{Float, Int, Point, Vector, PI},
+        types::{Float, Int, PI, Point, Vector},
     },
 };
 
@@ -160,10 +160,6 @@ impl MixturePdf {
     }
 
     pub fn generate(&self) -> Vector {
-        if rand() < 0.5 {
-            self.p0.generate()
-        } else {
-            self.p1.generate()
-        }
+        if rand() < 0.5 { self.p0.generate() } else { self.p1.generate() }
     }
 }

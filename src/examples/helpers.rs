@@ -7,8 +7,13 @@ pub mod materials {
         examples::helpers::{rand_arr3, textures},
         rt::{
             materials::{
-                dielectric::Dielectric, emissive::Emissive, isotropic::Isotropic, lambertian::Lambertian, material::Material, metal::Metal,
-                pbr_material::PbrMaterial,
+                dielectric::Dielectric,
+                emissive::Emissive,
+                isotropic::Isotropic,
+                lambertian::Lambertian,
+                material::Material,
+                metal::Metal,
+                pbr_material::{PbrMaterial, PbrMaterialProperties},
             },
             textures::{image_map::ImageMap, perlin_noise::PerlinNoise, texture::Texture},
         },
@@ -34,7 +39,6 @@ pub mod materials {
         pub rusty_metal: Material,
         pub marble: Material,
         pub earth: Material,
-        pub pbr: Material,
     }
 
     pub fn defaults() -> Defaults {
@@ -56,7 +60,6 @@ pub mod materials {
             rusty_metal: image_map("assets/rusty-metal.jpg", 1.0),
             marble: from_texture(Arc::new(Texture::Perlin(PerlinNoise::new(8.0)))),
             earth: image_map("assets/earthmap.jpg", 1.0),
-            pbr: pbr([0.8, 0.6, 0.2], 0.7),
         }
     }
 
@@ -86,7 +89,6 @@ pub mod materials {
         Material::Metal(Metal::new(color, fuzz))
     }
 
-    #[allow(dead_code)]
     pub fn rand_metal() -> Material {
         let albedo = rand_arr3();
         let fuzz = rand_range(0.0, 0.5);
@@ -102,9 +104,9 @@ pub mod materials {
         from_texture(tex)
     }
 
-    pub fn pbr(albedo: [Float; 3], metallicity: Float) -> Material {
+    pub fn pbr_metal(albedo: [Float; 3], props: PbrMaterialProperties) -> Material {
         let color = Color::from(albedo);
-        Material::PbrMaterial(PbrMaterial::new(color, metallicity))
+        Material::PbrMaterial(PbrMaterial::new(color, props))
     }
 
     pub fn isotropic(albedo: [Float; 3]) -> Material {

@@ -35,4 +35,3 @@ fn main(
     let out = (output[idx].xyz * (frame_num - 1.0) + color) / frame_num;
     output[idx] = color::to_rgba(out);
 }
-

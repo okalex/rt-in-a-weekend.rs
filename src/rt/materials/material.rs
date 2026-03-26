@@ -50,27 +50,15 @@ pub enum Material {
 }
 
 impl Material {
-    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+    pub fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
         let default = None;
         match self {
-            Self::Dielectric(mat) => mat.scatter(r_in, rec),
+            Self::Dielectric(mat) => mat.scatter(r_in, hit_record),
             Self::Emissive(_) => default,
-            Self::Isotropic(mat) => mat.scatter(r_in, rec),
-            Self::Lambertian(mat) => mat.scatter(r_in, rec),
-            Self::Metal(mat) => mat.scatter(r_in, rec),
-            Self::PbrMaterial(mat) => mat.scatter(r_in, rec),
-        }
-    }
-
-    pub fn pdf_value(&self, r_in: &Ray, rec: &HitRecord, scattered_dir: &Vector) -> Float {
-        let default = 0.0;
-        match self {
-            Self::Dielectric(_) => default,
-            Self::Emissive(_) => default,
-            Self::Isotropic(mat) => mat.pdf_value(r_in, rec, scattered_dir),
-            Self::Lambertian(mat) => mat.pdf_value(r_in, rec, scattered_dir),
-            Self::Metal(_) => default,
-            Self::PbrMaterial(_) => default,
+            Self::Isotropic(mat) => mat.scatter(r_in, hit_record),
+            Self::Lambertian(mat) => mat.scatter(r_in, hit_record),
+            Self::Metal(mat) => mat.scatter(r_in, hit_record),
+            Self::PbrMaterial(mat) => mat.scatter(r_in, hit_record),
         }
     }
 
@@ -81,6 +69,18 @@ impl Material {
             Self::Emissive(mat) => mat.emitted(r_in, hit_record),
             Self::Isotropic(_) => default,
             Self::Lambertian(_) => default,
+            Self::Metal(_) => default,
+            Self::PbrMaterial(_) => default,
+        }
+    }
+
+    pub fn brdf(&self, r_in: &Ray, hit_record: &HitRecord, scattered_dir: &Vector) -> Color {
+        let default = Color::black();
+        match self {
+            Self::Dielectric(_) => default,
+            Self::Emissive(_) => default,
+            Self::Isotropic(mat) => mat.brdf(r_in, hit_record, scattered_dir),
+            Self::Lambertian(mat) => mat.brdf(r_in, hit_record, scattered_dir),
             Self::Metal(_) => default,
             Self::PbrMaterial(_) => default,
         }

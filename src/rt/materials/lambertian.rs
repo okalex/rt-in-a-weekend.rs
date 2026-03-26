@@ -10,7 +10,7 @@ use crate::{
     },
     util::{
         color::Color,
-        types::{Float, Vector},
+        types::{Float, Vector, PI},
     },
 };
 
@@ -23,23 +23,18 @@ impl Lambertian {
         Self { texture }
     }
 
-    #[allow(dead_code)]
-    fn all_are_less_than(vec: Vector, limit: Float) -> bool {
-        (vec.x.abs() < limit) && (vec.y.abs() < limit) && (vec.z.abs() < limit)
-    }
-
-    #[allow(unused)]
-    pub fn scatter(&self, r_in: &Ray, rec: &HitRecord) -> Option<ScatterRecord> {
+    #[allow(unused_variables)]
+    pub fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
         Some(ScatterRecord::with_pdf(
-            self.texture.value(rec.u, rec.v, &rec.point),
-            Arc::new(Pdf::Cosine(CosinePdf::new(&rec.normal))),
+            self.texture.value(hit_record.u, hit_record.v, &hit_record.point),
+            Arc::new(Pdf::Cosine(CosinePdf::new(&hit_record.normal))),
         ))
     }
 
-    #[allow(unused)]
-    pub fn pdf_value(&self, r_in: &Ray, rec: &HitRecord, scattered_dir: &Vector) -> Float {
-        let pdf = CosinePdf::new(&rec.normal);
-        return pdf.value(scattered_dir);
+    #[allow(unused_variables)]
+    pub fn brdf(&self, r_in: &Ray, hit_record: &HitRecord, scattered_dir: &Vector) -> Color {
+        let attenuation = self.texture.value(hit_record.u, hit_record.v, &hit_record.point);
+        attenuation / PI
     }
 }
 
