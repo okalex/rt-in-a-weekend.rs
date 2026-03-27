@@ -17,11 +17,14 @@ pollster = "0.4.0"
 rand = "0.10.0"
 tobj = { version = "3.2", default-features = false, features = ["async"] }
 tokio = { version = "1.50.0", features = ["full"] }
-wgpu = { version = "28.0.0", features = ["naga-ir"] }
+wgpu = { version = "29.0.0" }
 winit = "0.30.13"
 encase_enum = { git = "https://github.com/okalex/encase_enum" }
 wesl = "0.3.2"
 obvhs = "0.3.0"
+egui = "0.34.0"
+egui-winit = "0.34.0"
+egui-wgpu = "0.34.0"
 
 [build-dependencies]
 anyhow = "1.0"

@@ -49,11 +49,11 @@ impl Pdf {
     }
 }
 
-pub struct SpherePdf {}
+pub struct SpherePdf;
 
 impl SpherePdf {
     pub fn new() -> Self {
-        Self {}
+        Self
     }
 
     #[allow(unused)]

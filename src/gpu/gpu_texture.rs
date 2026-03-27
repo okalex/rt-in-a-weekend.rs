@@ -5,6 +5,7 @@ use crate::rt::frame_buffer::FrameBuffer;
 pub struct GpuTexture {
     texture: wgpu::Texture,
     view: wgpu::TextureView,
+    unorm_view: wgpu::TextureView,
     sampler: wgpu::Sampler,
 }
 
@@ -23,16 +24,20 @@ impl GpuTexture {
             dimension: wgpu::TextureDimension::D2,
             format: texture_format,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
+            view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
         });
         let view = texture.create_view(&Default::default());
+        let unorm_view = texture.create_view(&wgpu::TextureViewDescriptor {
+            format: Some(wgpu::TextureFormat::Rgba8Unorm),
+            ..Default::default()
+        });
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             ..Default::default()
         });
 
-        Self { texture, view, sampler }
+        Self { texture, view, unorm_view, sampler }
     }
 
     pub fn bind_group_layout_entries(&self, binding_idx: u32) -> [wgpu::BindGroupLayoutEntry; 2] {
@@ -71,5 +76,9 @@ impl GpuTexture {
 
     pub fn as_image_copy(&self) -> wgpu::TexelCopyTextureInfo<'_> {
         self.texture.as_image_copy()
+    }
+
+    pub fn unorm_view(&self) -> &wgpu::TextureView {
+        &self.unorm_view
     }
 }

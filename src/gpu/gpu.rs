@@ -36,6 +36,13 @@ impl Gpu {
         }
     }
 
+    pub fn texture_format(&self) -> &wgpu::TextureFormat {
+        match self {
+            Self::Windowed(gpu) => &gpu.config.format,
+            Self::Headless(_) => panic!(),
+        }
+    }
+
     pub fn is_ready(&self) -> bool {
         match self {
             Self::Windowed(gpu) => gpu.is_surface_configured,
@@ -128,6 +135,27 @@ impl Gpu {
         }
     }
 
+    pub fn get_current_texture(&self) -> wgpu::SurfaceTexture {
+        match self {
+            Self::Headless(_) => panic!(),
+            Self::Windowed(gpu) => match gpu.surface.get_current_texture() {
+                wgpu::CurrentSurfaceTexture::Success(tex) | wgpu::CurrentSurfaceTexture::Suboptimal(tex) => tex,
+                other => panic!("Failed to acquire surface texture: {:?}", other),
+            },
+        }
+    }
+
+    pub fn create_command_encoder(&self) -> wgpu::CommandEncoder {
+        self.device().create_command_encoder(&Default::default())
+    }
+
+    pub fn submit_and_present(&self, encoder: wgpu::CommandEncoder, extra_buffers: Vec<wgpu::CommandBuffer>, frame: wgpu::SurfaceTexture) {
+        let mut buffers = extra_buffers;
+        buffers.push(encoder.finish());
+        self.queue().submit(buffers);
+        frame.present();
+    }
+
     pub fn resize(&mut self, width: Uint, height: Uint) {
         match self {
             Self::Headless(_) => panic!(),
@@ -146,7 +174,7 @@ pub struct GpuHeadless {
 
 impl GpuHeadless {
     pub async fn new() -> anyhow::Result<Self> {
-        let instance = wgpu::Instance::new(&Default::default());
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
         let adapter = instance.request_adapter(&Default::default()).await?;
         let (device, queue) = adapter.request_device(&Default::default()).await?;
 
@@ -192,10 +220,12 @@ impl GpuWindowed {
     }
 
     fn new_instance() -> wgpu::Instance {
-        wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             flags: wgpu::InstanceFlags::VALIDATION,
-            ..Default::default()
+            backend_options: Default::default(),
+            memory_budget_thresholds: Default::default(),
+            display: None,
         })
     }
 
@@ -250,7 +280,7 @@ impl GpuWindowed {
     ) -> wgpu::RenderPipeline {
         let pipeline_layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Pipeline layout"),
-            bind_group_layouts: bind_group_layouts,
+            bind_group_layouts: &bind_group_layouts.iter().map(|l| Some(*l)).collect::<Vec<_>>(),
             immediate_size: 0,
         });
 
@@ -291,7 +321,10 @@ impl GpuWindowed {
     }
 
     pub fn render(&self, render_pipeline: &wgpu::RenderPipeline, bind_group: &wgpu::BindGroup) {
-        let frame = self.surface.get_current_texture().unwrap();
+        let frame = match self.surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(tex) | wgpu::CurrentSurfaceTexture::Suboptimal(tex) => tex,
+            other => panic!("Failed to acquire surface texture: {:?}", other),
+        };
         let view = frame.texture.create_view(&Default::default());
         let mut encoder = self.device.create_command_encoder(&Default::default());
         {

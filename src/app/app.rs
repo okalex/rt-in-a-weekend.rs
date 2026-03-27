@@ -19,6 +19,7 @@ use crate::{
 pub struct App {
     width: Uint,
     height: Uint,
+    controls_panel_width: Uint,
     state: Option<State>,
     frame_buffer: Arc<FrameBuffer>,
 }
@@ -29,9 +30,12 @@ impl App {
             renderer.render().await;
         });
 
+        let controls_panel_width = 250;
+
         Self {
             width,
             height,
+            controls_panel_width,
             state: None,
             frame_buffer,
         }
@@ -43,10 +47,10 @@ impl ApplicationHandler<State> for App {
         log::info!("Window resumed");
         let window_attrs = Window::default_attributes()
             .with_inner_size(LogicalSize {
-                width: self.width as u32,
+                width: (self.width + self.controls_panel_width) as u32,
                 height: self.height as u32,
             })
-            .with_resizable(false);
+            .with_resizable(true);
 
         let window = Arc::new(event_loop.create_window(window_attrs).unwrap());
         self.state = Some(pollster::block_on(State::new(window, Arc::clone(&self.frame_buffer))).unwrap());
@@ -62,6 +66,11 @@ impl ApplicationHandler<State> for App {
             None => return,
         };
 
+        let event_response = state.egui_state.on_window_event(&state.window, &event);
+        if event_response.consumed {
+            return;
+        }
+
         match event {
             WindowEvent::CloseRequested => std::process::exit(0),
 
@@ -71,10 +80,6 @@ impl ApplicationHandler<State> for App {
                 state.update();
                 match state.render() {
                     Ok(_) => {}
-                    Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-                        let size = state.window.inner_size();
-                        state.resize(size.width as Uint, size.height as Uint);
-                    }
                     Err(e) => {
                         log::error!("Unable to render {}", e);
                     }
