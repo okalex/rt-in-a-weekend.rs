@@ -8,30 +8,21 @@ pub fn build_ui(ui: &mut egui::Ui, render_texture_id: egui::TextureId, frame_buf
             ui.heading("Controls");
             ui.separator();
 
-            ui.label(format!(
-                "Render size: {}x{}",
-                frame_buffer.width, frame_buffer.height
-            ));
+            ui.label(format!("Render size: {}x{}", frame_buffer.width, frame_buffer.height));
 
             ui.separator();
 
-            egui::CollapsingHeader::new("Renderer")
-                .default_open(true)
-                .show(ui, |ui| {
-                    ui.label("Renderer options will go here.");
-                });
+            egui::CollapsingHeader::new("Renderer").default_open(true).show(ui, |ui| {
+                ui.label("Renderer options will go here.");
+            });
 
-            egui::CollapsingHeader::new("Camera")
-                .default_open(true)
-                .show(ui, |ui| {
-                    ui.label("Camera options will go here.");
-                });
+            egui::CollapsingHeader::new("Camera").default_open(true).show(ui, |ui| {
+                ui.label("Camera options will go here.");
+            });
 
-            egui::CollapsingHeader::new("Scene")
-                .default_open(true)
-                .show(ui, |ui| {
-                    ui.label("Scene options will go here.");
-                });
+            egui::CollapsingHeader::new("Scene").default_open(true).show(ui, |ui| {
+                ui.label("Scene options will go here.");
+            });
         });
 
     egui::CentralPanel::default().show_inside(ui, |ui| {
@@ -41,10 +32,7 @@ pub fn build_ui(ui: &mut egui::Ui, render_texture_id: egui::TextureId, frame_buf
         let display_size = img_size * scale;
 
         ui.centered_and_justified(|ui| {
-            ui.add(egui::Image::new(egui::load::SizedTexture::new(
-                render_texture_id,
-                display_size,
-            )));
+            ui.add(egui::Image::new(egui::load::SizedTexture::new(render_texture_id, display_size)));
         });
     });
 

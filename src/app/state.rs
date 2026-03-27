@@ -32,19 +32,11 @@ impl State {
             None,
             None,
         );
-        let mut egui_renderer = egui_wgpu::Renderer::new(
-            gpu.device(),
-            *gpu.texture_format(),
-            egui_wgpu::RendererOptions::default(),
-        );
+        let mut egui_renderer = egui_wgpu::Renderer::new(gpu.device(), *gpu.texture_format(), egui_wgpu::RendererOptions::default());
 
         let texture = GpuTexture::new(gpu.device(), Arc::clone(&frame_buffer));
 
-        let render_texture_id = egui_renderer.register_native_texture(
-            gpu.device(),
-            texture.unorm_view(),
-            wgpu::FilterMode::Linear,
-        );
+        let render_texture_id = egui_renderer.register_native_texture(gpu.device(), texture.unorm_view(), wgpu::FilterMode::Linear);
 
         Ok(Self {
             window,
@@ -101,10 +93,7 @@ impl State {
         let paint_jobs = egui_ctx.tessellate(full_output.shapes, pixels_per_point);
 
         let screen_descriptor = egui_wgpu::ScreenDescriptor {
-            size_in_pixels: [
-                self.window.inner_size().width,
-                self.window.inner_size().height,
-            ],
+            size_in_pixels: [self.window.inner_size().width, self.window.inner_size().height],
             pixels_per_point,
         };
 
@@ -115,15 +104,12 @@ impl State {
 
         // Update egui textures and buffers
         for (id, image_delta) in &full_output.textures_delta.set {
-            self.egui_renderer.update_texture(self.gpu.device(), self.gpu.queue(), *id, image_delta);
+            self.egui_renderer
+                .update_texture(self.gpu.device(), self.gpu.queue(), *id, image_delta);
         }
-        let extra_buffers = self.egui_renderer.update_buffers(
-            self.gpu.device(),
-            self.gpu.queue(),
-            &mut encoder,
-            &paint_jobs,
-            &screen_descriptor,
-        );
+        let extra_buffers =
+            self.egui_renderer
+                .update_buffers(self.gpu.device(), self.gpu.queue(), &mut encoder, &paint_jobs, &screen_descriptor);
 
         // Render egui
         {
@@ -140,7 +126,8 @@ impl State {
                 })],
                 ..Default::default()
             });
-            self.egui_renderer.render(&mut rpass.forget_lifetime(), &paint_jobs, &screen_descriptor);
+            self.egui_renderer
+                .render(&mut rpass.forget_lifetime(), &paint_jobs, &screen_descriptor);
         }
 
         // Submit and present

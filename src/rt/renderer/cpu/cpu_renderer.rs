@@ -13,7 +13,7 @@ use crate::{
     util::{
         color::Color,
         interval::Interval,
-        types::{Uint, INFINITY},
+        types::{INFINITY, Uint},
     },
 };
 

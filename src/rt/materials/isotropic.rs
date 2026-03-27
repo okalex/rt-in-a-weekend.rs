@@ -10,7 +10,7 @@ use crate::{
     },
     util::{
         color::Color,
-        types::{Float, Vector, PI},
+        types::{Float, PI, Vector},
     },
 };
 
