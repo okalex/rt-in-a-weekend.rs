@@ -60,7 +60,7 @@ impl ApplicationHandler<State> for App {
             None => return,
         };
 
-        let event_response = state.egui_state.on_window_event(&state.window, &event);
+        let event_response = state.egui.state.on_window_event(&state.window, &event);
         if event_response.consumed {
             return;
         }

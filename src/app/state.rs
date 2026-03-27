@@ -3,7 +3,7 @@ use std::sync::Arc;
 use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 
 use crate::{
-    app::ui,
+    app::{egui_integration::EguiIntegration, ui},
     gpu::{gpu::Gpu, gpu_canvas::GpuCanvas},
     rt::{
         camera::{Camera, CameraOptions},
@@ -17,8 +17,7 @@ use crate::{
 #[allow(unused)]
 pub struct State {
     pub window: Arc<Window>,
-    pub egui_state: egui_winit::State,
-    egui_renderer: egui_wgpu::Renderer,
+    pub egui: EguiIntegration,
     render_texture_id: egui::TextureId,
     frame_buffer: Arc<FrameBuffer>,
     gpu: Arc<Gpu>,
@@ -38,16 +37,7 @@ impl State {
     ) -> anyhow::Result<Self> {
         let gpu = Arc::new(Gpu::new_windowed(Arc::clone(&window)).await?);
 
-        let egui_context = egui::Context::default();
-        let egui_state = egui_winit::State::new(
-            egui_context,
-            egui::ViewportId::ROOT,
-            &window,
-            Some(window.scale_factor() as f32),
-            None,
-            None,
-        );
-        let mut egui_renderer = egui_wgpu::Renderer::new(gpu.device(), gpu.texture_format(), egui_wgpu::RendererOptions::default());
+        let mut egui = EguiIntegration::new(&gpu, &window);
 
         let frame_buffer = Arc::new(FrameBuffer::new(
             render_options.img_width as usize,
@@ -55,7 +45,7 @@ impl State {
         ));
         let canvas = GpuCanvas::new(gpu.device(), Arc::clone(&frame_buffer));
 
-        let render_texture_id = egui_renderer.register_native_texture(gpu.device(), canvas.view(), wgpu::FilterMode::Linear);
+        let render_texture_id = egui.register_texture(gpu.device(), canvas.view(), wgpu::FilterMode::Linear);
 
         let render_options = Arc::new(render_options);
         let scene = Arc::new(scene);
@@ -79,8 +69,7 @@ impl State {
 
         Ok(Self {
             window,
-            egui_state,
-            egui_renderer,
+            egui,
             render_texture_id,
             frame_buffer,
             gpu,
@@ -114,71 +103,23 @@ impl State {
         // Copy ray tracer output to GPU texture
         self.gpu.write_texture(Arc::clone(&self.frame_buffer), &self.canvas);
 
-        self.egui_renderer.update_egui_texture_from_wgpu_texture(
+        self.egui.update_texture(
             self.gpu.device(),
             self.canvas.view(),
             wgpu::FilterMode::Linear,
             self.render_texture_id,
         );
 
-        let raw_input = self.egui_state.take_egui_input(&self.window);
-        let egui_ctx = self.egui_state.egui_ctx().clone();
-
-        let full_output = egui_ctx.run_ui(raw_input, |ui| {
-            ui::build_ui(ui, self.render_texture_id, &self.frame_buffer);
-        });
-        self.egui_state.handle_platform_output(&self.window, full_output.platform_output);
-        let pixels_per_point = egui_ctx.pixels_per_point();
-        let paint_jobs = egui_ctx.tessellate(full_output.shapes, pixels_per_point);
-
-        let screen_descriptor = egui_wgpu::ScreenDescriptor {
-            size_in_pixels: [self.window.inner_size().width, self.window.inner_size().height],
-            pixels_per_point,
-        };
-
-        for (id, image_delta) in &full_output.textures_delta.set {
-            self.egui_renderer
-                .update_texture(self.gpu.device(), self.gpu.queue(), *id, image_delta);
-        }
-
-        // Acquire surface texture and create encoder
         let frame = match self.gpu.get_current_texture() {
             Some(frame) => frame,
             None => return Ok(()),
         };
-        let view = frame.texture.create_view(&Default::default());
-        let mut encoder = self.gpu.create_command_encoder();
 
-        let extra_buffers =
-            self.egui_renderer
-                .update_buffers(self.gpu.device(), self.gpu.queue(), &mut encoder, &paint_jobs, &screen_descriptor);
-
-        // Render egui
-        {
-            let rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("egui render pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    depth_slice: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                ..Default::default()
-            });
-            self.egui_renderer
-                .render(&mut rpass.forget_lifetime(), &paint_jobs, &screen_descriptor);
-        }
-
-        // Submit and present
-        self.gpu.submit_and_present(encoder, extra_buffers, frame);
-
-        // Free textures (always, to stay in sync with egui's expectations)
-        for id in &full_output.textures_delta.free {
-            self.egui_renderer.free_texture(id);
-        }
+        let render_texture_id = self.render_texture_id;
+        let frame_buffer = &self.frame_buffer;
+        self.egui.render_ui(&self.gpu, &self.window, frame, |ui| {
+            ui::build_ui(ui, render_texture_id, frame_buffer);
+        });
 
         Ok(())
     }
