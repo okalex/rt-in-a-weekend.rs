@@ -156,7 +156,14 @@ impl CpuRenderWorker {
         emitted + scattered_color
     }
 
-    fn scatter_color(&self, ray: &Ray, depth: Uint, hit_record: &HitRecord, scatter_record: &ScatterRecord, mat: &Material) -> Color {
+    fn scatter_color(
+        &self,
+        ray: &Ray,
+        depth: Uint,
+        hit_record: &HitRecord,
+        scatter_record: &ScatterRecord,
+        mat: &Material,
+    ) -> Color {
         if let Some(skip_pdf_ray) = &scatter_record.skip_pdf_ray {
             return scatter_record.attenuation * self.ray_color(&skip_pdf_ray, depth + 1);
         }

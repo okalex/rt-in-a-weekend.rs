@@ -68,7 +68,11 @@ impl Gpu {
         })
     }
 
-    pub fn create_bind_group(&self, layout: &wgpu::BindGroupLayout, entries: &[wgpu::BindGroupEntry]) -> wgpu::BindGroup {
+    pub fn create_bind_group(
+        &self,
+        layout: &wgpu::BindGroupLayout,
+        entries: &[wgpu::BindGroupEntry],
+    ) -> wgpu::BindGroup {
         self.device().create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Bind group"),
             layout: layout,
@@ -120,7 +124,12 @@ impl Gpu {
         self.device().create_command_encoder(&Default::default())
     }
 
-    pub fn submit_and_present(&self, encoder: wgpu::CommandEncoder, extra_buffers: Vec<wgpu::CommandBuffer>, frame: wgpu::SurfaceTexture) {
+    pub fn submit_and_present(
+        &self,
+        encoder: wgpu::CommandEncoder,
+        extra_buffers: Vec<wgpu::CommandBuffer>,
+        frame: wgpu::SurfaceTexture,
+    ) {
         let mut buffers = extra_buffers;
         buffers.push(encoder.finish());
         self.queue().submit(buffers);
@@ -233,7 +242,11 @@ impl GpuWindowed {
             .await?)
     }
 
-    fn get_surface_config(size: &PhysicalSize<u32>, surface: &wgpu::Surface, adapter: &wgpu::Adapter) -> wgpu::SurfaceConfiguration {
+    fn get_surface_config(
+        size: &PhysicalSize<u32>,
+        surface: &wgpu::Surface,
+        adapter: &wgpu::Adapter,
+    ) -> wgpu::SurfaceConfiguration {
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
             .formats

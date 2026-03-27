@@ -40,7 +40,13 @@ mod buffer_usages {
 }
 
 impl<O: NoUninit + AnyBitPattern> RenderPipeline<O> {
-    pub fn new(gpu: Arc<Gpu>, shader: &wgpu::ShaderModule, output_size: u64, meta: Arc<GpuMeta>, scene: Arc<GpuScene>) -> Self {
+    pub fn new(
+        gpu: Arc<Gpu>,
+        shader: &wgpu::ShaderModule,
+        output_size: u64,
+        meta: Arc<GpuMeta>,
+        scene: Arc<GpuScene>,
+    ) -> Self {
         let meta_size = meta.size().get();
         let meta_buf = gpu.create_buffer(meta_size, buffer_usages::UNIFORM);
 

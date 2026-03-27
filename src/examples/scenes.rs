@@ -65,7 +65,9 @@ pub fn scene_spheres() -> (CameraOptions, Scene) {
     // Make instances
     let sphere_blue = Instance::new(sphere_id, blue_id).translate([0.0, 0.5, 0.0]);
     let sphere_glass = Instance::new(sphere_id, glass_id).translate([-1.1, 0.5, 0.0]);
-    let sphere_air = Instance::new(sphere_id, air_id).scale_uniform(0.6).translate([-1.1, 0.5, 0.0]);
+    let sphere_air = Instance::new(sphere_id, air_id)
+        .scale_uniform(0.6)
+        .translate([-1.1, 0.5, 0.0]);
     let sphere_gold = Instance::new(sphere_id, gold_id).translate([1.1, 0.5, 0.0]);
     let sphere_light = Instance::new(sphere_id, diffuse_light_id)
         .scale_uniform(0.6)
@@ -135,7 +137,9 @@ fn scene_marbles() -> (CameraOptions, Scene) {
                     // let center2 = center1 + Vector::new(0.0, rand_range(0.0, 0.5), 0.0);
                     let mat = materials::rand_lambertian();
                     let mat_id = scene_builder.add_material(mat);
-                    let sphere = Instance::new(sphere_id, mat_id).scale_uniform(0.2).translate(center1.to_array());
+                    let sphere = Instance::new(sphere_id, mat_id)
+                        .scale_uniform(0.2)
+                        .translate(center1.to_array());
                     scene_builder.add_instance(sphere);
                 } else if choose_mat < 0.7 {
                     // Metal
@@ -315,7 +319,8 @@ pub fn scene_mesh() -> (CameraOptions, Scene) {
     let sphere_prim = primitives::sphere([0.0, 0.0, 0.0], 0.2);
     let sphere_id = scene_builder.add_primitive(sphere_prim);
     for _ in -9..=9 {
-        let light = Instance::new(sphere_id, diffuse_light_id).translate([rand_range(-3.0, 3.0), 3.0, rand_range(-3.0, 3.0)]);
+        let light =
+            Instance::new(sphere_id, diffuse_light_id).translate([rand_range(-3.0, 3.0), 3.0, rand_range(-3.0, 3.0)]);
         let instance_id = scene_builder.add_instance(light);
         scene_builder.add_light(instance_id);
     }
@@ -357,7 +362,11 @@ pub fn scene_book2() -> (CameraOptions, Scene) {
 
     // Ceiling light
     {
-        let prim_id = scene_builder.add_primitive(primitives::quad([123.0, 554.0, 147.0], [300.0, 0.0, 0.0], [0.0, 0.0, 265.0]));
+        let prim_id = scene_builder.add_primitive(primitives::quad(
+            [123.0, 554.0, 147.0],
+            [300.0, 0.0, 0.0],
+            [0.0, 0.0, 265.0],
+        ));
         let instance_id = scene_builder.add_instance(Instance::new(prim_id, mat_light));
         let _ = scene_builder.add_light(instance_id);
     }

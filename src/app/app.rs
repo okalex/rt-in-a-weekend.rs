@@ -26,7 +26,10 @@ pub struct App {
 
 impl App {
     pub fn new(args: &Args) -> Self {
-        Self { args: *args, state: None }
+        Self {
+            args: *args,
+            state: None,
+        }
     }
 }
 

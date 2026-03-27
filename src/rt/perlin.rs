@@ -15,7 +15,9 @@ impl Perlin {
 
     pub fn new() -> Self {
         Self {
-            rand_vec: (0..Self::POINT_COUNT).map(|_| rand_range_vector(-1.0, 1.0).normalize()).collect(),
+            rand_vec: (0..Self::POINT_COUNT)
+                .map(|_| rand_range_vector(-1.0, 1.0).normalize())
+                .collect(),
             perm_x: Self::generate_perm(),
             perm_y: Self::generate_perm(),
             perm_z: Self::generate_perm(),

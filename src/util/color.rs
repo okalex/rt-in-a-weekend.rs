@@ -62,7 +62,11 @@ impl Color {
     }
 
     pub fn to_linear(&self) -> Color {
-        Self::new(gamma_to_linear(self.r()), gamma_to_linear(self.g()), gamma_to_linear(self.b()))
+        Self::new(
+            gamma_to_linear(self.r()),
+            gamma_to_linear(self.g()),
+            gamma_to_linear(self.b()),
+        )
     }
 
     pub fn to_u8(&self) -> [u8; 3] {

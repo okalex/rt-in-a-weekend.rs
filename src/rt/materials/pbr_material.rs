@@ -5,11 +5,7 @@ use crate::{
         pdf::CosinePdf,
         ray::Ray,
     },
-    util::{
-        color::Color,
-        random::{rand},
-        types::{Float},
-    },
+    util::{color::Color, random::rand, types::Float},
 };
 
 pub struct PbrMaterialProperties {
@@ -63,7 +59,8 @@ impl PbrMaterial {
 
         // Diffuse scatter
         let cosine_pdf = CosinePdf::new(&hit_record.normal);
-        let scatter_dir = (1.0 - self.roughness) * reflect(r_in.dir, hit_record.normal) + self.roughness * cosine_pdf.generate();
+        let scatter_dir =
+            (1.0 - self.roughness) * reflect(r_in.dir, hit_record.normal) + self.roughness * cosine_pdf.generate();
 
         Some(ScatterRecord::skip_pdf(
             self.albedo,

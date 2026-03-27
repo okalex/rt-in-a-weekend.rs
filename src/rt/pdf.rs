@@ -160,6 +160,10 @@ impl MixturePdf {
     }
 
     pub fn generate(&self) -> Vector {
-        if rand() < 0.5 { self.p0.generate() } else { self.p1.generate() }
+        if rand() < 0.5 {
+            self.p0.generate()
+        } else {
+            self.p1.generate()
+        }
     }
 }

@@ -26,7 +26,10 @@ use crate::{
     },
 };
 use crate::{
-    app::cli::{Args, print_config}, gpu::gpu::Gpu, rt::renderer::render_options::SamplerType, util::{color::Color, ppm_writer::PpmWriter, types::Float}
+    app::cli::{Args, print_config},
+    gpu::gpu::Gpu,
+    rt::renderer::render_options::SamplerType,
+    util::{color::Color, ppm_writer::PpmWriter, types::Float},
 };
 
 #[tokio::main]

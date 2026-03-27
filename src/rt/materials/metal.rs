@@ -18,7 +18,8 @@ impl Metal {
     }
 
     pub fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
-        let reflected = reflect(r_in.dir, hit_record.normal).normalize() + rand_on_hemisphere(hit_record.normal) * self.fuzz;
+        let reflected =
+            reflect(r_in.dir, hit_record.normal).normalize() + rand_on_hemisphere(hit_record.normal) * self.fuzz;
 
         Some(ScatterRecord::skip_pdf(
             self.albedo,

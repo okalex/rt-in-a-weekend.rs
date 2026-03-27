@@ -177,7 +177,13 @@ impl SceneBuilder {
     }
 
     pub fn build(self) -> Scene {
-        let mut scene = Scene::new(self.primitives, self.instances, self.meshes, self.materials, self.lights);
+        let mut scene = Scene::new(
+            self.primitives,
+            self.instances,
+            self.meshes,
+            self.materials,
+            self.lights,
+        );
         scene.build_bvh();
         scene
     }

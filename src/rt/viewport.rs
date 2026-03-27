@@ -29,7 +29,8 @@ impl Viewport {
         let viewport_v = -v * (viewport_height as Float);
         let delta_u = viewport_u / (img_width as Float);
         let delta_v = viewport_v / (img_height as Float);
-        let upper_left = Point::from(camera_options.position - viewport_u / 2.0 - viewport_v / 2.0 - w * camera_options.focus_dist);
+        let upper_left =
+            Point::from(camera_options.position - viewport_u / 2.0 - viewport_v / 2.0 - w * camera_options.focus_dist);
         let pixel00_loc = upper_left + (delta_u + delta_v) / 2.0;
 
         Viewport {

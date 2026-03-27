@@ -20,12 +20,21 @@ impl EguiIntegration {
             None,
             None,
         );
-        let renderer = egui_wgpu::Renderer::new(gpu.device(), gpu.texture_format(), egui_wgpu::RendererOptions::default());
+        let renderer = egui_wgpu::Renderer::new(
+            gpu.device(),
+            gpu.texture_format(),
+            egui_wgpu::RendererOptions::default(),
+        );
 
         Self { state, renderer }
     }
 
-    pub fn register_texture(&mut self, device: &wgpu::Device, view: &wgpu::TextureView, filter: wgpu::FilterMode) -> egui::TextureId {
+    pub fn register_texture(
+        &mut self,
+        device: &wgpu::Device,
+        view: &wgpu::TextureView,
+        filter: wgpu::FilterMode,
+    ) -> egui::TextureId {
         self.renderer.register_native_texture(device, view, filter)
     }
 
@@ -40,7 +49,13 @@ impl EguiIntegration {
             .update_egui_texture_from_wgpu_texture(device, view, filter, texture_id);
     }
 
-    pub fn render_ui(&mut self, gpu: &Gpu, window: &Arc<Window>, frame: wgpu::SurfaceTexture, build_ui: impl FnMut(&mut egui::Ui)) {
+    pub fn render_ui(
+        &mut self,
+        gpu: &Gpu,
+        window: &Arc<Window>,
+        frame: wgpu::SurfaceTexture,
+        build_ui: impl FnMut(&mut egui::Ui),
+    ) {
         let raw_input = self.state.take_egui_input(window);
         let egui_ctx = self.state.egui_ctx().clone();
 
@@ -56,15 +71,16 @@ impl EguiIntegration {
         };
 
         for (id, image_delta) in &full_output.textures_delta.set {
-            self.renderer.update_texture(gpu.device(), gpu.queue(), *id, image_delta);
+            self.renderer
+                .update_texture(gpu.device(), gpu.queue(), *id, image_delta);
         }
 
         let view = frame.texture.create_view(&Default::default());
         let mut encoder = gpu.create_command_encoder();
 
-        let extra_buffers = self
-            .renderer
-            .update_buffers(gpu.device(), gpu.queue(), &mut encoder, &paint_jobs, &screen_descriptor);
+        let extra_buffers =
+            self.renderer
+                .update_buffers(gpu.device(), gpu.queue(), &mut encoder, &paint_jobs, &screen_descriptor);
 
         {
             let rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -80,7 +96,8 @@ impl EguiIntegration {
                 })],
                 ..Default::default()
             });
-            self.renderer.render(&mut rpass.forget_lifetime(), &paint_jobs, &screen_descriptor);
+            self.renderer
+                .render(&mut rpass.forget_lifetime(), &paint_jobs, &screen_descriptor);
         }
 
         gpu.submit_and_present(encoder, extra_buffers, frame);

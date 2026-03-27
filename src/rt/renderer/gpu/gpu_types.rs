@@ -272,7 +272,9 @@ pub struct GpuMaterials {
 impl GpuMaterials {
     fn new(materials: &Vec<Material>) -> Self {
         let gpu_materials: Vec<GpuMaterial> = materials.iter().map(GpuMaterial::from).collect();
-        Self { materials: gpu_materials }
+        Self {
+            materials: gpu_materials,
+        }
     }
 }
 
@@ -303,7 +305,9 @@ impl From<&Material> for GpuMaterial {
             },
 
             Material::Emissive(mat) => match mat.texture.as_ref() {
-                Texture::Solid(color) => Self::Emissive { color: color.albedo.base },
+                Texture::Solid(color) => Self::Emissive {
+                    color: color.albedo.base,
+                },
                 _ => panic!(),
             },
 
@@ -342,7 +346,9 @@ pub enum GpuTexture {
 impl From<&Texture> for GpuTexture {
     fn from(texture: &Texture) -> Self {
         match texture {
-            Texture::Solid(tex) => Self::SolidColor { albedo: tex.albedo.base },
+            Texture::Solid(tex) => Self::SolidColor {
+                albedo: tex.albedo.base,
+            },
 
             Texture::Checkered(tex) => Self::Checkered {
                 inv_scale: tex.inv_scale,

@@ -57,7 +57,11 @@ impl GpuRenderer {
         // Render progressively in smaller dispatches
         for samples in 1..=(self.options.samples_per_pixel / self.options.dispatch_size) {
             // Update the frame number for rng seeding
-            let gpu_meta = Arc::new(GpuMeta::new(Arc::clone(&self.options), Arc::clone(&self.camera), samples));
+            let gpu_meta = Arc::new(GpuMeta::new(
+                Arc::clone(&self.options),
+                Arc::clone(&self.camera),
+                samples,
+            ));
             render_pipeline.init_buf(&gpu_meta, &render_pipeline.meta_buf);
 
             // Render

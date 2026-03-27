@@ -10,8 +10,16 @@ pub struct Aabb {
 
 impl Aabb {
     pub fn new(min: Vector, max: Vector) -> Self {
-        let mins = Vector::new(Float::min(min.x, max.x), Float::min(min.y, max.y), Float::min(min.z, max.z));
-        let maxs = Vector::new(Float::max(min.x, max.x), Float::max(min.y, max.y), Float::max(min.z, max.z));
+        let mins = Vector::new(
+            Float::min(min.x, max.x),
+            Float::min(min.y, max.y),
+            Float::min(min.z, max.z),
+        );
+        let maxs = Vector::new(
+            Float::max(min.x, max.x),
+            Float::max(min.y, max.y),
+            Float::max(min.z, max.z),
+        );
         let margin = Vector::splat(0.001); // TODO - what's a good choice here?
         Self {
             min: mins - margin,
