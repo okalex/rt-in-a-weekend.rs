@@ -10,50 +10,44 @@ use winit::{
 };
 
 use crate::{
-    app::state::State,
-    rt::{frame_buffer::FrameBuffer, renderer::renderer::Renderer},
+    app::{cli::Args, state::State},
+    examples::scenes::get_scene,
+    get_render_options,
     util::types::Uint,
 };
 
+const CONTROL_PANEL_WIDTH: Uint = 250;
+
 #[allow(unused)]
 pub struct App {
-    width: Uint,
-    height: Uint,
-    controls_panel_width: Uint,
+    args: Args,
     state: Option<State>,
-    frame_buffer: Arc<FrameBuffer>,
 }
 
 impl App {
-    pub fn new(width: Uint, height: Uint, renderer: Arc<Renderer>, frame_buffer: Arc<FrameBuffer>) -> Self {
-        tokio::spawn(async move {
-            renderer.render().await;
-        });
-
-        let controls_panel_width = 250;
-
-        Self {
-            width,
-            height,
-            controls_panel_width,
-            state: None,
-            frame_buffer,
-        }
+    pub fn new(args: &Args) -> Self {
+        Self { args: *args, state: None }
     }
 }
 
 impl ApplicationHandler<State> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         log::info!("Window resumed");
+
+        let render_options = get_render_options(&self.args);
+        let (camera_options, scene) = get_scene(self.args.scene);
+
         let window_attrs = Window::default_attributes()
             .with_inner_size(LogicalSize {
-                width: (self.width + self.controls_panel_width) as u32,
-                height: self.height as u32,
+                width: (render_options.img_width + CONTROL_PANEL_WIDTH) as u32,
+                height: render_options.img_height as u32,
             })
             .with_resizable(true);
 
         let window = Arc::new(event_loop.create_window(window_attrs).unwrap());
-        self.state = Some(pollster::block_on(State::new(window, Arc::clone(&self.frame_buffer))).unwrap());
+        let state = pollster::block_on(State::new(window, render_options, camera_options, scene)).unwrap();
+
+        self.state = Some(state);
     }
 
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: State) {

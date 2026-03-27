@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use bytemuck::NoUninit;
 use wgpu::util::DeviceExt;
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{gpu::gpu_texture::GpuTexture, rt::frame_buffer::FrameBuffer, util::types::Uint};
+use crate::{gpu::gpu_canvas::GpuCanvas, rt::frame_buffer::FrameBuffer, util::types::Uint};
 
 pub enum Gpu {
     Windowed(GpuWindowed),
@@ -36,22 +36,18 @@ impl Gpu {
         }
     }
 
-    pub fn texture_format(&self) -> &wgpu::TextureFormat {
+    pub fn texture_format(&self) -> wgpu::TextureFormat {
         match self {
-            Self::Windowed(gpu) => &gpu.config.format,
+            Self::Windowed(gpu) => gpu.surface_state.lock().unwrap().config.format,
             Self::Headless(_) => panic!(),
         }
     }
 
     pub fn is_ready(&self) -> bool {
         match self {
-            Self::Windowed(gpu) => gpu.is_surface_configured,
+            Self::Windowed(gpu) => gpu.surface_state.lock().unwrap().is_configured,
             Self::Headless(_) => true,
         }
-    }
-
-    pub fn create_shader(&self, desc: wgpu::ShaderModuleDescriptor) -> wgpu::ShaderModule {
-        self.device().create_shader_module(desc)
     }
 
     #[allow(unused)]
@@ -72,13 +68,6 @@ impl Gpu {
         })
     }
 
-    pub fn create_bind_group_layout(&self, entries: &[wgpu::BindGroupLayoutEntry]) -> wgpu::BindGroupLayout {
-        self.device().create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("Bind group layout"),
-            entries: entries,
-        })
-    }
-
     pub fn create_bind_group(&self, layout: &wgpu::BindGroupLayout, entries: &[wgpu::BindGroupEntry]) -> wgpu::BindGroup {
         self.device().create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Bind group"),
@@ -87,7 +76,7 @@ impl Gpu {
         })
     }
 
-    pub fn write_texture(&self, frame_buffer: Arc<FrameBuffer>, texture: &GpuTexture) {
+    pub fn write_texture(&self, frame_buffer: Arc<FrameBuffer>, texture: &GpuCanvas) {
         // Lock only long enough to copy the buffer
         let buffer = { frame_buffer.data.lock().unwrap().clone() };
         self.queue().write_texture(
@@ -106,17 +95,6 @@ impl Gpu {
         )
     }
 
-    pub fn create_render_pipeline(
-        &self,
-        bind_group_layouts: &[&wgpu::BindGroupLayout],
-        shader: &wgpu::ShaderModule,
-    ) -> wgpu::RenderPipeline {
-        match self {
-            Self::Headless(_) => panic!(),
-            Self::Windowed(gpu) => gpu.create_render_pipeline(bind_group_layouts, shader),
-        }
-    }
-
     pub fn create_compute_pipeline(&self, shader: &wgpu::ShaderModule) -> wgpu::ComputePipeline {
         self.device().create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("Compute Pipeline"),
@@ -128,19 +106,12 @@ impl Gpu {
         })
     }
 
-    pub fn render(&self, render_pipeline: &wgpu::RenderPipeline, bind_group: &wgpu::BindGroup) {
-        match self {
-            Self::Headless(_) => panic!(),
-            Self::Windowed(gpu) => gpu.render(render_pipeline, bind_group),
-        }
-    }
-
-    pub fn get_current_texture(&self) -> wgpu::SurfaceTexture {
+    pub fn get_current_texture(&self) -> Option<wgpu::SurfaceTexture> {
         match self {
             Self::Headless(_) => panic!(),
             Self::Windowed(gpu) => match gpu.surface.get_current_texture() {
-                wgpu::CurrentSurfaceTexture::Success(tex) | wgpu::CurrentSurfaceTexture::Suboptimal(tex) => tex,
-                other => panic!("Failed to acquire surface texture: {:?}", other),
+                wgpu::CurrentSurfaceTexture::Success(tex) | wgpu::CurrentSurfaceTexture::Suboptimal(tex) => Some(tex),
+                _ => None,
             },
         }
     }
@@ -156,7 +127,7 @@ impl Gpu {
         frame.present();
     }
 
-    pub fn resize(&mut self, width: Uint, height: Uint) {
+    pub fn resize(&self, width: Uint, height: Uint) {
         match self {
             Self::Headless(_) => panic!(),
             Self::Windowed(gpu) => gpu.resize(width, height),
@@ -194,7 +165,11 @@ pub struct GpuWindowed {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub surface: wgpu::Surface<'static>,
-    pub is_surface_configured: bool,
+    pub surface_state: Mutex<SurfaceState>,
+}
+
+pub struct SurfaceState {
+    pub is_configured: bool,
     pub config: wgpu::SurfaceConfiguration,
 }
 
@@ -208,14 +183,20 @@ impl GpuWindowed {
         let (device, queue) = Self::get_device_queue(&adapter).await?;
         let config = Self::get_surface_config(&size, &surface, &adapter);
 
+        let is_configured = if size.width > 0 && size.height > 0 {
+            surface.configure(&device, &config);
+            true
+        } else {
+            false
+        };
+
         Ok(Self {
             instance,
             adapter,
             device,
             queue,
             surface,
-            is_surface_configured: false,
-            config,
+            surface_state: Mutex::new(SurfaceState { is_configured, config }),
         })
     }
 
@@ -273,78 +254,13 @@ impl GpuWindowed {
         }
     }
 
-    pub fn create_render_pipeline(
-        &self,
-        bind_group_layouts: &[&wgpu::BindGroupLayout],
-        shader: &wgpu::ShaderModule,
-    ) -> wgpu::RenderPipeline {
-        let pipeline_layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Pipeline layout"),
-            bind_group_layouts: &bind_group_layouts.iter().map(|l| Some(*l)).collect::<Vec<_>>(),
-            immediate_size: 0,
-        });
-
-        self.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: shader,
-                entry_point: Some("vs_main"),
-                buffers: &[],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: self.config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            multiview_mask: None,
-            cache: None,
-        })
-    }
-
-    pub fn resize(&mut self, width: Uint, height: Uint) {
+    pub fn resize(&self, width: Uint, height: Uint) {
         if width > 0 && height > 0 {
-            self.config.width = width as u32;
-            self.config.height = height as u32;
-            self.surface.configure(&self.device, &self.config);
-            self.is_surface_configured = true;
+            let mut state = self.surface_state.lock().unwrap();
+            state.config.width = width as u32;
+            state.config.height = height as u32;
+            self.surface.configure(&self.device, &state.config);
+            state.is_configured = true;
         }
-    }
-
-    pub fn render(&self, render_pipeline: &wgpu::RenderPipeline, bind_group: &wgpu::BindGroup) {
-        let frame = match self.surface.get_current_texture() {
-            wgpu::CurrentSurfaceTexture::Success(tex) | wgpu::CurrentSurfaceTexture::Suboptimal(tex) => tex,
-            other => panic!("Failed to acquire surface texture: {:?}", other),
-        };
-        let view = frame.texture.create_view(&Default::default());
-        let mut encoder = self.device.create_command_encoder(&Default::default());
-        {
-            let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    depth_slice: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                ..Default::default()
-            });
-            rpass.set_pipeline(render_pipeline);
-            rpass.set_bind_group(0, bind_group, &[]);
-            rpass.draw(0..3, 0..1); // TODO: this should be dependent upon the gpu config, bind group, etc.
-        }
-        self.queue.submit([encoder.finish()]);
-        frame.present();
     }
 }

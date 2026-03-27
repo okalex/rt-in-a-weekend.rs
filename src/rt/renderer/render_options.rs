@@ -3,15 +3,23 @@ use crate::util::{
     types::{Float, Uint},
 };
 
+#[derive(Clone, Copy)]
+pub enum SamplerType {
+    Random,
+    Stratified,
+}
+
 pub struct RenderOptions {
     pub img_width: Uint,
     pub img_height: Uint,
     pub samples_per_pixel: Uint,
     pub dispatch_size: Uint,
     pub max_depth: Uint,
+    pub use_gpu: bool,
     pub use_multithreading: bool,
     pub use_importance_sampling: bool,
     pub background: Color,
+    pub sampler_type: SamplerType,
 }
 
 pub struct RenderOptionsBuilder {
@@ -19,9 +27,11 @@ pub struct RenderOptionsBuilder {
     samples_per_pixel: Uint,
     dispatch_size: Uint,
     max_depth: Uint,
+    use_gpu: bool,
     use_multithreading: bool,
     use_importance_sampling: bool,
     background: Color,
+    sampler_type: SamplerType,
 }
 
 impl RenderOptionsBuilder {
@@ -31,9 +41,11 @@ impl RenderOptionsBuilder {
             samples_per_pixel: 100,
             dispatch_size: 20,
             max_depth: 50,
+            use_gpu: true,
             use_multithreading: true,
             use_importance_sampling: true,
             background: Color::new(0.7, 0.8, 1.0),
+            sampler_type: SamplerType::Random,
         }
     }
 
@@ -44,9 +56,11 @@ impl RenderOptionsBuilder {
             samples_per_pixel: self.samples_per_pixel,
             dispatch_size: self.dispatch_size,
             max_depth: self.max_depth,
+            use_gpu: self.use_gpu,
             use_multithreading: self.use_multithreading,
             use_importance_sampling: self.use_importance_sampling,
             background: self.background,
+            sampler_type: self.sampler_type,
         }
     }
 
@@ -70,6 +84,11 @@ impl RenderOptionsBuilder {
         self
     }
 
+    pub fn use_gpu(mut self, new_use_gpu: bool) -> Self {
+        self.use_gpu = new_use_gpu;
+        self
+    }
+
     pub fn use_multithreading(mut self, new_use_multithreading: bool) -> Self {
         self.use_multithreading = new_use_multithreading;
         self
@@ -83,6 +102,11 @@ impl RenderOptionsBuilder {
     #[allow(dead_code)]
     pub fn background(mut self, new_background: Color) -> Self {
         self.background = new_background;
+        self
+    }
+
+    pub fn sampler_type(mut self, new_sampler_type: SamplerType) -> Self {
+        self.sampler_type = new_sampler_type;
         self
     }
 }

@@ -18,6 +18,7 @@ impl Emissive {
         Self { texture }
     }
 
+    #[allow(unused_variables)]
     pub fn emitted(&self, r_in: &Ray, hit_record: &HitRecord) -> Color {
         if hit_record.front_face {
             self.texture.value(hit_record.u, hit_record.v, &hit_record.point)

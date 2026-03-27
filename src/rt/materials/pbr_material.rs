@@ -7,8 +7,8 @@ use crate::{
     },
     util::{
         color::Color,
-        random::{rand, rand_on_hemisphere},
-        types::{Float, Vector},
+        random::{rand},
+        types::{Float},
     },
 };
 
@@ -19,6 +19,7 @@ pub struct PbrMaterialProperties {
     pub fresnel: Float,
 }
 
+#[allow(unused)]
 pub struct PbrMaterial {
     pub albedo: Color,
     pub roughness: Float,
@@ -45,6 +46,7 @@ impl PbrMaterial {
         a * control + b * (1.0 - control)
     }
 
+    #[allow(unused)]
     pub fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
         let alpha = self.roughness * self.roughness;
 

@@ -4,24 +4,39 @@ use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 
 use crate::{
     app::ui,
-    gpu::{gpu::Gpu, gpu_texture::GpuTexture},
-    rt::frame_buffer::FrameBuffer,
+    gpu::{gpu::Gpu, gpu_canvas::GpuCanvas},
+    rt::{
+        camera::{Camera, CameraOptions},
+        frame_buffer::FrameBuffer,
+        geometry::scene::Scene,
+        renderer::{render_options::RenderOptions, renderer::Renderer},
+    },
     util::types::Uint,
 };
 
+#[allow(unused)]
 pub struct State {
     pub window: Arc<Window>,
     pub egui_state: egui_winit::State,
     egui_renderer: egui_wgpu::Renderer,
     render_texture_id: egui::TextureId,
     frame_buffer: Arc<FrameBuffer>,
-    gpu: Gpu,
-    texture: GpuTexture,
+    gpu: Arc<Gpu>,
+    canvas: GpuCanvas,
+    render_options: Arc<RenderOptions>,
+    camera_options: Arc<CameraOptions>,
+    scene: Arc<Scene>,
+    renderer: Arc<Renderer>,
 }
 
 impl State {
-    pub async fn new(window: Arc<Window>, frame_buffer: Arc<FrameBuffer>) -> anyhow::Result<Self> {
-        let gpu = Gpu::new_windowed(Arc::clone(&window)).await?;
+    pub async fn new(
+        window: Arc<Window>,
+        render_options: RenderOptions,
+        camera_options: CameraOptions,
+        scene: Scene,
+    ) -> anyhow::Result<Self> {
+        let gpu = Arc::new(Gpu::new_windowed(Arc::clone(&window)).await?);
 
         let egui_context = egui::Context::default();
         let egui_state = egui_winit::State::new(
@@ -32,11 +47,35 @@ impl State {
             None,
             None,
         );
-        let mut egui_renderer = egui_wgpu::Renderer::new(gpu.device(), *gpu.texture_format(), egui_wgpu::RendererOptions::default());
+        let mut egui_renderer = egui_wgpu::Renderer::new(gpu.device(), gpu.texture_format(), egui_wgpu::RendererOptions::default());
 
-        let texture = GpuTexture::new(gpu.device(), Arc::clone(&frame_buffer));
+        let frame_buffer = Arc::new(FrameBuffer::new(
+            render_options.img_width as usize,
+            render_options.img_height as usize,
+        ));
+        let canvas = GpuCanvas::new(gpu.device(), Arc::clone(&frame_buffer));
 
-        let render_texture_id = egui_renderer.register_native_texture(gpu.device(), texture.unorm_view(), wgpu::FilterMode::Linear);
+        let render_texture_id = egui_renderer.register_native_texture(gpu.device(), canvas.view(), wgpu::FilterMode::Linear);
+
+        let render_options = Arc::new(render_options);
+        let scene = Arc::new(scene);
+        let camera = Arc::new(Camera::new(&render_options, &camera_options));
+        let use_gpu = render_options.use_gpu;
+        let renderer = Arc::new(
+            Renderer::new(
+                Arc::clone(&render_options),
+                Arc::clone(&scene),
+                Arc::clone(&camera),
+                Arc::clone(&frame_buffer),
+                if use_gpu { Some(Arc::clone(&gpu)) } else { None },
+            )
+            .await?,
+        );
+
+        let renderer_clone = Arc::clone(&renderer);
+        let _ = tokio::spawn(async move {
+            renderer_clone.render().await;
+        });
 
         Ok(Self {
             window,
@@ -45,7 +84,11 @@ impl State {
             render_texture_id,
             frame_buffer,
             gpu,
-            texture,
+            canvas,
+            render_options,
+            camera_options: Arc::new(camera_options),
+            scene,
+            renderer: Arc::clone(&renderer),
         })
     }
 
@@ -63,32 +106,28 @@ impl State {
 
     pub fn render(&mut self) -> anyhow::Result<()> {
         self.window.request_redraw();
+
         if !self.gpu.is_ready() {
             return Ok(());
         }
 
         // Copy ray tracer output to GPU texture
-        self.gpu.write_texture(Arc::clone(&self.frame_buffer), &self.texture);
+        self.gpu.write_texture(Arc::clone(&self.frame_buffer), &self.canvas);
 
-        // Update the egui texture binding to reflect new content
         self.egui_renderer.update_egui_texture_from_wgpu_texture(
             self.gpu.device(),
-            self.texture.unorm_view(),
+            self.canvas.view(),
             wgpu::FilterMode::Linear,
             self.render_texture_id,
         );
 
-        // Begin egui frame
         let raw_input = self.egui_state.take_egui_input(&self.window);
         let egui_ctx = self.egui_state.egui_ctx().clone();
+
         let full_output = egui_ctx.run_ui(raw_input, |ui| {
             ui::build_ui(ui, self.render_texture_id, &self.frame_buffer);
         });
-
-        // Handle platform output (cursor, clipboard, etc.)
         self.egui_state.handle_platform_output(&self.window, full_output.platform_output);
-
-        // Tessellate
         let pixels_per_point = egui_ctx.pixels_per_point();
         let paint_jobs = egui_ctx.tessellate(full_output.shapes, pixels_per_point);
 
@@ -97,16 +136,19 @@ impl State {
             pixels_per_point,
         };
 
-        // Acquire surface texture and create encoder
-        let frame = self.gpu.get_current_texture();
-        let view = frame.texture.create_view(&Default::default());
-        let mut encoder = self.gpu.create_command_encoder();
-
-        // Update egui textures and buffers
         for (id, image_delta) in &full_output.textures_delta.set {
             self.egui_renderer
                 .update_texture(self.gpu.device(), self.gpu.queue(), *id, image_delta);
         }
+
+        // Acquire surface texture and create encoder
+        let frame = match self.gpu.get_current_texture() {
+            Some(frame) => frame,
+            None => return Ok(()),
+        };
+        let view = frame.texture.create_view(&Default::default());
+        let mut encoder = self.gpu.create_command_encoder();
+
         let extra_buffers =
             self.egui_renderer
                 .update_buffers(self.gpu.device(), self.gpu.queue(), &mut encoder, &paint_jobs, &screen_descriptor);
@@ -133,7 +175,7 @@ impl State {
         // Submit and present
         self.gpu.submit_and_present(encoder, extra_buffers, frame);
 
-        // Free textures
+        // Free textures (always, to stay in sync with egui's expectations)
         for id in &full_output.textures_delta.free {
             self.egui_renderer.free_texture(id);
         }

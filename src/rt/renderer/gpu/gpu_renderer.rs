@@ -33,9 +33,8 @@ impl GpuRenderer {
         scene: Arc<Scene>,
         camera: Arc<Camera>,
         frame_buffer: Arc<FrameBuffer>,
+        gpu: Arc<Gpu>,
     ) -> anyhow::Result<Self> {
-        let gpu = Arc::new(Gpu::new_headless().await?);
-
         Ok(Self {
             options,
             scene,

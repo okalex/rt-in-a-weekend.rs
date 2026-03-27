@@ -1,5 +1,10 @@
 use crate::{
-    rt::{ray::Ray, sampler::Sampler, viewport::Viewport},
+    rt::{
+        ray::Ray,
+        renderer::render_options::{RenderOptions, SamplerType},
+        sampler::Sampler,
+        viewport::Viewport,
+    },
     util::{
         random::{rand, rand_in_unit_disk},
         trig::degrees_to_radians,
@@ -20,14 +25,22 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(options: CameraOptions, viewport: Viewport, sampler: Sampler) -> Self {
-        let defocus_radius = options.focus_dist * degrees_to_radians(options.defocus_angle / 2.0).tan();
+    pub fn new(render_options: &RenderOptions, camera_options: &CameraOptions) -> Self {
+        let viewport = Viewport::new(render_options.img_width, render_options.img_height, &camera_options);
+
+        let sampler = match render_options.sampler_type {
+            SamplerType::Random => Sampler::random(render_options.samples_per_pixel),
+            SamplerType::Stratified => Sampler::stratified(render_options.samples_per_pixel),
+        };
+
+        let defocus_radius = camera_options.focus_dist * degrees_to_radians(camera_options.defocus_angle / 2.0).tan();
         let defocus_disk = Disk {
             u: viewport.u * defocus_radius,
             v: viewport.v * defocus_radius,
         };
+
         Self {
-            options,
+            options: *camera_options,
             viewport,
             defocus_disk,
             sampler,
@@ -64,6 +77,7 @@ impl Camera {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct CameraOptions {
     pub position: Point,
     pub target: Point,
