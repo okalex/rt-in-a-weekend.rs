@@ -1,5 +1,7 @@
 use std::{sync::Arc, time::Instant};
 
+use tokio::sync::watch::Receiver;
+
 use crate::{
     rt::{
         camera::Camera,
@@ -8,7 +10,7 @@ use crate::{
         materials::material::{Material, ScatterRecord},
         pdf::{Pdf, TransformedPrimitive},
         ray::Ray,
-        renderer::{cpu::line_server::LineServer, render_options::RenderOptions},
+        renderer::{cpu::line_server::LineServer, render_options::RenderOptions, renderer_command::RendererCommand},
     },
     util::{
         color::Color,
@@ -23,11 +25,11 @@ pub struct CpuRenderer {
 
 impl CpuRenderer {
     pub fn new(
+        command_channel: Receiver<RendererCommand>,
         options: Arc<RenderOptions>,
         scene: Arc<Scene>,
         camera: Arc<Camera>,
         frame_buffer: Arc<FrameBuffer>,
-        line_server: Arc<LineServer>,
     ) -> Self {
         let num_threads = if options.use_multithreading {
             std::thread::available_parallelism().unwrap().get()
@@ -35,9 +37,12 @@ impl CpuRenderer {
             1
         };
 
+        let line_server = Arc::new(LineServer::new(options.img_height));
+
         let workers = (0..num_threads)
             .map(|_| {
                 Arc::new(CpuRenderWorker::new(
+                    command_channel.clone(),
                     Arc::clone(&options),
                     Arc::clone(&scene),
                     Arc::clone(&camera),
@@ -72,6 +77,7 @@ impl CpuRenderer {
 }
 
 pub struct CpuRenderWorker {
+    command_channel: Receiver<RendererCommand>,
     options: Arc<RenderOptions>,
     scene: Arc<Scene>,
     camera: Arc<Camera>,
@@ -81,6 +87,7 @@ pub struct CpuRenderWorker {
 
 impl CpuRenderWorker {
     pub fn new(
+        command_channel: Receiver<RendererCommand>,
         options: Arc<RenderOptions>,
         scene: Arc<Scene>,
         camera: Arc<Camera>,
@@ -88,6 +95,7 @@ impl CpuRenderWorker {
         line_server: Arc<LineServer>,
     ) -> Self {
         Self {
+            command_channel,
             options,
             scene,
             camera,
@@ -98,6 +106,14 @@ impl CpuRenderWorker {
 
     pub fn render(&self) {
         loop {
+            match *self.command_channel.borrow() {
+                RendererCommand::CancelRender => {
+                    log::info!("Canceling render...");
+                    break;
+                }
+                _ => {}
+            }
+
             let remaining_lines = self.line_server.len();
             eprint!("\rLines remaining: {}       ", remaining_lines);
 

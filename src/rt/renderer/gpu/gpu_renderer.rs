@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Instant};
 
+use tokio::sync::watch::Receiver;
 use wesl::include_wesl;
 
 use crate::{
@@ -11,12 +12,14 @@ use crate::{
         renderer::{
             gpu::{gpu_meta::GpuMeta, gpu_types::GpuScene, render_pipeline::RenderPipeline},
             render_options::RenderOptions,
+            renderer_command::RendererCommand,
         },
     },
     util::{color::Color, types::Float},
 };
 
 pub struct GpuRenderer {
+    command_channel: Receiver<RendererCommand>,
     options: Arc<RenderOptions>,
     scene: Arc<Scene>,
     camera: Arc<Camera>,
@@ -29,6 +32,7 @@ impl GpuRenderer {
     const WORKGROUP_SIZE_Y: u32 = 1u32;
 
     pub async fn new(
+        command_channel: Receiver<RendererCommand>,
         options: Arc<RenderOptions>,
         scene: Arc<Scene>,
         camera: Arc<Camera>,
@@ -36,6 +40,7 @@ impl GpuRenderer {
         gpu: Arc<Gpu>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
+            command_channel,
             options,
             scene,
             camera,
@@ -56,6 +61,14 @@ impl GpuRenderer {
 
         // Render progressively in smaller dispatches
         for samples in 1..=(self.options.samples_per_pixel / self.options.dispatch_size) {
+            match *self.command_channel.borrow() {
+                RendererCommand::CancelRender => {
+                    log::info!("Canceling render...");
+                    break;
+                }
+                _ => {}
+            }
+
             // Update the frame number for rng seeding
             let gpu_meta = Arc::new(GpuMeta::new(
                 Arc::clone(&self.options),

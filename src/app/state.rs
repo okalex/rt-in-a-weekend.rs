@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use tokio::sync::watch::Sender;
 use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 
 use crate::{
@@ -9,7 +10,7 @@ use crate::{
         camera::{Camera, CameraOptions},
         frame_buffer::FrameBuffer,
         geometry::scene::Scene,
-        renderer::{render_options::RenderOptions, renderer::Renderer},
+        renderer::{render_options::RenderOptions, renderer::Renderer, renderer_command::RendererCommand},
     },
     util::types::Uint,
 };
@@ -26,6 +27,7 @@ pub struct State {
     camera_options: Arc<CameraOptions>,
     scene: Arc<Scene>,
     renderer: Arc<Renderer>,
+    command_channel: Sender<RendererCommand>,
 }
 
 impl State {
@@ -47,12 +49,15 @@ impl State {
 
         let render_texture_id = egui.register_texture(gpu.device(), canvas.view(), wgpu::FilterMode::Linear);
 
+        let (tx, rx) = tokio::sync::watch::channel(RendererCommand::Render);
+
         let render_options = Arc::new(render_options);
         let scene = Arc::new(scene);
         let camera = Arc::new(Camera::new(&render_options, &camera_options));
         let use_gpu = render_options.use_gpu;
         let renderer = Arc::new(
             Renderer::new(
+                rx,
                 Arc::clone(&render_options),
                 Arc::clone(&scene),
                 Arc::clone(&camera),
@@ -78,6 +83,7 @@ impl State {
             camera_options: Arc::new(camera_options),
             scene,
             renderer: Arc::clone(&renderer),
+            command_channel: tx,
         })
     }
 
@@ -89,7 +95,8 @@ impl State {
 
     pub fn handle_key(&mut self, _event_loop: &ActiveEventLoop, code: KeyCode, is_pressed: bool) {
         if code == KeyCode::Escape && is_pressed {
-            std::process::exit(0);
+            let _ = self.command_channel.send(RendererCommand::CancelRender);
+            // std::process::exit(0);
         }
     }
 
