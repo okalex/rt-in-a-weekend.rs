@@ -9,6 +9,7 @@ pub enum SamplerType {
     Stratified,
 }
 
+#[derive(Copy, Clone)]
 pub struct RenderOptions {
     pub img_width: Uint,
     pub img_height: Uint,

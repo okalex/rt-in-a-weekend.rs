@@ -3,9 +3,10 @@ use std::sync::Arc;
 use tokio::sync::watch::Receiver;
 
 use crate::{
+    examples::scenes::get_scene,
     gpu::gpu::Gpu,
     rt::{
-        camera::Camera,
+        camera::{Camera, CameraOptions},
         frame_buffer::FrameBuffer,
         geometry::scene::Scene,
         renderer::{
@@ -13,75 +14,117 @@ use crate::{
             renderer_command::RendererCommand,
         },
     },
+    util::types::Uint,
 };
 
-pub enum Renderer {
-    Cpu(CpuRenderer),
-    Gpu(GpuRenderer),
+pub struct Renderer {
+    command_channel: Receiver<RendererCommand>,
+    frame_buffer: Arc<FrameBuffer>,
+    gpu: Option<Arc<Gpu>>,
 }
 
 impl Renderer {
-    pub async fn cpu(
+    pub async fn new(
+        command_channel: Receiver<RendererCommand>,
+        frame_buffer: Arc<FrameBuffer>,
+        gpu: Option<Arc<Gpu>>,
+    ) -> Self {
+        Self {
+            command_channel,
+            frame_buffer,
+            gpu,
+        }
+    }
+
+    pub async fn run(&mut self) {
+        loop {
+            match self.command_channel.changed().await {
+                Ok(()) => {
+                    let command = *self.command_channel.borrow_and_update();
+                    let _ = self.handle_command(command).await;
+                }
+
+                Err(_) => break,
+            }
+        }
+    }
+
+    pub async fn handle_command(&self, command: RendererCommand) -> anyhow::Result<()> {
+        match command {
+            RendererCommand::Idle => Ok(()),
+
+            RendererCommand::Render {
+                render_options,
+                camera_options,
+                scene_idx,
+            } => self.handle_render(render_options, camera_options, scene_idx).await,
+
+            RendererCommand::CancelRender => Ok(()),
+        }
+    }
+
+    pub async fn handle_render(
+        &self,
+        render_options: RenderOptions,
+        camera_options: CameraOptions,
+        scene_idx: Uint,
+    ) -> anyhow::Result<()> {
+        let scene = Arc::new(get_scene(scene_idx));
+        let camera = Arc::new(Camera::new(&render_options, &camera_options));
+        let render_options = Arc::new(render_options);
+
+        if render_options.use_gpu {
+            let renderer = if let Some(gpu) = &self.gpu {
+                Self::gpu(
+                    self.command_channel.clone(),
+                    render_options,
+                    scene,
+                    camera,
+                    Arc::clone(&self.frame_buffer),
+                    Arc::clone(gpu),
+                )
+                .await?
+            } else {
+                panic!("Can't use GPU renderer without a GPU")
+            };
+
+            renderer.render().await
+        } else {
+            let renderer = Self::cpu(
+                self.command_channel.clone(),
+                render_options,
+                scene,
+                camera,
+                Arc::clone(&self.frame_buffer),
+            )
+            .await?;
+
+            renderer.render().await
+        }
+
+        Ok(())
+    }
+
+    async fn cpu(
         command_channel: Receiver<RendererCommand>,
         options: Arc<RenderOptions>,
         scene: Arc<Scene>,
         camera: Arc<Camera>,
         frame_buffer: Arc<FrameBuffer>,
-    ) -> anyhow::Result<Renderer> {
+    ) -> anyhow::Result<CpuRenderer> {
         let renderer = CpuRenderer::new(command_channel, options, scene, camera, frame_buffer);
-        Ok(Self::Cpu(renderer))
+        Ok(renderer)
     }
 
-    pub async fn gpu(
+    async fn gpu(
         command_channel: Receiver<RendererCommand>,
         options: Arc<RenderOptions>,
         scene: Arc<Scene>,
         camera: Arc<Camera>,
         frame_buffer: Arc<FrameBuffer>,
         gpu: Arc<Gpu>,
-    ) -> anyhow::Result<Renderer> {
+    ) -> anyhow::Result<GpuRenderer> {
         let renderer = GpuRenderer::new(command_channel, options, scene, camera, frame_buffer, gpu).await?;
-        Ok(Self::Gpu(renderer))
-    }
-
-    pub async fn new(
-        command_channel: Receiver<RendererCommand>,
-        render_options: Arc<RenderOptions>,
-        scene: Arc<Scene>,
-        camera: Arc<Camera>,
-        frame_buffer: Arc<FrameBuffer>,
-        gpu: Option<Arc<Gpu>>,
-    ) -> anyhow::Result<Renderer> {
-        match gpu {
-            Some(gpu) => {
-                Renderer::gpu(
-                    command_channel,
-                    Arc::clone(&render_options),
-                    Arc::clone(&scene),
-                    Arc::clone(&camera),
-                    Arc::clone(&frame_buffer),
-                    gpu,
-                )
-                .await
-            }
-
-            None => {
-                Renderer::cpu(
-                    command_channel,
-                    Arc::clone(&render_options),
-                    Arc::clone(&scene),
-                    Arc::clone(&camera),
-                    Arc::clone(&frame_buffer),
-                )
-                .await
-            }
-        }
-    }
-
-    pub async fn render(&self) {
-        match self {
-            Self::Cpu(cpu) => cpu.render().await,
-            Self::Gpu(gpu) => gpu.render().await,
-        }
+        Ok(renderer)
     }
 }

@@ -11,7 +11,7 @@ use winit::{
 
 use crate::{
     app::{cli::Args, state::State},
-    examples::scenes::get_scene,
+    examples::scenes::{get_camera_options},
     get_render_options,
     util::types::Uint,
 };
@@ -38,7 +38,8 @@ impl ApplicationHandler<State> for App {
         log::info!("Window resumed");
 
         let render_options = get_render_options(&self.args);
-        let (camera_options, scene) = get_scene(self.args.scene);
+        let scene_idx = self.args.scene;
+        let camera_options = get_camera_options(scene_idx);
 
         let window_attrs = Window::default_attributes()
             .with_inner_size(LogicalSize {
@@ -48,7 +49,7 @@ impl ApplicationHandler<State> for App {
             .with_resizable(true);
 
         let window = Arc::new(event_loop.create_window(window_attrs).unwrap());
-        let state = pollster::block_on(State::new(window, render_options, camera_options, scene)).unwrap();
+        let state = pollster::block_on(State::new(window, render_options, camera_options, scene_idx)).unwrap();
 
         self.state = Some(state);
     }

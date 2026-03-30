@@ -7,7 +7,7 @@ use crate::{
     app::{egui_integration::EguiIntegration, ui},
     gpu::{gpu::Gpu, gpu_canvas::GpuCanvas},
     rt::{
-        camera::{Camera, CameraOptions},
+        camera::CameraOptions,
         frame_buffer::FrameBuffer,
         geometry::scene::Scene,
         renderer::{render_options::RenderOptions, renderer::Renderer, renderer_command::RendererCommand},
@@ -25,8 +25,6 @@ pub struct State {
     canvas: GpuCanvas,
     render_options: Arc<RenderOptions>,
     camera_options: Arc<CameraOptions>,
-    scene: Arc<Scene>,
-    renderer: Arc<Renderer>,
     command_channel: Sender<RendererCommand>,
 }
 
@@ -35,7 +33,7 @@ impl State {
         window: Arc<Window>,
         render_options: RenderOptions,
         camera_options: CameraOptions,
-        scene: Scene,
+        scene_idx: Uint,
     ) -> anyhow::Result<Self> {
         let gpu = Arc::new(Gpu::new_windowed(Arc::clone(&window)).await?);
 
@@ -49,27 +47,17 @@ impl State {
 
         let render_texture_id = egui.register_texture(gpu.device(), canvas.view(), wgpu::FilterMode::Linear);
 
-        let (tx, rx) = tokio::sync::watch::channel(RendererCommand::Render);
+        let (tx, rx) = tokio::sync::watch::channel(RendererCommand::Idle);
 
-        let render_options = Arc::new(render_options);
-        let scene = Arc::new(scene);
-        let camera = Arc::new(Camera::new(&render_options, &camera_options));
-        let use_gpu = render_options.use_gpu;
-        let renderer = Arc::new(
-            Renderer::new(
-                rx,
-                Arc::clone(&render_options),
-                Arc::clone(&scene),
-                Arc::clone(&camera),
-                Arc::clone(&frame_buffer),
-                if use_gpu { Some(Arc::clone(&gpu)) } else { None },
-            )
-            .await?,
-        );
-
-        let renderer_clone = Arc::clone(&renderer);
+        let mut renderer = Renderer::new(rx, Arc::clone(&frame_buffer), Some(Arc::clone(&gpu))).await;
         let _ = tokio::spawn(async move {
-            renderer_clone.render().await;
+            renderer.run().await;
+        });
+
+        let _ = tx.send(RendererCommand::Render {
+            render_options,
+            camera_options,
+            scene_idx,
         });
 
         Ok(Self {
@@ -79,10 +67,8 @@ impl State {
             frame_buffer,
             gpu,
             canvas,
-            render_options,
+            render_options: Arc::new(render_options),
             camera_options: Arc::new(camera_options),
-            scene,
-            renderer: Arc::clone(&renderer),
             command_channel: tx,
         })
     }
