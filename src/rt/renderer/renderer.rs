@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 use tokio::sync::watch::Receiver;
 
@@ -17,10 +20,23 @@ use crate::{
     util::types::Uint,
 };
 
+pub struct RendererState {
+    pub is_rendering: AtomicBool,
+}
+
+impl RendererState {
+    pub fn new() -> Self {
+        Self {
+            is_rendering: AtomicBool::new(false),
+        }
+    }
+}
+
 pub struct Renderer {
     command_channel: Receiver<RendererCommand>,
     frame_buffer: Arc<FrameBuffer>,
     gpu: Option<Arc<Gpu>>,
+    state: Arc<RendererState>,
 }
 
 impl Renderer {
@@ -28,11 +44,13 @@ impl Renderer {
         command_channel: Receiver<RendererCommand>,
         frame_buffer: Arc<FrameBuffer>,
         gpu: Option<Arc<Gpu>>,
+        state: Arc<RendererState>,
     ) -> Self {
         Self {
             command_channel,
             frame_buffer,
             gpu,
+            state,
         }
     }
 
@@ -69,6 +87,8 @@ impl Renderer {
         camera_options: CameraOptions,
         scene_idx: Uint,
     ) -> anyhow::Result<()> {
+        self.state.is_rendering.store(true, Ordering::Relaxed);
+
         let scene = Arc::new(get_scene(scene_idx));
         let camera = Arc::new(Camera::new(&render_options, &camera_options));
         let render_options = Arc::new(render_options);
@@ -85,6 +105,7 @@ impl Renderer {
                 )
                 .await?
             } else {
+                self.state.is_rendering.store(false, Ordering::Relaxed);
                 panic!("Can't use GPU renderer without a GPU")
             };
 
@@ -102,6 +123,7 @@ impl Renderer {
             renderer.render().await
         }
 
+        self.state.is_rendering.store(false, Ordering::Relaxed);
         Ok(())
     }
 

@@ -1,16 +1,22 @@
-use std::sync::Arc;
+use std::sync::{atomic::Ordering, Arc};
 
 use tokio::sync::watch::Sender;
 use winit::{event_loop::ActiveEventLoop, keyboard::KeyCode, window::Window};
 
 use crate::{
-    app::{egui_integration::EguiIntegration, ui},
+    app::{
+        egui_integration::EguiIntegration,
+        ui::{self, UiAction, UiState},
+    },
     gpu::{gpu::Gpu, gpu_canvas::GpuCanvas},
     rt::{
         camera::CameraOptions,
         frame_buffer::FrameBuffer,
-        geometry::scene::Scene,
-        renderer::{render_options::RenderOptions, renderer::Renderer, renderer_command::RendererCommand},
+        renderer::{
+            render_options::RenderOptions,
+            renderer::{Renderer, RendererState},
+            renderer_command::RendererCommand,
+        },
     },
     util::types::Uint,
 };
@@ -23,9 +29,11 @@ pub struct State {
     frame_buffer: Arc<FrameBuffer>,
     gpu: Arc<Gpu>,
     canvas: GpuCanvas,
-    render_options: Arc<RenderOptions>,
-    camera_options: Arc<CameraOptions>,
+    render_options: RenderOptions,
+    camera_options: CameraOptions,
+    scene_idx: Uint,
     command_channel: Sender<RendererCommand>,
+    renderer_state: Arc<RendererState>,
 }
 
 impl State {
@@ -49,15 +57,16 @@ impl State {
 
         let (tx, rx) = tokio::sync::watch::channel(RendererCommand::Idle);
 
-        let mut renderer = Renderer::new(rx, Arc::clone(&frame_buffer), Some(Arc::clone(&gpu))).await;
+        let renderer_state = Arc::new(RendererState::new());
+        let mut renderer = Renderer::new(
+            rx,
+            Arc::clone(&frame_buffer),
+            Some(Arc::clone(&gpu)),
+            Arc::clone(&renderer_state),
+        )
+        .await;
         let _ = tokio::spawn(async move {
             renderer.run().await;
-        });
-
-        let _ = tx.send(RendererCommand::Render {
-            render_options,
-            camera_options,
-            scene_idx,
         });
 
         Ok(Self {
@@ -67,9 +76,11 @@ impl State {
             frame_buffer,
             gpu,
             canvas,
-            render_options: Arc::new(render_options),
-            camera_options: Arc::new(camera_options),
+            render_options: render_options,
+            camera_options: camera_options,
+            scene_idx,
             command_channel: tx,
+            renderer_state,
         })
     }
 
@@ -108,12 +119,49 @@ impl State {
             None => return Ok(()),
         };
 
-        let render_texture_id = self.render_texture_id;
-        let frame_buffer = &self.frame_buffer;
+        let ui_state = self.build_ui_state();
+        let mut ui_actions: Vec<UiAction> = vec![];
         self.egui.render_ui(&self.gpu, &self.window, frame, |ui| {
-            ui::build_ui(ui, render_texture_id, frame_buffer);
+            ui_actions = ui::build_ui(ui, &ui_state);
         });
 
+        for action in ui_actions {
+            self.handle_ui_action(action);
+        }
+
         Ok(())
+    }
+
+    fn handle_ui_action(&self, action: UiAction) {
+        let _ = match action {
+            UiAction::RenderButtonClicked => {
+                if self.renderer_state.is_rendering.load(Ordering::Relaxed) {
+                    self.cancel_render();
+                } else {
+                    self.start_render();
+                }
+            }
+        };
+    }
+
+    fn start_render(&self) {
+        let _ = self.command_channel.send(RendererCommand::Render {
+            render_options: self.render_options,
+            camera_options: self.camera_options,
+            scene_idx: self.scene_idx,
+        });
+    }
+
+    fn cancel_render(&self) {
+        let _ = self.command_channel.send(RendererCommand::CancelRender);
+    }
+
+    fn build_ui_state(&self) -> UiState {
+        UiState {
+            render_texture_id: self.render_texture_id,
+            render_width: self.frame_buffer.width,
+            render_height: self.frame_buffer.height,
+            is_rendering: self.renderer_state.is_rendering.load(Ordering::Relaxed),
+        }
     }
 }

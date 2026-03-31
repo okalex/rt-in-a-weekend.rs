@@ -1,6 +1,17 @@
-use crate::rt::frame_buffer::FrameBuffer;
+pub struct UiState {
+    pub render_texture_id: egui::TextureId,
+    pub render_width: usize,
+    pub render_height: usize,
+    pub is_rendering: bool,
+}
 
-pub fn build_ui(ui: &mut egui::Ui, render_texture_id: egui::TextureId, frame_buffer: &FrameBuffer) {
+pub enum UiAction {
+    RenderButtonClicked,
+}
+
+pub fn build_ui(ui: &mut egui::Ui, ui_state: &UiState) -> Vec<UiAction> {
+    let mut actions: Vec<UiAction> = vec![];
+
     egui::Panel::left("controls_panel")
         .resizable(true)
         .default_size(250.0)
@@ -8,7 +19,10 @@ pub fn build_ui(ui: &mut egui::Ui, render_texture_id: egui::TextureId, frame_buf
             ui.heading("Controls");
             ui.separator();
 
-            ui.label(format!("Render size: {}x{}", frame_buffer.width, frame_buffer.height));
+            ui.label(format!(
+                "Render size: {}x{}",
+                ui_state.render_width, ui_state.render_height
+            ));
 
             ui.separator();
 
@@ -16,6 +30,11 @@ pub fn build_ui(ui: &mut egui::Ui, render_texture_id: egui::TextureId, frame_buf
                 .default_open(true)
                 .show(ui, |ui| {
                     ui.label("Renderer options will go here.");
+
+                    let render_button_text = if ui_state.is_rendering { "Cancel" } else { "Render" };
+                    if ui.button(render_button_text).clicked() {
+                        actions.push(UiAction::RenderButtonClicked);
+                    }
                 });
 
             egui::CollapsingHeader::new("Camera").default_open(true).show(ui, |ui| {
@@ -29,13 +48,13 @@ pub fn build_ui(ui: &mut egui::Ui, render_texture_id: egui::TextureId, frame_buf
 
     egui::CentralPanel::default().show_inside(ui, |ui| {
         let available = ui.available_size();
-        let img_size = egui::vec2(frame_buffer.width as f32, frame_buffer.height as f32);
+        let img_size = egui::vec2(ui_state.render_width as f32, ui_state.render_height as f32);
         let scale = (available.x / img_size.x).min(available.y / img_size.y).min(1.0);
         let display_size = img_size * scale;
 
         ui.centered_and_justified(|ui| {
             ui.add(egui::Image::new(egui::load::SizedTexture::new(
-                render_texture_id,
+                ui_state.render_texture_id,
                 display_size,
             )));
         });
@@ -43,4 +62,6 @@ pub fn build_ui(ui: &mut egui::Ui, render_texture_id: egui::TextureId, frame_buf
 
     // Request continuous repaint so the progressive render updates are visible
     ui.ctx().request_repaint();
+
+    actions
 }
