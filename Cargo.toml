@@ -1,5 +1,5 @@
 [package]
-name = "rt-in-a-weekend"
+name = "crabapple"
 version = "0.1.0"
 edition = "2024"
 
@@ -22,9 +22,7 @@ winit = "0.30.13"
 encase_enum = { git = "https://github.com/okalex/encase_enum" }
 wesl = "0.3.2"
 obvhs = "0.3.0"
-egui = "0.34.0"
-egui-winit = "0.34.0"
-egui-wgpu = "0.34.0"
+iced = { version = "0.14.0", features = ["image", "tokio"] }
 
 [build-dependencies]
 anyhow = "1.0"

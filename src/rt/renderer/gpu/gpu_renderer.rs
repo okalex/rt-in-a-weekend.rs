@@ -132,7 +132,7 @@ impl GpuRenderer {
     }
 
     fn create_shader(&self) -> anyhow::Result<wgpu::ShaderModule> {
-        let shader = self.gpu.device().create_shader_module(wgpu::ShaderModuleDescriptor {
+        let shader = self.gpu.device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("compute.wgsl"),
             source: wgpu::ShaderSource::Wgsl(include_wesl!("render_shader").into()),
         });

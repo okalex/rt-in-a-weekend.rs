@@ -7,7 +7,6 @@ mod util;
 use std::sync::Arc;
 
 use clap::Parser;
-use winit::event_loop::EventLoop;
 
 #[allow(unused)]
 use crate::{
@@ -33,8 +32,7 @@ use crate::{
     util::{color::Color, ppm_writer::PpmWriter, types::Float},
 };
 
-#[tokio::main]
-async fn main() {
+fn main() {
     env_logger::init();
 
     let args = Args::parse();
@@ -43,7 +41,8 @@ async fn main() {
     if args.interactive {
         let _ = run_windowed(&args);
     } else {
-        let _ = run_headless(&args).await;
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        let _ = rt.block_on(run_headless(&args));
     }
 }
 
@@ -79,7 +78,7 @@ async fn run_headless(args: &Args) -> anyhow::Result<()> {
     let writer = PpmWriter::new(Arc::clone(&frame_buffer), 255);
 
     let gpu = if args.gpu {
-        Some(Arc::new(Gpu::new_headless().await?))
+        Some(Arc::new(Gpu::new().await?))
     } else {
         None
     };
@@ -109,10 +108,15 @@ async fn run_headless(args: &Args) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn run_windowed(args: &Args) -> anyhow::Result<()> {
-    let event_loop = EventLoop::with_user_event().build()?;
-    let mut app = App::new(args);
-    event_loop.run_app(&mut app)?;
-
-    Ok(())
+fn run_windowed(args: &Args) -> iced::Result {
+    let render_options = get_render_options(args);
+    let args = *args;
+    iced::application(move || App::new(args), App::update, App::view)
+        .title("Crabapple")
+        .subscription(App::subscription)
+        .window_size(iced::Size::new(
+            (render_options.img_width + 250) as f32,
+            render_options.img_height as f32,
+        ))
+        .run()
 }

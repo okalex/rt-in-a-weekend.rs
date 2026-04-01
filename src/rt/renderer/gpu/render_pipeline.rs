@@ -151,28 +151,28 @@ impl<O: NoUninit + AnyBitPattern> RenderPipeline<O> {
     pub fn init_buf<T: ShaderType + WriteInto>(&self, data: &T, buf: &wgpu::Buffer) {
         let mut buffer = encase::StorageBuffer::new(Vec::new());
         buffer.write(data).unwrap();
-        self.gpu.queue().write_buffer(buf, 0, buffer.as_ref());
+        self.gpu.queue.write_buffer(buf, 0, buffer.as_ref());
     }
 
     // Warm up the pipeline - this was meant to prevent dropped dispatches, but it
     // didn't work. Need to investigate
     pub async fn warmup(&self) -> anyhow::Result<()> {
-        let mut encoder = self.gpu.device().create_command_encoder(&Default::default());
+        let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
         {
             let mut pass = encoder.begin_compute_pass(&Default::default());
             pass.set_pipeline(&self.pipeline);
             pass.set_bind_group(0, &self.bind_group, &[]);
             pass.dispatch_workgroups(1, 1, 1);
         }
-        self.gpu.queue().submit([encoder.finish()]);
-        let _ = self.gpu.device().poll(wgpu::PollType::wait_indefinitely()); // block until done
+        self.gpu.queue.submit([encoder.finish()]);
+        let _ = self.gpu.device.poll(wgpu::PollType::wait_indefinitely()); // block until done
 
         Ok(())
     }
 
     // Run the renderer
     pub fn dispatch(&self, workgroup_dims: [u32; 2]) {
-        let mut encoder = self.gpu.device().create_command_encoder(&Default::default());
+        let mut encoder = self.gpu.device.create_command_encoder(&Default::default());
 
         {
             let mut pass = encoder.begin_compute_pass(&Default::default());
@@ -182,7 +182,7 @@ impl<O: NoUninit + AnyBitPattern> RenderPipeline<O> {
         }
 
         encoder.copy_buffer_to_buffer(&self.output_buf, 0, &self.temp_buf, 0, self.output_buf.size());
-        self.gpu.queue().submit([encoder.finish()]);
+        self.gpu.queue.submit([encoder.finish()]);
     }
 
     // Read the output buffer
@@ -192,7 +192,7 @@ impl<O: NoUninit + AnyBitPattern> RenderPipeline<O> {
 
             self.temp_buf
                 .map_async(wgpu::MapMode::Read, .., move |result| tx.send(result).unwrap());
-            self.gpu.device().poll(wgpu::PollType::wait_indefinitely())?;
+            self.gpu.device.poll(wgpu::PollType::wait_indefinitely())?;
             rx.recv()??;
 
             let output_view = self.temp_buf.get_mapped_range(..);
