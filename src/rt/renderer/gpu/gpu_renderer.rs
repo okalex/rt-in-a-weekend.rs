@@ -61,6 +61,13 @@ impl GpuRenderer {
 
         // Render progressively in smaller dispatches
         for samples in 1..=(self.options.samples_per_pixel / self.options.dispatch_size) {
+            // Exit if channel is dropped (app exited)
+            if !self.channel_is_open() {
+                log::info!("Command channel dropped. Exiting...");
+                break;
+            }
+
+            // Check for cancel event
             match *self.command_channel.borrow() {
                 RendererCommand::CancelRender => {
                     log::info!("Canceling render...");
@@ -93,7 +100,7 @@ impl GpuRenderer {
             }
         }
 
-        // Display final results
+        // Display final results if app is still open
         let result = render_pipeline.get_result().await;
         match result {
             Ok(pixels) => {
@@ -105,6 +112,10 @@ impl GpuRenderer {
 
         let elapsed = now.elapsed().as_millis();
         eprintln!("Done rendering: {}.{:0>3} s", elapsed / 1000, elapsed % 1000);
+    }
+
+    fn channel_is_open(&self) -> bool {
+        self.command_channel.has_changed().is_ok()
     }
 
     fn setup_pipeline(&self) -> RenderPipeline<[f32; 4]> {

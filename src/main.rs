@@ -25,7 +25,7 @@ use crate::{
     },
 };
 use crate::{
-    app::cli::{print_config, Args},
+    app::cli::{Args, print_config},
     examples::scenes::get_camera_options,
     gpu::gpu::Gpu,
     rt::renderer::{render_options::SamplerType, renderer::RendererState, renderer_command::RendererCommand},
@@ -114,6 +114,7 @@ fn run_windowed(args: &Args) -> iced::Result {
     iced::application(move || App::new(args), App::update, App::view)
         .title("Crabapple")
         .subscription(App::subscription)
+        .exit_on_close_request(false)
         .window_size(iced::Size::new(
             (render_options.img_width + 250) as f32,
             render_options.img_height as f32,

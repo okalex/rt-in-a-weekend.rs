@@ -18,7 +18,6 @@ pub fn view(app: &App) -> Element<'_, Message> {
     let selected_scene = SCENES.get(app.selected_scene_idx).map(|s| s.to_string());
 
     let controls = column![
-        text("Controls").size(20),
         text(format!(
             "Render size: {}x{}",
             app.render_options.img_width, app.render_options.img_height

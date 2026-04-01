@@ -106,6 +106,12 @@ impl CpuRenderWorker {
 
     pub fn render(&self) {
         loop {
+            // Exit if channel was dropped (app exited)
+            if self.command_channel.has_changed().is_err() {
+                break;
+            }
+
+            // Check for cancel events
             match *self.command_channel.borrow() {
                 RendererCommand::CancelRender => {
                     log::info!("Canceling render...");

@@ -39,6 +39,7 @@ pub enum Message {
     SceneSelected(String),
     SamplesChanged(String),
     Tick,
+    CloseRequested,
 }
 
 impl App {
@@ -47,29 +48,29 @@ impl App {
         let scene_idx = args.scene;
         let camera_options = get_camera_options(scene_idx);
 
+        // Set up frame buffer
+        // TODO: generate this at render time to accommodate render size changes
         let frame_buffer = Arc::new(FrameBuffer::new(
             render_options.img_width as usize,
             render_options.img_height as usize,
         ));
 
+        // Set up renderer command channel
         let (tx, rx) = tokio::sync::watch::channel(RendererCommand::Idle);
         let renderer_state = Arc::new(RendererState::new());
 
-        // Spawn renderer on background thread with its own tokio runtime
+        // Spawn renderer
         let fb_clone = Arc::clone(&frame_buffer);
         let state_clone = Arc::clone(&renderer_state);
         let use_gpu = args.gpu;
-        std::thread::spawn(move || {
-            let rt = tokio::runtime::Runtime::new().unwrap();
-            rt.block_on(async {
-                let gpu = if use_gpu {
-                    Some(Arc::new(Gpu::new().await.unwrap()))
-                } else {
-                    None
-                };
-                let mut renderer = Renderer::new(rx, fb_clone, gpu, state_clone).await;
-                renderer.run().await;
-            });
+        let _ = tokio::spawn(async move {
+            let gpu = if use_gpu {
+                Some(Arc::new(Gpu::new().await.unwrap()))
+            } else {
+                None
+            };
+            let mut renderer = Renderer::new(rx, fb_clone, gpu, state_clone).await;
+            renderer.run().await
         });
 
         let width = render_options.img_width;
@@ -110,16 +111,28 @@ impl App {
                     });
                 }
             }
+
             Message::SceneSelected(scene_name) => {
                 if let Some(idx) = crate::app::ui::SCENES.iter().position(|&s| s == scene_name) {
                     self.selected_scene_idx = idx;
                 }
             }
+
             Message::SamplesChanged(value) => {
                 self.samples_per_pixel = value;
             }
+
             Message::Tick => {
                 self.refresh_image();
+            }
+
+            Message::CloseRequested => {
+                log::info!("Exiting app...");
+                if self.is_rendering() {
+                    log::info!("Stopping renderer.");
+                    let _ = self.command_channel.send(RendererCommand::CancelRender);
+                }
+                return iced::exit();
             }
         }
         Task::none()
@@ -130,7 +143,10 @@ impl App {
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
-        iced::time::every(Duration::from_millis(33)).map(|_| Message::Tick)
+        Subscription::batch([
+            iced::time::every(Duration::from_millis(33)).map(|_| Message::Tick),
+            iced::window::close_requests().map(|_| Message::CloseRequested),
+        ])
     }
 
     fn refresh_image(&mut self) {
