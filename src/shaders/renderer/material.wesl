@@ -149,17 +149,50 @@ fn reflectance(cosine: f32, refraction_idx: f32) -> f32 {
     return r0 + (1.0 - r0) * pow(1.0 - cosine, 5.0);
 }
 
-fn pdf_value(mat: types::GpuMaterial, hit_record: hit_record::HitRecord, direction: vec3f) -> f32 {
+fn pdf_value(
+    mat: types::GpuMaterial,
+    hit_record: hit_record::HitRecord,
+    direction: vec3f
+) -> f32 {
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
             let pdf = pdf::new_cosine_pdf(hit_record.normal);
             return pdf::cosine_pdf_value(pdf, direction);
         }
+
         case types::GPUMATERIAL_ISOTROPIC {
             return pdf::sphere_pdf_value();
         }
+
         default: {
             return 0.0;
         }
     }
+}
+
+fn brdf(
+    mat: types::GpuMaterial,
+    ray_in: ray::Ray,
+    hit_record: hit_record::HitRecord,
+    scattered_dir: vec3f
+) -> vec3f {
+    switch mat._type {
+        case types::GPUMATERIAL_LAMBERTIAN {
+            let lambertian = types::unpack_GpuMaterial_Lambertian(mat);
+            let attenuation = texture::get_color(lambertian.texture, hit_record.u, hit_record.v, hit_record.point);
+            return attenuation / PI;
+        }
+
+        case types::GPUMATERIAL_ISOTROPIC {
+            let isotropic = types::unpack_GpuMaterial_Isotropic(mat);
+            let attenuation = texture::get_color(isotropic.texture, hit_record.u, hit_record.v, hit_record.point);
+            return attenuation / (4.0 * PI);
+        }
+
+        default: {
+            return vec3f(0, 0, 0);
+        }
+    }
+
+    return vec3f(0, 0, 0);
 }
