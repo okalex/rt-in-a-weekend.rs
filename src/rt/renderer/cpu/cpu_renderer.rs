@@ -196,21 +196,31 @@ impl CpuRenderWorker {
 
         let scattered_ray = Ray::new(hit_record.point, scattered_dir, ray.time); // Should time = ray.time + hit_record.t?
         let sample_color = self.ray_color(&scattered_ray, depth + 1);
-
-        // Abort before pdf calculation if ray isn't contributing
-        if sample_color.is_black() {
+        if !sample_color.is_finite() {
             return Color::black();
         }
 
         let pdf_value = pdf.value(&scattered_dir);
-        if pdf_value < 1e-8 {
+        if !pdf_value.is_finite() || pdf_value <= 0.0 {
             return Color::black();
         }
 
         let cos_theta = hit_record.normal.dot(scattered_dir.normalize()).max(0.0);
-        let brdf = mat.brdf(ray, hit_record, &scattered_dir);
+        if !cos_theta.is_finite() || cos_theta <= 0.0 {
+            return Color::black();
+        }
 
-        brdf * sample_color * cos_theta / pdf_value
+        let brdf = mat.brdf(ray, hit_record, &scattered_dir);
+        if !brdf.is_finite() {
+            return Color::black();
+        }
+
+        let contribution = brdf * sample_color * cos_theta / pdf_value;
+        if contribution.is_finite() {
+            contribution
+        } else {
+            Color::black()
+        }
     }
 
     fn get_pdf(&self, hit_record: &HitRecord, material_pdf: &Arc<Pdf>) -> Arc<Pdf> {
@@ -236,6 +246,6 @@ impl CpuRenderWorker {
             .collect();
 
         let light_pdf = Arc::new(Pdf::multi(hit_record.point, primitives));
-        Arc::new(Pdf::mixture(light_pdf, Arc::clone(&material_pdf)))
+        Arc::new(Pdf::mixture(light_pdf, Arc::clone(&material_pdf), 0.5))
     }
 }

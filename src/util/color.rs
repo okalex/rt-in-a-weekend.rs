@@ -54,10 +54,18 @@ impl Color {
         self.base.z
     }
 
+    pub fn luminance(&self) -> Float {
+        self.base.dot(Vector::new(0.2126, 0.7152, 0.0722))
+    }
+
+    pub fn is_finite(&self) -> bool {
+        self.r().is_finite() && self.g().is_finite() && self.b().is_finite()
+    }
+
     pub fn to_gamma(&self) -> Color {
-        let r = if self.r().is_nan() { 0.0 } else { self.r() };
-        let g = if self.r().is_nan() { 0.0 } else { self.g() };
-        let b = if self.r().is_nan() { 0.0 } else { self.b() };
+        let r = if self.r().is_finite() { self.r() } else { 0.0 };
+        let g = if self.g().is_finite() { self.g() } else { 0.0 };
+        let b = if self.b().is_finite() { self.b() } else { 0.0 };
         Self::new(linear_to_gamma(r), linear_to_gamma(g), linear_to_gamma(b))
     }
 
@@ -101,6 +109,14 @@ impl Add<Float> for Color {
     }
 }
 
+impl Add<Color> for Float {
+    type Output = Color;
+
+    fn add(self, b: Color) -> Color {
+        b + self
+    }
+}
+
 impl Sub for Color {
     type Output = Self;
 
@@ -114,6 +130,14 @@ impl Sub<Float> for Color {
 
     fn sub(self, b: Float) -> Self {
         self - Self::fill(b)
+    }
+}
+
+impl Sub<Color> for Float {
+    type Output = Color;
+
+    fn sub(self, b: Color) -> Color {
+        Color::new(self - b.r(), self - b.g(), self - b.b())
     }
 }
 
@@ -133,6 +157,14 @@ impl Mul<Float> for Color {
     }
 }
 
+impl Mul<Color> for Float {
+    type Output = Color;
+
+    fn mul(self, b: Color) -> Color {
+        b * self
+    }
+}
+
 impl Div for Color {
     type Output = Self;
 
@@ -146,6 +178,14 @@ impl Div<Float> for Color {
 
     fn div(self, b: Float) -> Self {
         Self::wrap_vec(self.base / b)
+    }
+}
+
+impl Div<Color> for Float {
+    type Output = Color;
+
+    fn div(self, b: Color) -> Color {
+        Color::new(self / b.r(), self / b.g(), self / b.b())
     }
 }
 

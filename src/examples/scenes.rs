@@ -567,7 +567,7 @@ mod pbr {
     pub fn camera() -> CameraOptions {
         CameraOptions::new()
             .vfov(20.0)
-            .position([0.0, 1.5, 4.0])
+            .position([0.0, 1.5, 10.0])
             .target([0.0, 0.5, 0.0])
             .defocus_angle(0.0)
             .focus_dist(3.4)
@@ -590,7 +590,7 @@ mod pbr {
         for i in 0..=5 {
             let props = PbrMaterialProperties {
                 roughness: 0.2 * i as Float,
-                specular: 0.0,
+                specular: 0.5,
                 metallic: 0.0,
                 fresnel: 0.0,
             };

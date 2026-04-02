@@ -68,6 +68,12 @@ pub fn rand_in_unit_disk() -> Vector {
     }
 }
 
+pub fn rand_on_unit_disk() -> Vector {
+    let r = rand().sqrt();
+    let phi = 2.0 * PI * rand();
+    Vector::new(r * phi.cos(), r * phi.sin(), 0.0)
+}
+
 pub fn rand_cos_dir() -> Vector {
     let r1 = rand();
     let r2 = rand();

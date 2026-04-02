@@ -35,4 +35,9 @@ impl Onb {
     pub fn transform(&self, v: Vector) -> Vector {
         v[0] * self.u() + v[1] * self.v() + v[2] * self.w()
     }
+
+    // Transform from local space to basis coordinates.
+    pub fn inv_transform(&self, v: Vector) -> Vector {
+        Vector::new(v.dot(self.u()), v.dot(self.v()), v.dot(self.w()))
+    }
 }

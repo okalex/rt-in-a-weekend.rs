@@ -25,7 +25,7 @@ use crate::{
     },
 };
 use crate::{
-    app::cli::{print_config, Args},
+    app::cli::{Args, print_config},
     examples::scenes::get_camera_options,
     gpu::gpu::Gpu,
     rt::renderer::{render_options::SamplerType, renderer::RendererState, renderer_command::RendererCommand},
@@ -57,7 +57,7 @@ pub fn get_render_options(args: &Args) -> RenderOptions {
         .use_gpu(args.gpu)
         .use_multithreading(args.multithreading)
         .use_importance_sampling(args.importance)
-        .background(Color::black())
+        // .background(Color::black())
         .sampler_type(if args.sampler == 2 {
             SamplerType::Stratified
         } else {

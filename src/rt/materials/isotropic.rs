@@ -4,7 +4,7 @@ use super::material::ScatterRecord;
 use crate::{
     rt::{
         geometry::hit_record::HitRecord,
-        pdf::{Pdf, SpherePdf},
+        pdf::Pdf,
         ray::Ray,
         textures::{solid_color::SolidColor, texture::Texture},
     },
@@ -27,7 +27,7 @@ impl Isotropic {
     pub fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
         Some(ScatterRecord::with_pdf(
             self.texture.value(hit_record.u, hit_record.v, &hit_record.point),
-            Arc::new(Pdf::Sphere(SpherePdf::new())),
+            Arc::new(Pdf::sphere()),
         ))
     }
 

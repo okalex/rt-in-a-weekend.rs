@@ -25,7 +25,7 @@ pub struct UiState {
     pub max_depth: String,
     pub scene_idx: Uint,
     pub use_gpu: bool,
-    pub use_importance_sampling: bool
+    pub use_importance_sampling: bool,
 }
 
 impl UiState {

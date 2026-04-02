@@ -1,4 +1,4 @@
-use std::sync::{atomic::Ordering, Arc};
+use std::sync::{Arc, atomic::Ordering};
 use std::time::Duration;
 
 use iced::{Element, Subscription, Task};

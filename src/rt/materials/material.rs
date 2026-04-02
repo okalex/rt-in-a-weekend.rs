@@ -82,7 +82,7 @@ impl Material {
             Self::Isotropic(mat) => mat.brdf(r_in, hit_record, scattered_dir),
             Self::Lambertian(mat) => mat.brdf(r_in, hit_record, scattered_dir),
             Self::Metal(_) => default,
-            Self::PbrMaterial(_) => default,
+            Self::PbrMaterial(mat) => mat.brdf(r_in, hit_record, scattered_dir),
         }
     }
 }
