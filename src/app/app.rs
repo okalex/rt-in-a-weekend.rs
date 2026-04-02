@@ -91,16 +91,20 @@ impl App {
                 if self.is_rendering() {
                     let _ = self.command_channel.send(RendererCommand::CancelRender);
                 } else {
+                    let scene_idx = self.get_scene_idx();
                     let _ = self.command_channel.send(RendererCommand::Render {
                         render_options: self.build_render_options(),
                         camera_options: self.camera_options,
-                        scene_idx: self.get_scene_idx(),
+                        scene_idx,
                     });
                 }
             }
 
             Message::SceneSelected(scene_idx) => {
-                self.ui_state.update_scene_idx(scene_idx);
+                if scene_idx != self.ui_state.scene_idx {
+                    self.camera_options = get_camera_options(scene_idx + 1);
+                    self.ui_state.update_scene_idx(scene_idx);
+                }
             }
 
             Message::SamplesChanged(value) => {

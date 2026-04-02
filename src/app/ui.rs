@@ -71,10 +71,13 @@ impl UiState {
 pub fn view(state: &UiState) -> Element<'_, Message> {
     let selected_scene = SCENES.get(state.scene_idx as usize).map(|s| s.to_string());
 
+    #[rustfmt::skip]
     let controls = column![
         text(format!("Render size: {}x{}", state.render_width, state.render_height)),
+
         text("Samples per pixel:"),
         text_input("100", &state.samples_per_pixel).on_input(Message::SamplesChanged),
+
         text("Scene:"),
         pick_list(
             SCENES.iter().map(|s| s.to_string()).collect::<Vec<_>>(),
@@ -84,6 +87,7 @@ pub fn view(state: &UiState) -> Element<'_, Message> {
                 Message::SceneSelected(scene_idx as Uint)
             },
         ),
+        
         button(if state.is_rendering { "Cancel" } else { "Render" }).on_press(Message::RenderButtonClicked),
     ]
     .spacing(10)
