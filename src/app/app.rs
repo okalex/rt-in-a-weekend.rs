@@ -1,10 +1,10 @@
 use std::sync::{atomic::Ordering, Arc};
 use std::time::Duration;
 
-use iced::widget::image;
 use iced::{Element, Subscription, Task};
 use tokio::sync::watch::Sender;
 
+use crate::app::ui::UiState;
 use crate::{
     app::cli::Args,
     examples::scenes::get_camera_options,
@@ -24,19 +24,17 @@ use crate::{
 
 pub struct App {
     pub frame_buffer: Arc<FrameBuffer>,
-    pub render_options: RenderOptions,
-    pub camera_options: CameraOptions,
+    pub render_options: RenderOptions, // TODO: Move all this into UI state
+    pub camera_options: CameraOptions, // TODO: Move all this into UI state
     command_channel: Sender<RendererCommand>,
     pub renderer_state: Arc<RendererState>,
-    pub samples_per_pixel: String,
-    pub selected_scene_idx: usize,
-    pub render_image: image::Handle,
+    ui_state: UiState,
 }
 
 #[derive(Debug, Clone)]
 pub enum Message {
     RenderButtonClicked,
-    SceneSelected(String),
+    SceneSelected(Uint),
     SamplesChanged(String),
     Tick,
     CloseRequested,
@@ -48,7 +46,7 @@ impl App {
         let scene_idx = args.scene;
         let camera_options = get_camera_options(scene_idx);
 
-        // Set up frame buffer
+        // Set up frame buffer and UI image
         // TODO: generate this at render time to accommodate render size changes
         let frame_buffer = Arc::new(FrameBuffer::new(
             render_options.img_width as usize,
@@ -73,9 +71,7 @@ impl App {
             renderer.run().await
         });
 
-        let width = render_options.img_width;
-        let height = render_options.img_height;
-        let render_image = image::Handle::from_rgba(width, height, vec![0u8; (width * height * 4) as usize]);
+        let ui_state = UiState::new(render_options, (scene_idx as Uint) - 1);
 
         let app = Self {
             frame_buffer,
@@ -83,9 +79,7 @@ impl App {
             camera_options,
             command_channel: tx,
             renderer_state,
-            samples_per_pixel: render_options.samples_per_pixel.to_string(),
-            selected_scene_idx: (scene_idx - 1) as usize,
-            render_image,
+            ui_state,
         };
 
         (app, Task::none())
@@ -97,32 +91,24 @@ impl App {
                 if self.is_rendering() {
                     let _ = self.command_channel.send(RendererCommand::CancelRender);
                 } else {
-                    let render_options = RenderOptions {
-                        samples_per_pixel: self
-                            .samples_per_pixel
-                            .parse::<Uint>()
-                            .unwrap_or(self.render_options.samples_per_pixel),
-                        ..self.render_options
-                    };
                     let _ = self.command_channel.send(RendererCommand::Render {
-                        render_options,
+                        render_options: self.build_render_options(),
                         camera_options: self.camera_options,
-                        scene_idx: (self.selected_scene_idx + 1) as Uint,
+                        scene_idx: self.get_scene_idx(),
                     });
                 }
             }
 
-            Message::SceneSelected(scene_name) => {
-                if let Some(idx) = crate::app::ui::SCENES.iter().position(|&s| s == scene_name) {
-                    self.selected_scene_idx = idx;
-                }
+            Message::SceneSelected(scene_idx) => {
+                self.ui_state.update_scene_idx(scene_idx);
             }
 
             Message::SamplesChanged(value) => {
-                self.samples_per_pixel = value;
+                self.ui_state.update_samples_per_pixel(value);
             }
 
             Message::Tick => {
+                self.ui_state.update_is_rendering(self.is_rendering());
                 self.refresh_image();
             }
 
@@ -139,7 +125,7 @@ impl App {
     }
 
     pub fn view(&self) -> Element<'_, Message> {
-        crate::app::ui::view(self)
+        crate::app::ui::view(&self.ui_state)
     }
 
     pub fn subscription(&self) -> Subscription<Message> {
@@ -151,11 +137,21 @@ impl App {
 
     fn refresh_image(&mut self) {
         let data = self.frame_buffer.data.lock().unwrap().clone();
-        self.render_image =
-            image::Handle::from_rgba(self.render_options.img_width, self.render_options.img_height, data);
+        self.ui_state.update_render_image(data);
     }
 
-    pub fn is_rendering(&self) -> bool {
+    fn is_rendering(&self) -> bool {
         self.renderer_state.is_rendering.load(Ordering::Relaxed)
+    }
+
+    fn build_render_options(&self) -> RenderOptions {
+        RenderOptions {
+            samples_per_pixel: self.ui_state.get_samples_per_pixel(),
+            ..self.render_options
+        }
+    }
+
+    fn get_scene_idx(&self) -> Uint {
+        self.ui_state.scene_idx + 1
     }
 }
