@@ -37,6 +37,7 @@ pub enum Message {
     SceneSelected(Uint),
     SamplesChanged(String),
     MaxDepthChanged(String),
+    UseGpuChanged(bool),
     Tick,
     CloseRequested,
 }
@@ -116,6 +117,10 @@ impl App {
                 self.ui_state.update_max_depth(value);
             }
 
+            Message::UseGpuChanged(value) => {
+                self.ui_state.update_use_gpu(value);
+            }
+
             Message::Tick => {
                 self.ui_state.update_is_rendering(self.is_rendering());
                 self.refresh_image();
@@ -157,6 +162,7 @@ impl App {
         RenderOptions {
             samples_per_pixel: self.ui_state.get_samples_per_pixel(),
             max_depth: self.ui_state.get_max_depth(),
+            use_gpu: self.ui_state.use_gpu,
             ..self.render_options
         }
     }

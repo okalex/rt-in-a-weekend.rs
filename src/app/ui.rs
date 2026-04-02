@@ -1,4 +1,4 @@
-use iced::widget::{button, column, container, image, pick_list, row, text, text_input};
+use iced::widget::{button, checkbox, column, container, image, pick_list, row, text, text_input};
 use iced::{Element, Fill};
 
 use crate::app::app::Message;
@@ -24,6 +24,7 @@ pub struct UiState {
     pub samples_per_pixel: String,
     pub max_depth: String,
     pub scene_idx: Uint,
+    pub use_gpu: bool,
 }
 
 impl UiState {
@@ -44,6 +45,7 @@ impl UiState {
             samples_per_pixel: render_options.samples_per_pixel.to_string(),
             max_depth: render_options.max_depth.to_string(),
             scene_idx,
+            use_gpu: render_options.use_gpu,
         }
     }
 
@@ -78,6 +80,10 @@ impl UiState {
     pub fn update_render_image(&mut self, data: Vec<u8>) {
         self.render_image = image::Handle::from_rgba(self.render_width, self.render_height, data);
     }
+
+    pub fn update_use_gpu(&mut self, new_value: bool) {
+        self.use_gpu = new_value;
+    }
 }
 
 pub fn view(state: &UiState) -> Element<'_, Message> {
@@ -102,6 +108,9 @@ pub fn view(state: &UiState) -> Element<'_, Message> {
                 Message::SceneSelected(scene_idx as Uint)
             },
         ),
+
+        text("Use GPU?"),
+        checkbox(state.use_gpu).on_toggle(Message::UseGpuChanged),
         
         button(if state.is_rendering { "Cancel" } else { "Render" }).on_press(Message::RenderButtonClicked),
     ]
