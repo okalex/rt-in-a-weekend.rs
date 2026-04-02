@@ -54,7 +54,7 @@ impl Color {
     }
 
     pub fn luminance(&self) -> Float {
-        self.base.dot(Vector::new(0.2126, 0.7152, 0.0722))
+        self.base.dot(Vector::new(0.2126, 0.7152, 0.0722)).max(0.0)
     }
 
     pub fn is_finite(&self) -> bool {

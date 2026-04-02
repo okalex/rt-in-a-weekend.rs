@@ -1,7 +1,7 @@
-use super::material::{ScatterRecord, reflect, reflectance, refract};
+use super::material::{ScatterRecord, reflectance, refract};
 use crate::{
     rt::{geometry::hit_record::HitRecord, ray::Ray},
-    util::{color::Color, random::rand, types::Float},
+    util::{color::Color, random::rand, types::Float, vector_ext::VectorExt},
 };
 
 pub struct Dielectric {
@@ -27,7 +27,7 @@ impl Dielectric {
 
         let cannot_refract = (ri * sin_theta) > 1.0;
         let (attenuation, direction) = if cannot_refract || reflectance(cos_theta, ri) > rand() {
-            (Color::white(), reflect(unit_dir, hit_record.normal))
+            (Color::white(), VectorExt::reflect(-unit_dir, hit_record.normal))
         } else {
             (self.albedo, refract(unit_dir, hit_record.normal, ri))
         };

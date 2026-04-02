@@ -5,7 +5,7 @@ use crate::{
         geometry::hit_record::HitRecord,
         materials::{
             ggx::{ggx_d, schlick_fresnel, smith_g2},
-            material::{ScatterRecord, reflect},
+            material::ScatterRecord,
         },
         pdf::Pdf,
         ray::Ray,
@@ -130,8 +130,8 @@ impl PbrMaterial {
         let n_dot_o = normal.dot(wo).clamp(0.0, 1.0);
         let specular_color = schlick_fresnel(self.f0, n_dot_o);
         let diffuse_color = self.diffuse_color(specular_color);
-        let specular_luma = specular_color.luminance().max(0.0);
-        let diffuse_luma = diffuse_color.luminance().max(0.0);
+        let specular_luma = specular_color.luminance();
+        let diffuse_luma = diffuse_color.luminance();
         let total_luma = specular_luma + diffuse_luma;
 
         if total_luma <= 0.0 {
@@ -153,7 +153,7 @@ impl PbrMaterial {
         if weights.specular_probability >= 1.0
             || (weights.specular_probability > 0.0 && rand() < weights.specular_probability)
         {
-            let reflected = reflect(r_in.dir.normalize(), hit_record.normal);
+            let reflected = VectorExt::reflect(-r_in.dir.normalize(), hit_record.normal);
             return Some(ScatterRecord::skip_pdf(
                 weights.specular_color / weights.specular_probability.max(HALF_VECTOR_EPSILON),
                 Ray::new(hit_record.point, reflected, r_in.time),

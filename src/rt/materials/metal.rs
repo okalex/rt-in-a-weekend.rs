@@ -1,7 +1,7 @@
-use super::material::{ScatterRecord, reflect};
+use super::material::ScatterRecord;
 use crate::{
     rt::{geometry::hit_record::HitRecord, ray::Ray},
-    util::{color::Color, random::rand_on_hemisphere, types::Float},
+    util::{color::Color, random::rand_on_hemisphere, types::Float, vector_ext::VectorExt},
 };
 
 pub struct Metal {
@@ -18,8 +18,8 @@ impl Metal {
     }
 
     pub fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
-        let reflected =
-            reflect(r_in.dir, hit_record.normal).normalize() + rand_on_hemisphere(hit_record.normal) * self.fuzz;
+        let reflected = VectorExt::reflect(-r_in.dir, hit_record.normal).normalize()
+            + rand_on_hemisphere(hit_record.normal) * self.fuzz;
 
         Some(ScatterRecord::skip_pdf(
             self.albedo,
