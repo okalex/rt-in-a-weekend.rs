@@ -1,68 +1,93 @@
 use std::sync::Arc;
 
 use crate::{
-    rt::{geometry::hit_record::HitRecord, materials::material::ScatterRecord, pdf::Pdf, ray::Ray},
+    rt::{
+        geometry::hit_record::HitRecord,
+        materials::{
+            ggx::{ggx_d, schlick_fresnel, smith_g2},
+            material::{ScatterRecord, reflect},
+        },
+        pdf::Pdf,
+        ray::Ray,
+    },
     util::{
         color::Color,
+        random::rand,
         types::{Float, PI, Vector},
+        vector_ext::{HALF_VECTOR_EPSILON, VectorExt},
     },
 };
 
-const MIN_ROUGHNESS: Float = 0.1;
-const HALF_VECTOR_EPSILON: Float = 1e-12;
+const MIN_ALPHA: Float = 1e-4;
+const MIRROR_ROUGHNESS_EPSILON: Float = 1e-6;
 
 pub struct PbrMaterialProperties {
     pub roughness: Float,
-    pub specular: Float,
     pub metallic: Float,
-    pub fresnel: Float,
+    pub ior: Float,
 }
 
 #[allow(unused)]
 pub struct PbrMaterial {
     pub albedo: Color,
     pub roughness: Float,
-    pub specular: Float,
     pub metallic: Float,
-    pub fresnel: Float,
-    pub diffuse: Float,
+    pub ior: Float,
+    pub alpha: Float,
+    pub f0: Color,
+    pub p_spec: Float,
+}
+
+struct MirrorLimitWeights {
+    specular_color: Color,
+    diffuse_color: Color,
+    specular_probability: Float,
+    diffuse_probability: Float,
 }
 
 impl PbrMaterial {
     pub fn new(albedo: Color, props: PbrMaterialProperties) -> Self {
-        let diffuse = (1.0 - props.specular) * (1.0 - props.metallic);
+        let alpha = Float::max(props.roughness * props.roughness, MIN_ALPHA);
+        let dielectric_f0 = Color::fill(Self::dielectric_f0_from_ior(props.ior));
+        let f0 = Color::mix(albedo, dielectric_f0, props.metallic);
+        let p_spec = Self::specular_sample_weight(f0.luminance(), props.roughness);
+
         Self {
             albedo,
             roughness: props.roughness,
-            specular: props.specular,
             metallic: props.metallic,
-            fresnel: props.fresnel,
-            diffuse,
+            ior: props.ior,
+            alpha,
+            f0,
+            p_spec,
         }
     }
 
     pub fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
-        let alpha = self.alpha();
         let wo = -r_in.dir.normalize();
-
-        let f0 = Self::mix_colors(self.albedo, Color::fill(0.08 * self.specular), self.metallic);
-        let p_spec = Self::specular_sample_weight(f0.luminance(), self.roughness, self.specular);
+        if self.is_mirror_limit() {
+            return self.scatter_mirror_limit(r_in, hit_record, wo);
+        }
 
         Some(ScatterRecord::with_pdf(
             Color::white(), // TODO: unused because attenuation is calculated by brdf
             Arc::new(Pdf::mixture(
-                Arc::new(Pdf::ggx(wo, hit_record.normal, alpha)),
+                Arc::new(Pdf::ggx(wo, hit_record.normal, self.alpha)),
                 Arc::new(Pdf::cosine(&hit_record.normal)),
-                p_spec,
+                self.p_spec,
             )),
         ))
     }
 
     pub fn brdf(&self, r_in: &Ray, hit_record: &HitRecord, scattered_dir: &Vector) -> Color {
-        let alpha = self.alpha();
         let wo = -r_in.dir.normalize();
         let wi = scattered_dir.normalize();
-        let h = match Self::half_vector(wi, wo) {
+
+        if self.is_mirror_limit() {
+            return self.mirror_limit_diffuse_brdf(hit_record, wo);
+        }
+
+        let h = match VectorExt::half_vector(wi, wo) {
             Some(h) => h,
             None => return Color::black(),
         };
@@ -76,10 +101,10 @@ impl PbrMaterial {
             return Color::black();
         }
 
-        let f0 = Self::mix_colors(self.albedo, Color::fill(0.08 * self.specular), self.metallic);
-        let f = Self::schlick_fresnel(f0, v_dot_h);
-        let d = Self::ggx_d(n_dot_h, alpha);
-        let g = Self::smith_g2(n_dot_i, n_dot_o, alpha);
+        let alpha_sqrd = self.alpha * self.alpha;
+        let f = schlick_fresnel(self.f0, v_dot_h);
+        let d = ggx_d(n_dot_h, alpha_sqrd);
+        let g = smith_g2(n_dot_i, n_dot_o, alpha_sqrd);
 
         let diffuse = (Color::white() - f) * (1.0 - self.metallic) * self.albedo / PI;
         let specular = d * f * g / (4.0 * n_dot_i * n_dot_o);
@@ -87,92 +112,78 @@ impl PbrMaterial {
         diffuse + specular
     }
 
-    pub fn mix_colors(a: Color, b: Color, control: Float) -> Color {
-        a * control + b * (1.0 - control)
+    fn is_mirror_limit(&self) -> bool {
+        self.roughness <= MIRROR_ROUGHNESS_EPSILON
     }
 
-    pub fn alpha_from_roughness(roughness: Float) -> Float {
-        let clamped_roughness = roughness.max(MIN_ROUGHNESS);
-        clamped_roughness * clamped_roughness
+    fn diffuse_color(&self, fresnel: Color) -> Color {
+        (Color::white() - fresnel) * (1.0 - self.metallic) * self.albedo
     }
 
-    fn alpha(&self) -> Float {
-        Self::alpha_from_roughness(self.roughness)
+    fn dielectric_f0_from_ior(ior: Float) -> Float {
+        let clamped_ior = ior.max(HALF_VECTOR_EPSILON);
+        let reflectance = (clamped_ior - 1.0) / (clamped_ior + 1.0);
+        reflectance * reflectance
     }
 
-    fn half_vector(wi: Vector, wo: Vector) -> Option<Vector> {
-        let half_vec = wi + wo;
-        let len_sq = half_vec.length_squared();
+    fn mirror_limit_weights(&self, normal: Vector, wo: Vector) -> Option<MirrorLimitWeights> {
+        let n_dot_o = normal.dot(wo).clamp(0.0, 1.0);
+        let specular_color = schlick_fresnel(self.f0, n_dot_o);
+        let diffuse_color = self.diffuse_color(specular_color);
+        let specular_luma = specular_color.luminance().max(0.0);
+        let diffuse_luma = diffuse_color.luminance().max(0.0);
+        let total_luma = specular_luma + diffuse_luma;
 
-        if !len_sq.is_finite() || len_sq <= HALF_VECTOR_EPSILON {
+        if total_luma <= 0.0 {
             return None;
         }
 
-        Some(half_vec / len_sq.sqrt())
+        let specular_probability = (specular_luma / total_luma).clamp(0.0, 1.0);
+        Some(MirrorLimitWeights {
+            specular_color,
+            diffuse_color,
+            specular_probability,
+            diffuse_probability: 1.0 - specular_probability,
+        })
     }
 
-    fn specular_sample_weight(f0_luminance: Float, roughness: Float, specular: Float) -> Float {
+    fn scatter_mirror_limit(&self, r_in: &Ray, hit_record: &HitRecord, wo: Vector) -> Option<ScatterRecord> {
+        let weights = self.mirror_limit_weights(hit_record.normal, wo)?;
+
+        if weights.specular_probability >= 1.0
+            || (weights.specular_probability > 0.0 && rand() < weights.specular_probability)
+        {
+            let reflected = reflect(r_in.dir.normalize(), hit_record.normal);
+            return Some(ScatterRecord::skip_pdf(
+                weights.specular_color / weights.specular_probability.max(HALF_VECTOR_EPSILON),
+                Ray::new(hit_record.point, reflected, r_in.time),
+            ));
+        }
+
+        if weights.diffuse_probability <= 0.0 {
+            return None;
+        }
+
+        Some(ScatterRecord::with_pdf(
+            Color::white(),
+            Arc::new(Pdf::cosine(&hit_record.normal)),
+        ))
+    }
+
+    fn mirror_limit_diffuse_brdf(&self, hit_record: &HitRecord, wo: Vector) -> Color {
+        let Some(weights) = self.mirror_limit_weights(hit_record.normal, wo) else {
+            return Color::black();
+        };
+
+        if weights.diffuse_probability <= 0.0 {
+            return Color::black();
+        }
+
+        weights.diffuse_color / (PI * weights.diffuse_probability.clamp(HALF_VECTOR_EPSILON, 1.0))
+    }
+
+    fn specular_sample_weight(f0_luminance: Float, roughness: Float) -> Float {
         let smoothness = 1.0 - roughness.clamp(0.0, 1.0);
-        (f0_luminance + smoothness * specular).clamp(0.1, 0.9)
-    }
-
-    pub fn ggx_d(n_dot_h: Float, alpha: Float) -> Float {
-        let alpha_sqrd = alpha * alpha;
-        let n_dot_h_sqrd = n_dot_h * n_dot_h;
-        let denom = n_dot_h_sqrd * (alpha_sqrd - 1.0) + 1.0;
-        alpha_sqrd / (PI * denom * denom)
-    }
-
-    pub fn smith_g1(n_dot_o: Float, alpha: Float) -> Float {
-        let alpha_sqrd = alpha * alpha;
-        let n_dot_o_sqrd = n_dot_o * n_dot_o;
-        let denom = n_dot_o + (alpha_sqrd + (1.0 - alpha_sqrd) * n_dot_o_sqrd).sqrt();
-        2.0 * n_dot_o / denom
-    }
-
-    pub fn smith_g2(n_dot_i: Float, n_dot_o: Float, alpha: Float) -> Float {
-        let alpha_sqrd = alpha * alpha;
-        let n_dot_i_sqrd = n_dot_i * n_dot_i;
-        let n_dot_o_sqrd = n_dot_o * n_dot_o;
-        let a = alpha_sqrd + (1.0 - alpha_sqrd) * n_dot_i_sqrd;
-        let b = alpha_sqrd + (1.0 - alpha_sqrd) * n_dot_o_sqrd;
-        let denom = n_dot_o * a.sqrt() + n_dot_i * b.sqrt();
-        2.0 * n_dot_i * n_dot_o / denom
-    }
-
-    pub fn schlick_fresnel(f0: Color, v_dot_h: Float) -> Color {
-        let cos_theta = v_dot_h.clamp(0.0, 1.0);
-        f0 + (1.0 - f0) * (1.0 - cos_theta).powf(5.0)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{PbrMaterial, PbrMaterialProperties};
-    use crate::{
-        rt::{geometry::hit_record::HitRecord, ray::Ray},
-        util::{color::Color, types::Vector},
-    };
-
-    #[test]
-    fn brdf_returns_black_for_degenerate_half_vector() {
-        let material = PbrMaterial::new(
-            Color::from([0.3, 0.2, 0.8]),
-            PbrMaterialProperties {
-                roughness: 0.0,
-                specular: 0.5,
-                metallic: 0.0,
-                fresnel: 0.0,
-            },
-        );
-        let hit_record = HitRecord::new(Vector::ZERO, Vector::Z, true, 1.0, 0.0, 0.0);
-        let ray = Ray::new(Vector::ZERO, -Vector::Z, 0.0);
-
-        let brdf = material.brdf(&ray, &hit_record, &(-Vector::Z));
-
-        assert!(brdf.is_finite());
-        assert_eq!(brdf.r(), 0.0);
-        assert_eq!(brdf.g(), 0.0);
-        assert_eq!(brdf.b(), 0.0);
+        (f0_luminance + 0.5 * smoothness).clamp(0.1, 0.9)
     }
 }

@@ -4,6 +4,7 @@ use crate::util::{
     interval::Interval,
     random::rand,
     types::{Float, Vector},
+    vector_ext::VectorExt,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -12,12 +13,10 @@ pub struct Color {
 }
 
 impl Color {
-    pub fn wrap_vec(base: Vector) -> Color {
-        Color { base }
-    }
-
     pub fn new(r: Float, g: Float, b: Float) -> Color {
-        Self::wrap_vec(Vector::new(r, g, b))
+        Self {
+            base: Vector::new(r, g, b),
+        }
     }
 
     #[allow(dead_code)]
@@ -85,6 +84,16 @@ impl Color {
     pub fn is_black(&self) -> bool {
         to_u8(self.r()) == 0 && to_u8(self.g()) == 0 && to_u8(self.b()) == 0
     }
+
+    pub fn mix(a: Self, b: Self, factor: Float) -> Self {
+        Color::from(VectorExt::lerp(a.base, b.base, factor))
+    }
+}
+
+impl From<Vector> for Color {
+    fn from(color: Vector) -> Self {
+        Self::new(color.x, color.y, color.z)
+    }
 }
 
 impl From<[Float; 3]> for Color {
@@ -97,7 +106,7 @@ impl Add for Color {
     type Output = Self;
 
     fn add(self, b: Self) -> Self {
-        Self::wrap_vec(self.base + b.base)
+        Self::from(self.base + b.base)
     }
 }
 
@@ -121,7 +130,7 @@ impl Sub for Color {
     type Output = Self;
 
     fn sub(self, b: Self) -> Self {
-        Self::wrap_vec(self.base - b.base)
+        Self::from(self.base - b.base)
     }
 }
 
@@ -145,7 +154,7 @@ impl Mul for Color {
     type Output = Self;
 
     fn mul(self, b: Self) -> Self {
-        Self::wrap_vec(self.base * b.base)
+        Self::from(self.base * b.base)
     }
 }
 
@@ -153,7 +162,7 @@ impl Mul<Float> for Color {
     type Output = Self;
 
     fn mul(self, b: Float) -> Self {
-        Self::wrap_vec(self.base * b)
+        Self::from(self.base * b)
     }
 }
 
@@ -169,7 +178,7 @@ impl Div for Color {
     type Output = Self;
 
     fn div(self, b: Self) -> Self {
-        Self::wrap_vec(self.base / b.base)
+        Self::from(self.base / b.base)
     }
 }
 
@@ -177,7 +186,7 @@ impl Div<Float> for Color {
     type Output = Self;
 
     fn div(self, b: Float) -> Self {
-        Self::wrap_vec(self.base / b)
+        Self::from(self.base / b)
     }
 }
 

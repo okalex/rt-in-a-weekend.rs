@@ -1,5 +1,6 @@
 pub mod dielectric;
 pub mod emissive;
+pub mod ggx;
 pub mod isotropic;
 pub mod lambertian;
 pub mod material;

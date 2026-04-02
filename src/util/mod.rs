@@ -6,3 +6,4 @@ pub mod ppm_writer;
 pub mod random;
 pub mod trig;
 pub mod types;
+pub mod vector_ext;

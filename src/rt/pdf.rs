@@ -3,14 +3,17 @@ use std::sync::Arc;
 use glam::Mat4;
 
 use crate::{
-    rt::{geometry::primitive::Primitive, materials::pbr_material::PbrMaterial, onb::Onb},
+    rt::{
+        geometry::primitive::Primitive,
+        materials::ggx::{ggx_d, smith_g1},
+        onb::Onb,
+    },
     util::{
         random::{rand, rand_cos_dir, rand_int, rand_on_hemisphere, rand_on_unit_disk, rand_unit_vector},
         types::{Float, Int, PI, Point, Vector},
+        vector_ext::VectorExt,
     },
 };
-
-const HALF_VECTOR_EPSILON: Float = 1e-12;
 
 #[allow(unused)]
 pub enum Pdf {
@@ -206,60 +209,91 @@ impl GgxPdf {
     }
 
     pub fn value(&self, direction: &Vector) -> Float {
-        let direction_len_sq = direction.length_squared();
-        if !direction_len_sq.is_finite() || direction_len_sq <= HALF_VECTOR_EPSILON {
+        let Some(incoming_dir) = VectorExt::normalize_if_valid(*direction) else {
             return 0.0;
-        }
-
-        let wi = *direction / direction_len_sq.sqrt();
-        let half_vec = self.view_dir + wi;
-        let half_len_sq = half_vec.length_squared();
-        if !half_len_sq.is_finite() || half_len_sq <= HALF_VECTOR_EPSILON {
+        };
+        let Some(half_vector) = VectorExt::half_vector(self.view_dir, incoming_dir) else {
             return 0.0;
-        }
+        };
 
-        let h = half_vec / half_len_sq.sqrt();
-        let n_dot_h = self.normal.dot(h);
-        let n_dot_i = self.normal.dot(wi);
+        let n_dot_h = self.normal.dot(half_vector);
+        let n_dot_i = self.normal.dot(incoming_dir);
         let n_dot_v = self.normal.dot(self.view_dir);
 
         if n_dot_h <= 0.0 || n_dot_i <= 0.0 || n_dot_v <= 0.0 {
             return 0.0;
         }
 
-        let d_h = PbrMaterial::ggx_d(n_dot_h, self.alpha);
-        let g1_o = PbrMaterial::smith_g1(n_dot_v, self.alpha);
-        let pdf = d_h * g1_o / (4.0 * n_dot_v);
-
-        if pdf.is_finite() && pdf > 0.0 { pdf } else { 0.0 }
+        Self::sanitize_pdf(self.visible_microfacet_pdf(n_dot_h, n_dot_v))
     }
 
     pub fn generate(&self) -> Vector {
-        let onb = Onb::new(&self.normal);
-        let v = onb.inv_transform(self.view_dir);
-        let v_stretched = Vector::new(self.alpha * v.x, self.alpha * v.y, v.z).normalize();
+        let shading_basis = Onb::new(&self.normal);
+        let local_view_dir = shading_basis.inv_transform(self.view_dir);
+        let stretched_view_dir = Self::stretch_view_dir(local_view_dir, self.alpha);
+        let disk_sample = Self::sample_visible_normal_disk(stretched_view_dir);
+        let (tangent, bitangent) = Self::visible_normal_frame(stretched_view_dir);
+        let stretched_half_vector = Self::stretched_half_vector(disk_sample, tangent, bitangent, stretched_view_dir);
+        let local_half_vector = Self::unstretch_half_vector(stretched_half_vector, self.alpha);
+        let world_half_vector = shading_basis.transform(local_half_vector);
 
-        let mut r = rand_on_unit_disk();
-        let s = 0.5 * (1.0 + v_stretched.z);
-        r.y = (1.0 - s) * (1.0 - r.x * r.x).sqrt() + s * r.y;
-        r.z = Float::max(0.0, 1.0 - r.x * r.x - r.y * r.y).sqrt();
+        VectorExt::reflect(self.view_dir, world_half_vector)
+    }
 
-        let t1 = if v_stretched.z.abs() < 0.999 {
-            Vector::new(0.0, 0.0, 1.0).cross(v_stretched).normalize()
+    fn visible_microfacet_pdf(&self, n_dot_h: Float, n_dot_v: Float) -> Float {
+        let alpha_sqrd = self.alpha * self.alpha;
+        let normal_distribution = ggx_d(n_dot_h, alpha_sqrd);
+        let masking = smith_g1(n_dot_v, alpha_sqrd);
+        normal_distribution * masking / (4.0 * n_dot_v)
+    }
+
+    fn sanitize_pdf(pdf: Float) -> Float {
+        if pdf.is_finite() && pdf > 0.0 { pdf } else { 0.0 }
+    }
+
+    fn stretch_view_dir(local_view_dir: Vector, alpha: Float) -> Vector {
+        VectorExt::normalize_if_valid(Vector::new(
+            alpha * local_view_dir.x,
+            alpha * local_view_dir.y,
+            local_view_dir.z,
+        ))
+        .unwrap_or(Vector::Z)
+    }
+
+    fn sample_visible_normal_disk(stretched_view_dir: Vector) -> Vector {
+        let mut disk_sample = rand_on_unit_disk();
+        let blend = 0.5 * (1.0 + stretched_view_dir.z);
+        disk_sample.y = (1.0 - blend) * (1.0 - disk_sample.x * disk_sample.x).sqrt() + blend * disk_sample.y;
+        disk_sample.z = Float::max(0.0, 1.0 - disk_sample.x * disk_sample.x - disk_sample.y * disk_sample.y).sqrt();
+        disk_sample
+    }
+
+    fn visible_normal_frame(stretched_view_dir: Vector) -> (Vector, Vector) {
+        let tangent = if stretched_view_dir.z.abs() < 0.999 {
+            Vector::Z.cross(stretched_view_dir).normalize()
         } else {
-            Vector::new(1.0, 0.0, 0.0).cross(v_stretched).normalize()
+            Vector::X.cross(stretched_view_dir).normalize()
         };
-        let t2 = v_stretched.cross(t1);
+        let bitangent = stretched_view_dir.cross(tangent);
 
-        let h_stretched = r.x * t1 + r.y * t2 + r.z * v_stretched;
-        let h_local = Vector::new(
-            self.alpha * h_stretched.x,
-            self.alpha * h_stretched.y,
-            Float::max(h_stretched.z, 0.0),
-        )
-        .normalize();
-        let h = onb.transform(h_local);
+        (tangent, bitangent)
+    }
 
-        2.0 * self.view_dir.dot(h) * h - self.view_dir
+    fn stretched_half_vector(
+        disk_sample: Vector,
+        tangent: Vector,
+        bitangent: Vector,
+        stretched_view_dir: Vector,
+    ) -> Vector {
+        disk_sample.x * tangent + disk_sample.y * bitangent + disk_sample.z * stretched_view_dir
+    }
+
+    fn unstretch_half_vector(stretched_half_vector: Vector, alpha: Float) -> Vector {
+        VectorExt::normalize_if_valid(Vector::new(
+            alpha * stretched_half_vector.x,
+            alpha * stretched_half_vector.y,
+            Float::max(stretched_half_vector.z, 0.0),
+        ))
+        .unwrap_or(Vector::Z)
     }
 }

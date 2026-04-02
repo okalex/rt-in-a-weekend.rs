@@ -561,7 +561,7 @@ mod pbr {
             geometry::scene::{Instance, Scene, SceneBuilder},
             materials::pbr_material::PbrMaterialProperties,
         },
-        util::types::Float,
+        util::{random::rand, types::Float},
     };
 
     pub fn camera() -> CameraOptions {
@@ -590,12 +590,24 @@ mod pbr {
         for i in 0..=5 {
             let props = PbrMaterialProperties {
                 roughness: 0.2 * i as Float,
-                specular: 0.5,
-                metallic: 0.0,
-                fresnel: 0.0,
+                metallic: 1.0,
+                ior: 1.3,
             };
             let mat_id = scene_builder.add_material(materials::pbr_metal([0.3, 0.2, 0.8], props));
             scene_builder.add_instance(Instance::new(sphere_id, mat_id).translate([1.1 * i as Float - 2.75, 0.5, 0.0]));
+        }
+
+        // Add lights
+        let sphere_prim = primitives::sphere([0.0, 0.0, 0.0], 0.5);
+        let sphere_id = scene_builder.add_primitive(sphere_prim);
+        let diffuse_light_id = scene_builder.add_material(materials.diffuse_light);
+        for _ in 0..=9 {
+            let instance_id = scene_builder.add_instance(
+                Instance::new(sphere_id, diffuse_light_id)
+                    .scale_uniform(0.6)
+                    .translate([-4.0 + 8.0 * rand(), 4.0, -2.0 + 4.0 * rand()]),
+            );
+            let _ = scene_builder.add_light(instance_id);
         }
 
         scene_builder.build()

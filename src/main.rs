@@ -57,7 +57,7 @@ pub fn get_render_options(args: &Args) -> RenderOptions {
         .use_gpu(args.gpu)
         .use_multithreading(args.multithreading)
         .use_importance_sampling(args.importance)
-        // .background(Color::black())
+        .background(Color::black())
         .sampler_type(if args.sampler == 2 {
             SamplerType::Stratified
         } else {
