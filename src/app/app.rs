@@ -36,6 +36,7 @@ pub enum Message {
     RenderButtonClicked,
     SceneSelected(Uint),
     SamplesChanged(String),
+    MaxDepthChanged(String),
     Tick,
     CloseRequested,
 }
@@ -111,6 +112,10 @@ impl App {
                 self.ui_state.update_samples_per_pixel(value);
             }
 
+            Message::MaxDepthChanged(value) => {
+                self.ui_state.update_max_depth(value);
+            }
+
             Message::Tick => {
                 self.ui_state.update_is_rendering(self.is_rendering());
                 self.refresh_image();
@@ -151,6 +156,7 @@ impl App {
     fn build_render_options(&self) -> RenderOptions {
         RenderOptions {
             samples_per_pixel: self.ui_state.get_samples_per_pixel(),
+            max_depth: self.ui_state.get_max_depth(),
             ..self.render_options
         }
     }

@@ -22,6 +22,7 @@ pub struct UiState {
     pub render_height: Uint,
     pub render_image: image::Handle,
     pub samples_per_pixel: String,
+    pub max_depth: String,
     pub scene_idx: Uint,
 }
 
@@ -41,6 +42,7 @@ impl UiState {
             render_height,
             render_image,
             samples_per_pixel: render_options.samples_per_pixel.to_string(),
+            max_depth: render_options.max_depth.to_string(),
             scene_idx,
         }
     }
@@ -57,6 +59,16 @@ impl UiState {
 
     pub fn get_samples_per_pixel(&self) -> Uint {
         self.samples_per_pixel.parse::<Uint>().unwrap()
+    }
+
+    pub fn update_max_depth(&mut self, new_value: String) {
+        if let Ok(_) = new_value.parse::<Uint>() {
+            self.max_depth = new_value;
+        }
+    }
+
+    pub fn get_max_depth(&self) -> Uint {
+        self.max_depth.parse::<Uint>().unwrap()
     }
 
     pub fn update_scene_idx(&mut self, new_value: Uint) {
@@ -76,7 +88,10 @@ pub fn view(state: &UiState) -> Element<'_, Message> {
         text(format!("Render size: {}x{}", state.render_width, state.render_height)),
 
         text("Samples per pixel:"),
-        text_input("100", &state.samples_per_pixel).on_input(Message::SamplesChanged),
+        text_input("", &state.samples_per_pixel).on_input(Message::SamplesChanged),
+
+        text("Max depth:"),
+        text_input("", &state.max_depth).on_input(Message::MaxDepthChanged),
 
         text("Scene:"),
         pick_list(
