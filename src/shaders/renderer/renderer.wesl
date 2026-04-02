@@ -29,7 +29,7 @@ fn get_ray_color(ray: ray::Ray) -> vec3f {
             let scatter_record = material::scattered(material, hit_ray, hit_record);
 
             if scatter_record.is_scattered {
-                let scatter_result = scatter_ray(material, hit_record, scatter_record);
+                let scatter_result = scatter_ray(material, hit_record, scatter_record, bounces);
                 color = color * (emitted_color + scatter_result.color);
                 hit_ray = scatter_result.ray;
             } else {
@@ -56,7 +56,8 @@ struct ScatterResult {
 fn scatter_ray(
     material: types::GpuMaterial,
     hit_record: hit_record::HitRecord,
-    scatter_record: material::ScatterRecord
+    scatter_record: material::ScatterRecord,
+    depth: u32,
 ) -> ScatterResult {
 
     if scatter_record.skip_pdf {

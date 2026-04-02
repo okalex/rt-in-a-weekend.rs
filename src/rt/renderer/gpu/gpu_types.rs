@@ -384,6 +384,8 @@ impl From<&Arc<Texture>> for GpuTexture {
 
 #[derive(ShaderType, Debug)]
 pub struct GpuLights {
+    count: u32,
+
     #[shader(size(runtime))]
     lights: Vec<u32>,
 }
@@ -391,6 +393,7 @@ pub struct GpuLights {
 impl GpuLights {
     pub fn new(lights: &Vec<InstanceId>) -> Self {
         Self {
+            count: lights.len() as u32,
             lights: lights.iter().map(|id| id.id as u32).collect(),
         }
     }

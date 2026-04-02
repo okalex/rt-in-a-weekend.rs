@@ -63,13 +63,8 @@ impl App {
         // Spawn renderer
         let fb_clone = Arc::clone(&frame_buffer);
         let state_clone = Arc::clone(&renderer_state);
-        let use_gpu = args.gpu;
         let _ = tokio::spawn(async move {
-            let gpu = if use_gpu {
-                Some(Arc::new(Gpu::new().await.unwrap()))
-            } else {
-                None
-            };
+            let gpu = Arc::new(Gpu::new().await.unwrap());
             let mut renderer = Renderer::new(rx, fb_clone, gpu, state_clone).await;
             renderer.run().await
         });

@@ -25,7 +25,7 @@ use crate::{
     },
 };
 use crate::{
-    app::cli::{Args, print_config},
+    app::cli::{print_config, Args},
     examples::scenes::get_camera_options,
     gpu::gpu::Gpu,
     rt::renderer::{render_options::SamplerType, renderer::RendererState, renderer_command::RendererCommand},
@@ -77,15 +77,10 @@ async fn run_headless(args: &Args) -> anyhow::Result<()> {
 
     let writer = PpmWriter::new(Arc::clone(&frame_buffer), 255);
 
-    let gpu = if args.gpu {
-        Some(Arc::new(Gpu::new().await?))
-    } else {
-        None
-    };
-
     let (tx, rx) = tokio::sync::watch::channel(RendererCommand::Idle);
 
     let renderer_state = Arc::new(RendererState::new());
+    let gpu = Arc::new(Gpu::new().await?);
     let mut renderer = Renderer::new(rx, Arc::clone(&frame_buffer), gpu, renderer_state).await;
     let handle = tokio::spawn(async move {
         renderer.run().await;

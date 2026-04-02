@@ -184,7 +184,8 @@ mod marbles {
                         let sphere = Instance::new(sphere_id, diffuse_light_id)
                             .scale_uniform(0.2)
                             .translate(center.to_array());
-                        scene_builder.add_instance(sphere);
+                        let instance_id = scene_builder.add_instance(sphere);
+                        let _ = scene_builder.add_light(instance_id);
                     }
                 }
             }

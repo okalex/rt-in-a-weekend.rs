@@ -53,7 +53,7 @@ struct LightsPdf {
 };
 
 fn lights_pdf_value(pdf: LightsPdf, direction: vec3f) -> f32 {
-    let num_lights = arrayLength(&lights.lights);
+    let num_lights = lights.count;
     let weight = 1.0 / f32(num_lights);
     var sum = 0.0;
 
@@ -70,7 +70,7 @@ fn lights_pdf_value(pdf: LightsPdf, direction: vec3f) -> f32 {
 }
 
 fn lights_pdf_generate(pdf: LightsPdf) -> vec3f {
-    let num_lights = arrayLength(&lights.lights);
+    let num_lights = lights.count;
     let light_id = random::rand_range_int(i32(0), i32(num_lights - 1));
     let light_instance_id = lights.lights[light_id];
     let light_instance = instances.instances[light_instance_id];

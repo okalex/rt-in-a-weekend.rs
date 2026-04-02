@@ -1,6 +1,6 @@
 use std::sync::{
-    Arc,
     atomic::{AtomicBool, Ordering},
+    Arc,
 };
 
 use tokio::sync::watch::Receiver;
@@ -35,7 +35,7 @@ impl RendererState {
 pub struct Renderer {
     command_channel: Receiver<RendererCommand>,
     frame_buffer: Arc<FrameBuffer>,
-    gpu: Option<Arc<Gpu>>,
+    gpu: Arc<Gpu>,
     state: Arc<RendererState>,
 }
 
@@ -43,7 +43,7 @@ impl Renderer {
     pub async fn new(
         command_channel: Receiver<RendererCommand>,
         frame_buffer: Arc<FrameBuffer>,
-        gpu: Option<Arc<Gpu>>,
+        gpu: Arc<Gpu>,
         state: Arc<RendererState>,
     ) -> Self {
         Self {
@@ -94,20 +94,15 @@ impl Renderer {
         let render_options = Arc::new(render_options);
 
         if render_options.use_gpu {
-            let renderer = if let Some(gpu) = &self.gpu {
-                Self::gpu(
-                    self.command_channel.clone(),
-                    render_options,
-                    scene,
-                    camera,
-                    Arc::clone(&self.frame_buffer),
-                    Arc::clone(gpu),
-                )
-                .await?
-            } else {
-                self.state.is_rendering.store(false, Ordering::Relaxed);
-                panic!("Can't use GPU renderer without a GPU")
-            };
+            let renderer = Self::gpu(
+                self.command_channel.clone(),
+                render_options,
+                scene,
+                camera,
+                Arc::clone(&self.frame_buffer),
+                Arc::clone(&self.gpu),
+            )
+            .await?;
 
             renderer.render().await
         } else {

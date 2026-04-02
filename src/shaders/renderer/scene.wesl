@@ -9,7 +9,7 @@ import package::{
 };
 
 fn has_lights() -> bool {
-    return arrayLength(&lights.lights) > 0;
+    return lights.count > 0;
 }
 
 fn hit_instances(

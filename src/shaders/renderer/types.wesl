@@ -162,6 +162,7 @@ struct GpuMaterials {
 }
 
 struct GpuLights {
+    count: u32,
     lights: array<u32>,
 }
 
