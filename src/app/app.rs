@@ -38,6 +38,7 @@ pub enum Message {
     SamplesChanged(String),
     MaxDepthChanged(String),
     UseGpuChanged(bool),
+    UseImportanceSamplingChanged(bool),
     Tick,
     CloseRequested,
 }
@@ -121,6 +122,10 @@ impl App {
                 self.ui_state.update_use_gpu(value);
             }
 
+            Message::UseImportanceSamplingChanged(value) => {
+                self.ui_state.update_use_importance_sampling(value);
+            }
+
             Message::Tick => {
                 self.ui_state.update_is_rendering(self.is_rendering());
                 self.refresh_image();
@@ -163,6 +168,7 @@ impl App {
             samples_per_pixel: self.ui_state.get_samples_per_pixel(),
             max_depth: self.ui_state.get_max_depth(),
             use_gpu: self.ui_state.use_gpu,
+            use_importance_sampling: self.ui_state.use_importance_sampling,
             ..self.render_options
         }
     }

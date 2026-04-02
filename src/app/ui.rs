@@ -25,6 +25,7 @@ pub struct UiState {
     pub max_depth: String,
     pub scene_idx: Uint,
     pub use_gpu: bool,
+    pub use_importance_sampling: bool
 }
 
 impl UiState {
@@ -46,6 +47,7 @@ impl UiState {
             max_depth: render_options.max_depth.to_string(),
             scene_idx,
             use_gpu: render_options.use_gpu,
+            use_importance_sampling: render_options.use_importance_sampling,
         }
     }
 
@@ -84,6 +86,10 @@ impl UiState {
     pub fn update_use_gpu(&mut self, new_value: bool) {
         self.use_gpu = new_value;
     }
+
+    pub fn update_use_importance_sampling(&mut self, new_value: bool) {
+        self.use_importance_sampling = new_value;
+    }
 }
 
 pub fn view(state: &UiState) -> Element<'_, Message> {
@@ -111,6 +117,9 @@ pub fn view(state: &UiState) -> Element<'_, Message> {
 
         text("Use GPU?"),
         checkbox(state.use_gpu).on_toggle(Message::UseGpuChanged),
+
+        text("Importance sampling:"),
+        checkbox(state.use_importance_sampling).on_toggle(Message::UseImportanceSamplingChanged),
         
         button(if state.is_rendering { "Cancel" } else { "Render" }).on_press(Message::RenderButtonClicked),
     ]
