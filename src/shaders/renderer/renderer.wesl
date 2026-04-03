@@ -8,6 +8,7 @@ import package::{
     pdf,
     random,
     ray,
+    scatter_record,
     scene,
     types,
     vector,
@@ -57,7 +58,7 @@ fn scatter_ray(
     material: types::GpuMaterial,
     ray_in: ray::Ray,
     hit_record: hit_record::HitRecord,
-    scatter_record: material::ScatterRecord,
+    scatter_record: scatter_record::ScatterRecord,
     depth: u32,
 ) -> ScatterResult {
 
@@ -79,7 +80,7 @@ fn scatter_ray(
         scattered_dir = scatter_record.scattered.dir;
     }
 
-    let mat_pdf = material::pdf_value(material, hit_record, scattered_dir);
+    let mat_pdf = material::pdf_value(material, ray_in, hit_record, scattered_dir);
     var pdf_value = mat_pdf;
     if use_importance_sampling {
         pdf_value = 0.5 * mat_pdf + 0.5 * pdf::lights_pdf_value(lights_pdf, scattered_dir);

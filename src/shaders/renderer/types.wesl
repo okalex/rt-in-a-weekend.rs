@@ -146,11 +146,22 @@ struct GpuMaterial_Isotropic {
     texture: GpuTexture,
 }
 
+struct GpuMaterial_Pbr {
+    albedo: vec3<f32>,
+    roughness: f32,
+    metallic: f32,
+    ior: f32,
+    alpha: f32,
+    f0: vec3<f32>,
+    p_spec: f32,
+}
+
 const GPUMATERIAL_LAMBERTIAN: u32 = 0u;
 const GPUMATERIAL_METAL: u32 = 1u;
 const GPUMATERIAL_DIELECTRIC: u32 = 2u;
 const GPUMATERIAL_EMISSIVE: u32 = 3u;
 const GPUMATERIAL_ISOTROPIC: u32 = 4u;
+const GPUMATERIAL_PBR: u32 = 5u;
 
 struct GpuMaterial {
     _type: u32,
@@ -224,6 +235,10 @@ fn unpack_GpuMaterial_Emissive(v: GpuMaterial) -> GpuMaterial_Emissive {
 
 fn unpack_GpuMaterial_Isotropic(v: GpuMaterial) -> GpuMaterial_Isotropic {
     return GpuMaterial_Isotropic(GpuTexture(bitcast<u32>(v.data[0].x), array<vec4<f32>, 3>(v.data[1], v.data[2], v.data[3])));
+}
+
+fn unpack_GpuMaterial_Pbr(v: GpuMaterial) -> GpuMaterial_Pbr {
+    return GpuMaterial_Pbr(v.data[0].xyz, v.data[0].w, v.data[1].x, v.data[1].y, v.data[1].z, v.data[2].xyz, v.data[2].w);
 }
 
 fn unpack_GpuTexture_SolidColor(v: GpuTexture) -> GpuTexture_SolidColor {

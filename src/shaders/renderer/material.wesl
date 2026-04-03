@@ -2,9 +2,11 @@ import package::{
     bindings::{instances, materials},
     constants::{PI},
     hit_record,
+    pbr,
     pdf,
     random,
     ray,
+    scatter_record,
     texture,
     vector,
     types,
@@ -15,54 +17,14 @@ fn get_for_instance(instance_id: u32) -> types::GpuMaterial {
     return materials.materials[instance.material_id];
 }
 
-struct ScatterRecord {
-    is_scattered: bool,
-    attenuation: vec3f,
-    scattered: ray::Ray,
-    skip_pdf: bool,
-}
-
-fn no_scatter() -> ScatterRecord {
-    return ScatterRecord(
-        false,
-        vec3f(0, 0, 0),
-        ray::Ray(vector::ZEROS, vector::ZEROS),
-        false,
-    );
-}
-
-fn scatter_with_pdf(
-    attenuation: vec3f,
-    scattered: ray::Ray,
-) -> ScatterRecord {
-    return ScatterRecord(
-        true,
-        attenuation,
-        scattered,
-        false,
-    );
-}
-
-fn skip_pdf(
-    attenuation: vec3f,
-    skip_pdf_ray: ray::Ray
-) -> ScatterRecord {
-    return ScatterRecord(
-        true,
-        attenuation,
-        skip_pdf_ray,
-        true,
-    );
-}
-
-fn scattered(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::HitRecord) -> ScatterRecord {
+fn scattered(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::HitRecord) -> scatter_record::ScatterRecord {
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
             let lambertian = types::unpack_GpuMaterial_Lambertian(mat);
             let color = texture::get_color(lambertian.texture, hit_record.u, hit_record.v, hit_record.point);
             let scattered_dir = pdf::cosine_generate(pdf::new_cosine_pdf(hit_record.normal));
 
-            return scatter_with_pdf(
+            return scatter_record::with_pdf(
                 color,
                 ray::Ray(hit_record.point, scattered_dir),
             );
@@ -72,7 +34,7 @@ fn scattered(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::
             let metal = types::unpack_GpuMaterial_Metal(mat);
             let scattered_dir = normalize(reflect(ray_in.dir, hit_record.normal)) + random::rand_vector_on_hemisphere(hit_record.normal) * metal.fuzz;
 
-            return skip_pdf(
+            return scatter_record::skip_pdf(
                 metal.albedo,
                 ray::Ray(hit_record.point, scattered_dir)
             );
@@ -103,7 +65,7 @@ fn scattered(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::
                 dir = refract(unit_dir, hit_record.normal, ri);
             }
 
-            return skip_pdf(
+            return scatter_record::skip_pdf(
                 attenuation,
                 ray::Ray(hit_record.point, dir),
             );
@@ -114,14 +76,19 @@ fn scattered(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::
             let color = texture::get_color(isotropic.texture, hit_record.u, hit_record.v, hit_record.point);
             let scattered_dir = pdf::sphere_generate();
 
-            return scatter_with_pdf(
+            return scatter_record::with_pdf(
                 color,
                 ray::Ray(hit_record.point, scattered_dir),
             );
         }
 
+        case types::GPUMATERIAL_PBR {
+            let pbr_mat = types::unpack_GpuMaterial_Pbr(mat);
+            return pbr::scatter(pbr_mat, ray_in, hit_record);
+        }
+
         default: {
-            return no_scatter();
+            return scatter_record::none();
         }
     }
 }
@@ -151,17 +118,28 @@ fn reflectance(cosine: f32, refraction_idx: f32) -> f32 {
 
 fn pdf_value(
     mat: types::GpuMaterial,
+    ray_in: ray::Ray,
     hit_record: hit_record::HitRecord,
     direction: vec3f
 ) -> f32 {
     switch mat._type {
         case types::GPUMATERIAL_LAMBERTIAN {
-            let pdf = pdf::new_cosine_pdf(hit_record.normal);
-            return pdf::cosine_pdf_value(pdf, direction);
+            return pdf::cosine_pdf_value(pdf::new_cosine_pdf(hit_record.normal), direction);
         }
 
         case types::GPUMATERIAL_ISOTROPIC {
             return pdf::sphere_pdf_value();
+        }
+
+        case types::GPUMATERIAL_PBR {
+            let pbr_mat = types::unpack_GpuMaterial_Pbr(mat);
+            let wo = -normalize(ray_in.dir);
+            let ggx_pdf = pbr::ggx_pdf(pbr_mat, wo, hit_record.normal);
+            return pdf::mixture_pdf_value(
+                pbr_mat.p_spec,
+                pdf::ggx_pdf_value(ggx_pdf, direction),
+                pdf::cosine_pdf_value(pdf::new_cosine_pdf(hit_record.normal), direction)
+            );
         }
 
         default: {
@@ -187,6 +165,11 @@ fn brdf(
             let isotropic = types::unpack_GpuMaterial_Isotropic(mat);
             let attenuation = texture::get_color(isotropic.texture, hit_record.u, hit_record.v, hit_record.point);
             return attenuation / (4.0 * PI);
+        }
+
+        case types::GPUMATERIAL_PBR {
+            let pbr_mat = types::unpack_GpuMaterial_Pbr(mat);
+            return pbr::brdf(pbr_mat, ray_in, hit_record, scattered_dir);
         }
 
         default: {

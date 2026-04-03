@@ -280,11 +280,32 @@ impl GpuMaterials {
 
 #[derive(ShaderEnum, Debug)]
 pub enum GpuMaterial {
-    Lambertian { texture: GpuTexture },
-    Metal { albedo: Vec3, fuzz: f32 },
-    Dielectric { albedo: Vec3, refraction_idx: f32 },
-    Emissive { color: Vec3 },
-    Isotropic { texture: GpuTexture },
+    Lambertian {
+        texture: GpuTexture,
+    },
+    Metal {
+        albedo: Vec3,
+        fuzz: f32,
+    },
+    Dielectric {
+        albedo: Vec3,
+        refraction_idx: f32,
+    },
+    Emissive {
+        color: Vec3,
+    },
+    Isotropic {
+        texture: GpuTexture,
+    },
+    Pbr {
+        albedo: Vec3,
+        roughness: f32,
+        metallic: f32,
+        ior: f32,
+        alpha: f32,
+        f0: Vec3,
+        p_spec: f32,
+    },
 }
 
 impl From<&Material> for GpuMaterial {
@@ -316,10 +337,14 @@ impl From<&Material> for GpuMaterial {
             },
 
             // TODO: Handle other materials properly
-            _ => Self::Lambertian {
-                texture: GpuTexture::SolidColor {
-                    albedo: Vec3::new(0.5, 0.5, 0.5),
-                },
+            Material::PbrMaterial(mat) => Self::Pbr {
+                albedo: mat.albedo.base,
+                roughness: mat.roughness,
+                metallic: mat.metallic,
+                ior: mat.ior,
+                alpha: mat.alpha,
+                f0: mat.f0.base,
+                p_spec: mat.p_spec,
             },
         }
     }

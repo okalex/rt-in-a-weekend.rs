@@ -1,2 +1,4 @@
 const PI = 3.141592653589793;
 const INF = 1.0e38f;
+
+const HALF_VECTOR_EPSILON = 1e-12;

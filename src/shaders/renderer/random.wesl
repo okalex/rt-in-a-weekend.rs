@@ -72,6 +72,12 @@ fn rand_in_unit_disk() -> vec3f {
     return vector::ZEROS;
 }
 
+fn rand_on_unit_disk() -> vec3f {
+    let r = sqrt(rand());
+    let phi = 2.0 * PI * rand();
+    return vec3f(r * cos(phi), r * sin(phi), 0.0);
+}
+
 fn rand_cos_vector() -> vec3f {
     let r1 = rand();
     let r2 = rand();

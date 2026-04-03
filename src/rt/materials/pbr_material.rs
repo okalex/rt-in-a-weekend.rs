@@ -148,7 +148,9 @@ impl PbrMaterial {
     }
 
     fn scatter_mirror_limit(&self, r_in: &Ray, hit_record: &HitRecord, wo: Vector) -> Option<ScatterRecord> {
-        let weights = self.mirror_limit_weights(hit_record.normal, wo)?;
+        let Some(weights) = self.mirror_limit_weights(hit_record.normal, wo) else {
+            return None;
+        };
 
         if weights.specular_probability >= 1.0
             || (weights.specular_probability > 0.0 && rand() < weights.specular_probability)
