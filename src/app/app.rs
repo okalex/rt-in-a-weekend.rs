@@ -2,7 +2,7 @@ use std::sync::{Arc, atomic::Ordering};
 use std::time::Duration;
 
 use iced::{Element, Subscription, Task};
-use tokio::sync::watch::Sender;
+use tokio::sync::watch;
 
 use crate::app::ui::UiState;
 use crate::{
@@ -23,11 +23,10 @@ use crate::{
 };
 
 pub struct App {
-    pub frame_buffer: Arc<FrameBuffer>,
-    pub render_options: RenderOptions, // TODO: Move all this into UI state
-    pub camera_options: CameraOptions, // TODO: Move all this into UI state
-    command_channel: Sender<RendererCommand>,
-    pub renderer_state: Arc<RendererState>,
+    render_options: RenderOptions, // TODO: Move all this into UI state
+    camera_options: CameraOptions, // TODO: Move all this into UI state
+    renderer_commands: watch::Sender<RendererCommand>,
+    renderer_state: Arc<RendererState>,
     ui_state: UiState,
 }
 
@@ -69,13 +68,17 @@ impl App {
             renderer.run().await
         });
 
-        let ui_state = UiState::new(render_options, (scene_idx as Uint) - 1);
+        let ui_state = UiState::new(
+            render_options,
+            (scene_idx as Uint) - 1,
+            Arc::clone(&frame_buffer),
+            Arc::clone(&renderer_state.render_idx),
+        );
 
         let app = Self {
-            frame_buffer,
             render_options,
             camera_options,
-            command_channel: tx,
+            renderer_commands: tx,
             renderer_state,
             ui_state,
         };
@@ -87,10 +90,10 @@ impl App {
         match message {
             Message::RenderButtonClicked => {
                 if self.is_rendering() {
-                    let _ = self.command_channel.send(RendererCommand::CancelRender);
+                    let _ = self.renderer_commands.send(RendererCommand::CancelRender);
                 } else {
                     let scene_idx = self.get_scene_idx();
-                    let _ = self.command_channel.send(RendererCommand::Render {
+                    let _ = self.renderer_commands.send(RendererCommand::Render {
                         render_options: self.build_render_options(),
                         camera_options: self.camera_options,
                         scene_idx,
@@ -123,14 +126,13 @@ impl App {
 
             Message::Tick => {
                 self.ui_state.update_is_rendering(self.is_rendering());
-                self.refresh_image();
             }
 
             Message::CloseRequested => {
                 log::info!("Exiting app...");
                 if self.is_rendering() {
                     log::info!("Stopping renderer.");
-                    let _ = self.command_channel.send(RendererCommand::CancelRender);
+                    let _ = self.renderer_commands.send(RendererCommand::CancelRender);
                 }
                 return iced::exit();
             }
@@ -147,11 +149,6 @@ impl App {
             iced::time::every(Duration::from_millis(33)).map(|_| Message::Tick),
             iced::window::close_requests().map(|_| Message::CloseRequested),
         ])
-    }
-
-    fn refresh_image(&mut self) {
-        let data = self.frame_buffer.data.lock().unwrap().clone();
-        self.ui_state.update_render_image(data);
     }
 
     fn is_rendering(&self) -> bool {

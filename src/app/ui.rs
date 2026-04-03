@@ -1,7 +1,12 @@
-use iced::widget::{button, checkbox, column, container, image, pick_list, row, text, text_input};
+use std::sync::Arc;
+use std::sync::atomic::AtomicU64;
+
+use iced::widget::{button, checkbox, column, container, pick_list, row, shader, text, text_input};
 use iced::{Element, Fill};
 
 use crate::app::app::Message;
+use crate::app::preview_widget::PreviewWidget;
+use crate::rt::frame_buffer::FrameBuffer;
 use crate::rt::renderer::render_options::RenderOptions;
 use crate::util::types::Uint;
 
@@ -17,37 +22,39 @@ pub const SCENES: &[&str] = &[
 ];
 
 pub struct UiState {
-    pub is_rendering: bool,
-    pub render_width: Uint,
-    pub render_height: Uint,
-    pub render_image: image::Handle,
-    pub samples_per_pixel: String,
-    pub max_depth: String,
+    is_rendering: bool,
+    render_width: Uint,
+    render_height: Uint,
+    samples_per_pixel: String,
+    max_depth: String,
     pub scene_idx: Uint,
     pub use_gpu: bool,
     pub use_importance_sampling: bool,
+    frame_buffer: Arc<FrameBuffer>,
+    render_idx: Arc<AtomicU64>,
 }
 
 impl UiState {
-    pub fn new(render_options: RenderOptions, scene_idx: Uint) -> Self {
+    pub fn new(
+        render_options: RenderOptions,
+        scene_idx: Uint,
+        frame_buffer: Arc<FrameBuffer>,
+        render_idx: Arc<AtomicU64>,
+    ) -> Self {
         let render_width = render_options.img_width;
         let render_height = render_options.img_height;
-        let render_image = image::Handle::from_rgba(
-            render_width,
-            render_height,
-            vec![0u8; (render_width * render_height * 4) as usize],
-        );
 
         Self {
             is_rendering: false,
             render_width,
             render_height,
-            render_image,
             samples_per_pixel: render_options.samples_per_pixel.to_string(),
             max_depth: render_options.max_depth.to_string(),
             scene_idx,
             use_gpu: render_options.use_gpu,
             use_importance_sampling: render_options.use_importance_sampling,
+            frame_buffer,
+            render_idx,
         }
     }
 
@@ -77,10 +84,6 @@ impl UiState {
 
     pub fn update_scene_idx(&mut self, new_value: Uint) {
         self.scene_idx = new_value;
-    }
-
-    pub fn update_render_image(&mut self, data: Vec<u8>) {
-        self.render_image = image::Handle::from_rgba(self.render_width, self.render_height, data);
     }
 
     pub fn update_use_gpu(&mut self, new_value: bool) {
@@ -127,11 +130,18 @@ pub fn view(state: &UiState) -> Element<'_, Message> {
     .padding(10)
     .width(250);
 
-    let render_view = container(image(&state.render_image).content_fit(iced::ContentFit::ScaleDown))
-        .center_x(Fill)
-        .center_y(Fill)
+    let render_view = container(
+        shader(PreviewWidget::new(
+            Arc::clone(&state.frame_buffer),
+            Arc::clone(&state.render_idx),
+        ))
         .width(Fill)
-        .height(Fill);
+        .height(Fill),
+    )
+    .center_x(Fill)
+    .center_y(Fill)
+    .width(Fill)
+    .height(Fill);
 
     row![controls, render_view].into()
 }

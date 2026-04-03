@@ -22,7 +22,7 @@ winit = "0.30.13"
 encase_enum = { git = "https://github.com/okalex/encase_enum" }
 wesl = "0.3.2"
 obvhs = "0.3.0"
-iced = { version = "0.14.0", features = ["image", "tokio"] }
+iced = { version = "0.14.0", features = ["tokio", "advanced"] }
 
 [build-dependencies]
 anyhow = "1.0"

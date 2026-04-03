@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Instant};
+use std::{
+    sync::{Arc, atomic::Ordering},
+    time::Instant,
+};
 
 use tokio::sync::watch::Receiver;
 
@@ -10,7 +13,10 @@ use crate::{
         materials::material::{Material, ScatterRecord},
         pdf::{Pdf, TransformedPrimitive},
         ray::Ray,
-        renderer::{cpu::line_server::LineServer, render_options::RenderOptions, renderer_command::RendererCommand},
+        renderer::{
+            cpu::line_server::LineServer, render_options::RenderOptions, renderer::RendererState,
+            renderer_command::RendererCommand,
+        },
     },
     util::{
         color::Color,
@@ -25,11 +31,12 @@ pub struct CpuRenderer {
 
 impl CpuRenderer {
     pub fn new(
-        command_channel: Receiver<RendererCommand>,
+        renderer_commands: Receiver<RendererCommand>,
         options: Arc<RenderOptions>,
         scene: Arc<Scene>,
         camera: Arc<Camera>,
         frame_buffer: Arc<FrameBuffer>,
+        render_state: Arc<RendererState>,
     ) -> Self {
         let num_threads = if options.use_multithreading {
             std::thread::available_parallelism().unwrap().get()
@@ -42,12 +49,13 @@ impl CpuRenderer {
         let workers = (0..num_threads)
             .map(|_| {
                 Arc::new(CpuRenderWorker::new(
-                    command_channel.clone(),
+                    renderer_commands.clone(),
                     Arc::clone(&options),
                     Arc::clone(&scene),
                     Arc::clone(&camera),
                     Arc::clone(&frame_buffer),
                     Arc::clone(&line_server),
+                    Arc::clone(&render_state),
                 ))
             })
             .collect();
@@ -77,7 +85,8 @@ impl CpuRenderer {
 }
 
 pub struct CpuRenderWorker {
-    command_channel: Receiver<RendererCommand>,
+    renderer_commands: Receiver<RendererCommand>,
+    render_state: Arc<RendererState>,
     options: Arc<RenderOptions>,
     scene: Arc<Scene>,
     camera: Arc<Camera>,
@@ -87,15 +96,17 @@ pub struct CpuRenderWorker {
 
 impl CpuRenderWorker {
     pub fn new(
-        command_channel: Receiver<RendererCommand>,
+        renderer_commands: Receiver<RendererCommand>,
         options: Arc<RenderOptions>,
         scene: Arc<Scene>,
         camera: Arc<Camera>,
         frame_buffer: Arc<FrameBuffer>,
         line_server: Arc<LineServer>,
+        render_state: Arc<RendererState>,
     ) -> Self {
         Self {
-            command_channel,
+            renderer_commands,
+            render_state,
             options,
             scene,
             camera,
@@ -107,12 +118,12 @@ impl CpuRenderWorker {
     pub fn render(&self) {
         loop {
             // Exit if channel was dropped (app exited)
-            if self.command_channel.has_changed().is_err() {
+            if self.renderer_commands.has_changed().is_err() {
                 break;
             }
 
             // Check for cancel events
-            match *self.command_channel.borrow() {
+            match *self.renderer_commands.borrow() {
                 RendererCommand::CancelRender => {
                     log::info!("Canceling render...");
                     break;
@@ -123,13 +134,12 @@ impl CpuRenderWorker {
             let remaining_lines = self.line_server.len();
             eprint!("\rLines remaining: {}       ", remaining_lines);
 
-            let maybe_line = self.line_server.next_line();
-            match maybe_line {
+            match self.line_server.next_line() {
                 None => break,
-                Some(line_idx) => {
-                    self.render_line(line_idx);
-                }
+                Some(line_idx) => self.render_line(line_idx),
             }
+
+            self.render_state.render_idx.fetch_add(1, Ordering::Relaxed);
         }
 
         let remaining_lines = self.line_server.len();

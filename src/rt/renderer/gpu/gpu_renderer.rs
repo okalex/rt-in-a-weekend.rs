@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Instant};
+use std::{
+    sync::{Arc, atomic::Ordering},
+    time::Instant,
+};
 
 use tokio::sync::watch::Receiver;
 use wesl::include_wesl;
@@ -12,6 +15,7 @@ use crate::{
         renderer::{
             gpu::{gpu_meta::GpuMeta, gpu_types::GpuScene, render_pipeline::RenderPipeline},
             render_options::RenderOptions,
+            renderer::RendererState,
             renderer_command::RendererCommand,
         },
     },
@@ -19,12 +23,13 @@ use crate::{
 };
 
 pub struct GpuRenderer {
-    command_channel: Receiver<RendererCommand>,
+    renderer_commands: Receiver<RendererCommand>,
     options: Arc<RenderOptions>,
     scene: Arc<Scene>,
     camera: Arc<Camera>,
     frame_buffer: Arc<FrameBuffer>,
     gpu: Arc<Gpu>,
+    render_state: Arc<RendererState>,
 }
 
 impl GpuRenderer {
@@ -32,20 +37,22 @@ impl GpuRenderer {
     const WORKGROUP_SIZE_Y: u32 = 1u32;
 
     pub async fn new(
-        command_channel: Receiver<RendererCommand>,
+        renderer_commands: Receiver<RendererCommand>,
         options: Arc<RenderOptions>,
         scene: Arc<Scene>,
         camera: Arc<Camera>,
         frame_buffer: Arc<FrameBuffer>,
         gpu: Arc<Gpu>,
+        render_state: Arc<RendererState>,
     ) -> anyhow::Result<Self> {
         Ok(Self {
-            command_channel,
+            renderer_commands,
             options,
             scene,
             camera,
             frame_buffer,
             gpu,
+            render_state,
         })
     }
 
@@ -68,7 +75,7 @@ impl GpuRenderer {
             }
 
             // Check for cancel event
-            match *self.command_channel.borrow() {
+            match *self.renderer_commands.borrow() {
                 RendererCommand::CancelRender => {
                     log::info!("Canceling render...");
                     break;
@@ -93,7 +100,8 @@ impl GpuRenderer {
                 match result {
                     Ok(pixels) => {
                         let colors = self.collect_results(pixels);
-                        self.write_result_to_frame(&colors)
+                        self.write_result_to_frame(&colors);
+                        self.render_state.render_idx.fetch_add(1, Ordering::Relaxed);
                     }
                     _ => panic!(),
                 }
@@ -115,7 +123,7 @@ impl GpuRenderer {
     }
 
     fn channel_is_open(&self) -> bool {
-        self.command_channel.has_changed().is_ok()
+        self.renderer_commands.has_changed().is_ok()
     }
 
     fn setup_pipeline(&self) -> RenderPipeline<[f32; 4]> {

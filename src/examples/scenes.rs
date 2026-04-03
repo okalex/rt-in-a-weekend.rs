@@ -505,7 +505,8 @@ mod book2 {
         // Glass sphere
         {
             let prim_id = scene_builder.add_primitive(primitives::sphere([260.0, 150.0, 45.0], 50.0));
-            let _ = scene_builder.add_instance(Instance::new(prim_id, mat_glass));
+            let instance_id = scene_builder.add_instance(Instance::new(prim_id, mat_glass));
+            let _ = scene_builder.add_light(instance_id);
         }
 
         // Metal sphere
@@ -567,7 +568,7 @@ mod pbr {
     pub fn camera() -> CameraOptions {
         CameraOptions::new()
             .vfov(20.0)
-            .position([0.0, 1.5, 10.0])
+            .position([0.0, 2.0, 10.0])
             .target([0.0, 0.5, 0.0])
             .defocus_angle(0.0)
             .focus_dist(3.4)
@@ -590,8 +591,8 @@ mod pbr {
         for i in 0..=5 {
             let props = PbrMaterialProperties {
                 roughness: 0.2 * i as Float,
-                metallic: 1.0,
-                ior: 1.3,
+                metallic: 0.85,
+                ior: 1.0,
             };
             let mat_id = scene_builder.add_material(materials::pbr_metal([0.3, 0.2, 0.8], props));
             scene_builder.add_instance(Instance::new(sphere_id, mat_id).translate([1.1 * i as Float - 2.75, 0.5, 0.0]));
