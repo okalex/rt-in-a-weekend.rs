@@ -1,8 +1,10 @@
 import package::{
+    constants,
     hit_record,
     interval,
     ray,
     types,
+    vector,
 };
 
 fn hit(triangle: types::GpuPrimitive_Triangle, ray: ray::Ray, ray_t: interval::Interval) -> hit_record::HitRecord {
@@ -54,4 +56,18 @@ fn hit(triangle: types::GpuPrimitive_Triangle, ray: ray::Ray, ray_t: interval::I
         uv[0],
         uv[1],
     );
+}
+
+fn pdf_value(tri: types::GpuPrimitive_Triangle, origin: vec3f, direction: vec3f) -> f32 {
+    let ray = ray::Ray(origin, direction);
+    let ray_t = interval::Interval(0.001, constants::INF);
+    let hit_record = hit(tri, ray, ray_t);
+
+    if !hit_record.is_hit {
+        return 0.0;
+    }
+
+    let dist_sqrd = hit_record.t * hit_record.t * vector::length_squared(direction);
+    let cos = abs(dot(direction, hit_record.normal) / length(direction));
+    return dist_sqrd / (cos * tri.area);
 }

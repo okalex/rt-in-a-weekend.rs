@@ -44,6 +44,7 @@ struct GpuPrimitive_Triangle {
     normal0: vec3<f32>,
     normal1: vec3<f32>,
     normal2: vec3<f32>,
+    area: f32,
 }
 
 struct GpuPrimitive_Quad {
@@ -202,7 +203,7 @@ fn unpack_GpuPrimitive_Sphere(v: GpuPrimitive) -> GpuPrimitive_Sphere {
 }
 
 fn unpack_GpuPrimitive_Triangle(v: GpuPrimitive) -> GpuPrimitive_Triangle {
-    return GpuPrimitive_Triangle(v.data[0].xyz, v.data[1].xyz, v.data[2].xyz, v.data[3].xy, v.data[3].zw, v.data[4].xy, v.data[5].xyz, v.data[6].xyz, v.data[7].xyz, v.data[8].xyz, v.data[9].xyz);
+    return GpuPrimitive_Triangle(v.data[0].xyz, v.data[1].xyz, v.data[2].xyz, v.data[3].xy, v.data[3].zw, v.data[4].xy, v.data[5].xyz, v.data[6].xyz, v.data[7].xyz, v.data[8].xyz, v.data[9].xyz, v.data[9].w);
 }
 
 fn unpack_GpuPrimitive_Quad(v: GpuPrimitive) -> GpuPrimitive_Quad {

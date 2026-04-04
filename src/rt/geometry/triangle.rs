@@ -7,7 +7,7 @@ use crate::{
     },
     util::{
         interval::Interval,
-        types::{Point, Vector},
+        types::{Float, INFINITY, Point, Vector},
     },
 };
 
@@ -18,6 +18,7 @@ pub struct Triangle {
     pub normal: [Vector; 3],
     pub e01: Vector,
     pub e02: Vector,
+    pub area: Float,
     pub aabb: Aabb,
 }
 
@@ -31,8 +32,10 @@ impl Triangle {
 
         let e01 = v[1] - v[0];
         let e02 = v[2] - v[0];
+        let cross = e01.cross(e02);
         let n = e01.cross(e02).normalize();
         let normal = normal.unwrap_or([n, n, n]);
+        let area = cross.length() / 2.0;
 
         let aabb = Aabb::from_points(Vec::from(v));
 
@@ -42,6 +45,7 @@ impl Triangle {
             normal,
             e01,
             e02,
+            area,
             aabb,
         }
     }
@@ -87,5 +91,18 @@ impl Triangle {
         normal = if front_face { normal } else { -normal };
 
         Some(HitRecord::new(point, normal, front_face, t, uv[0], uv[1]))
+    }
+
+    pub fn pdf_value(&self, origin: &Point, direction: &Vector) -> Float {
+        let ray = Ray::new(*origin, *direction, 0.0);
+        let interval = Interval::new(0.001, INFINITY);
+        match self.hit(&ray, interval) {
+            None => 0.0,
+            Some(hit_record) => {
+                let dist_sqrd = hit_record.t * hit_record.t * direction.length_squared();
+                let cos = (direction.dot(hit_record.normal) / direction.length()).abs();
+                dist_sqrd / (cos * self.area)
+            }
+        }
     }
 }

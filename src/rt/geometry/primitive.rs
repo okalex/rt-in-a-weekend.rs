@@ -42,8 +42,8 @@ impl Primitive {
             Self::Mesh(_) => default, // TODO
             Self::Quad(obj) => obj.pdf_value(origin, direction),
             Self::Sphere(obj) => obj.pdf_value(origin, direction),
-            Self::Triangle(_) => default, // TODO
-            Self::Medium(_) => default,   // TODO
+            Self::Triangle(obj) => obj.pdf_value(origin, direction),
+            Self::Medium(_) => default, // TODO
         }
     }
 

@@ -160,6 +160,7 @@ pub enum GpuPrimitive {
         normal0: Vec3,
         normal1: Vec3,
         normal2: Vec3,
+        area: f32,
     },
 
     Quad {
@@ -196,6 +197,7 @@ impl GpuPrimitive {
             normal0: tri.normal[0],
             normal1: tri.normal[1],
             normal2: tri.normal[2],
+            area: tri.area,
         }
     }
 }

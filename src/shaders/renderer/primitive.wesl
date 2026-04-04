@@ -58,9 +58,10 @@ fn pdf_value(primitive: types::GpuPrimitive, origin: vec3f, direction: vec3f) ->
             return sphere::pdf_value(sphere, origin, direction);
         }
 
-        // case types::GPUPRIMITIVE_TRIANGLE: {
-        //     let triangle = types::unpack_GpuPrimitive_Triangle(primitive);
-        // }
+        case types::GPUPRIMITIVE_TRIANGLE: {
+            let triangle = types::unpack_GpuPrimitive_Triangle(primitive);
+            return triangle::pdf_value(triangle, origin, direction);
+        }
 
         case types::GPUPRIMITIVE_QUAD: {
             let quad = types::unpack_GpuPrimitive_Quad(primitive);
