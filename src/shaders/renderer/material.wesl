@@ -76,7 +76,7 @@ fn scattered(mat: types::GpuMaterial, ray_in: ray::Ray, hit_record: hit_record::
             let color = texture::get_color(isotropic.texture, hit_record.u, hit_record.v, hit_record.point);
             let scattered_dir = pdf::sphere_generate();
 
-            return scatter_record::with_pdf(
+            return scatter_record::skip_pdf(
                 color,
                 ray::Ray(hit_record.point, scattered_dir),
             );
@@ -127,10 +127,6 @@ fn pdf_value(
             return pdf::cosine_pdf_value(pdf::new_cosine_pdf(hit_record.normal), direction);
         }
 
-        case types::GPUMATERIAL_ISOTROPIC {
-            return pdf::sphere_pdf_value();
-        }
-
         case types::GPUMATERIAL_PBR {
             let pbr_mat = types::unpack_GpuMaterial_Pbr(mat);
             let wo = -normalize(ray_in.dir);
@@ -159,12 +155,6 @@ fn brdf(
             let lambertian = types::unpack_GpuMaterial_Lambertian(mat);
             let attenuation = texture::get_color(lambertian.texture, hit_record.u, hit_record.v, hit_record.point);
             return attenuation / PI;
-        }
-
-        case types::GPUMATERIAL_ISOTROPIC {
-            let isotropic = types::unpack_GpuMaterial_Isotropic(mat);
-            let attenuation = texture::get_color(isotropic.texture, hit_record.u, hit_record.v, hit_record.point);
-            return attenuation / (4.0 * PI);
         }
 
         case types::GPUMATERIAL_PBR {

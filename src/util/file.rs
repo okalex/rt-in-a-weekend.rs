@@ -28,8 +28,7 @@ pub fn load_model(file_name: &str) -> anyhow::Result<Vec<Mesh>> {
     let obj_cursor = Cursor::new(obj_text);
     let mut obj_reader = BufReader::new(obj_cursor);
 
-    #[allow(unused)]
-    let (models, obj_materials) = tobj::load_obj_buf(
+    let (models, _obj_materials) = tobj::load_obj_buf(
         &mut obj_reader,
         &tobj::LoadOptions {
             single_index: true,

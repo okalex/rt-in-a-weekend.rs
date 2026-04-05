@@ -26,6 +26,7 @@ pub enum Pdf {
 }
 
 impl Pdf {
+    #[allow(unused)]
     pub fn sphere() -> Self {
         Self::Sphere(SpherePdf::new())
     }

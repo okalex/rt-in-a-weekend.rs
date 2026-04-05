@@ -79,7 +79,7 @@ impl Material {
         match self {
             Self::Dielectric(_) => default,
             Self::Emissive(_) => default,
-            Self::Isotropic(mat) => mat.brdf(r_in, hit_record, scattered_dir),
+            Self::Isotropic(_) => default,
             Self::Lambertian(mat) => mat.brdf(r_in, hit_record, scattered_dir),
             Self::Metal(_) => default,
             Self::PbrMaterial(mat) => mat.brdf(r_in, hit_record, scattered_dir),

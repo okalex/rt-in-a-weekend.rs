@@ -384,7 +384,7 @@ mod mesh {
     pub fn camera() -> CameraOptions {
         CameraOptions::new()
             .vfov(50.0)
-            .position([0.0, 1.0, 3.0])
+            .position([2.5, 2.0, 1.5])
             .target([0.0, 0.5, 0.0])
             .defocus_angle(0.1)
             .focus_dist(3.4)
@@ -415,8 +415,9 @@ mod mesh {
         }
 
         // Add meshes
-        let mesh_mat_id = scene_builder.add_material(materials::checkered(0.05, [0.8, 0.3, 0.2], [0.9, 0.9, 0.9]));
-        let model = load_model("teapot.obj").unwrap();
+        // let mesh_mat_id = scene_builder.add_material(materials::checkered(0.05, [0.8, 0.3, 0.2], [0.9, 0.9, 0.9]));
+        let mesh_mat_id = scene_builder.add_material(materials.default);
+        let model = load_model("ramen_shop.obj").unwrap();
         for mesh in model {
             let mesh_id = scene_builder.add_mesh(mesh);
             let primitive = Primitive::mesh(mesh_id);
@@ -517,10 +518,10 @@ mod book2 {
 
         // Blue glass sphere
         {
-            let mat_inner = scene_builder.add_material(materials::isotropic([0.2, 0.4, 0.9]));
+            let mat_inner = scene_builder.add_material(materials::isotropic([0.1, 0.2, 0.8]));
             let boundary_id = scene_builder.add_primitive(primitives::sphere([360.0, 150.0, 145.0], 70.0));
             let _ = scene_builder.add_instance(Instance::new(boundary_id, mat_glass));
-            let inner_id = scene_builder.add_primitive(primitives::medium(boundary_id, 0.2));
+            let inner_id = scene_builder.add_primitive(primitives::medium(boundary_id, 0.015));
             let _ = scene_builder.add_instance(Instance::new(inner_id, mat_inner));
         }
 

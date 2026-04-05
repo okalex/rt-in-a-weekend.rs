@@ -4,13 +4,11 @@ use super::material::ScatterRecord;
 use crate::{
     rt::{
         geometry::hit_record::HitRecord,
-        pdf::Pdf,
         ray::Ray,
         textures::{solid_color::SolidColor, texture::Texture},
     },
     util::{
-        color::Color,
-        types::{Float, PI, Vector},
+        color::Color, random::rand_unit_vector, types::{Float}
     },
 };
 
@@ -23,18 +21,11 @@ impl Isotropic {
         Self { texture }
     }
 
-    #[allow(unused_variables)]
     pub fn scatter(&self, r_in: &Ray, hit_record: &HitRecord) -> Option<ScatterRecord> {
-        Some(ScatterRecord::with_pdf(
+        Some(ScatterRecord::skip_pdf(
             self.texture.value(hit_record.u, hit_record.v, &hit_record.point),
-            Arc::new(Pdf::sphere()),
+            Ray::new(hit_record.point, rand_unit_vector(), r_in.time),
         ))
-    }
-
-    #[allow(unused_variables)]
-    pub fn brdf(&self, r_in: &Ray, hit_record: &HitRecord, scattered_dir: &Vector) -> Color {
-        let attenuation = self.texture.value(hit_record.u, hit_record.v, &hit_record.point);
-        attenuation / (4.0 * PI)
     }
 }
 
